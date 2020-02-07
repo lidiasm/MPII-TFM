@@ -3,6 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.7
+      - image: circleci/mongo:latest
     steps:
       - checkout
       - run:
@@ -11,3 +12,6 @@ jobs:
       - run:
           name: Run tests.
           command: make test
+machine:
+  services:
+    - mongodb
