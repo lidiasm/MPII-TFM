@@ -15,28 +15,14 @@ from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, Ite
 from mongodb import MongoDB
 """Connection to a test database with a test collection."""
 testConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
-
-def test1_empty_collection():
-    """Test to check the delete method when the collection doesn't exist. In order
-        to do that we create another connection and set it to None."""
-    invalidTestConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
-    invalidTestConnection.collection = None
-    with pytest.raises(CollectionNotFound):
-        invalidTestConnection.empty_collection()
-        
-def test2_empty_collection():
-    """Test to check the delete method which remove the documents of the
-        current collection."""
-    result = testConnection.empty_collection()
-    assert result.acknowledged == True
-    
-def test3_empty_collection():
-    """Test to check the delete method when the collection is already empty."""
-    with pytest.raises(EmptyCollection):
-        testConnection.empty_collection()
     
 def test1_insert():
-    """Test to check the insert method with a valid new item."""
+    """Test to check the insert method with a valid new item. In the first place,
+        we try to empty the collection."""
+    try:
+        testConnection.empty_collection()
+    except EmptyCollection:
+        print("Empty collection")
     data = {'id':'1', 'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
             'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
     id_new_item = testConnection.insert(data)
@@ -127,3 +113,22 @@ def test4_delete_item():
     newConnection.collection = None
     with pytest.raises(CollectionNotFound):
         newConnection.delete_item('whatever', '1')
+
+def test1_empty_collection():
+    """Test to check the delete method when the collection doesn't exist. In order
+        to do that we create another connection and set it to None."""
+    invalidTestConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    invalidTestConnection.collection = None
+    with pytest.raises(CollectionNotFound):
+        invalidTestConnection.empty_collection()
+        
+def test2_empty_collection():
+    """Test to check the delete method which remove the documents of the
+        current collection."""
+    result = testConnection.empty_collection()
+    assert result.acknowledged == True
+    
+def test3_empty_collection():
+    """Test to check the delete method when the collection is already empty."""
+    with pytest.raises(EmptyCollection):
+        testConnection.empty_collection()
