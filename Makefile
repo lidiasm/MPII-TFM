@@ -6,4 +6,4 @@ test:
 	# Execute the tests for the project classes.
 	python3 -B -m pytest tests/*
 	# Coverage tests.
-	python3 -B -m pytest --cov=commondata tests/
+	python3 -B -m pytest --cov=commondata --cov=mongodb tests/
