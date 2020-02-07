@@ -1,13 +1,16 @@
 language: python
 python:
-- "3.5"
-- "3.6"
-- "3.7"
-- "3.8"
-- "3.8-dev"
+- '3.5'
+- '3.6'
+- '3.7'
+- '3.8'
+- 3.8-dev
 before_install:
 - make install
 script:
 - make test
 after_success:
 - codecov
+env:
+  global:
+    secure: hI3T7Ey8X/2OCKdwCnUy1yBPnfNtpsIny8dLPY7GksXnxtAHUHdyDfOD9hhfDA7rIXtyArZT+6rjK0EB4UKmwzn9QohZN0spYRoXwzxTq8DRst2O6DJDJtodyJ23ZtZOmoxvzD93MPa57zcfWhYuYgJx3Cn3M1ns8GQz8iUpnSXSiECC/P8D/k2rNwqvrC4gLMDaygGdvcLOt+T19MwmkUpkSd7Jna9jzN4G+0CKofxOEmd3RJPphAZuMDu9se5gAN8fWzd5uci+S8UU1eae/HxBNmirpbCXDPiZfYxw2u4aWaVQggN7xLz8ft1EcW+f2wqzgo66BtZUbNyS7MakDShSC9AxgLFI0p/5hKNzemckiMjtiMWfchweCeuEJepwGnfm4bKpok+0/zHp8MUhz0xPtdE/IOwqHCVwgs1jRyaTsvafOTfDtDsjn3gHNKOX22UgwkPila8A/sjp/GwL+CRv9ZITapkWGFC118yljKfuTAps5cIwSiwOrTmCdgCfIKYPoJ0ocNGsG8OLfRFbqNoulhomkaUqmtcjQNo7oxsvnBw/wB6hvE2lxXB0DmzbhtOiBUW/xRgwhxAiwIsw9iAuwmX3NJ3Qv3bN+b0pNfitDTxtedctRQsgP5GpCavKKJ6ryUQ+NEj49qjwsTOVmsdo/AOw+4XK8cuL42tn41c=
