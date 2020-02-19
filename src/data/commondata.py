@@ -8,20 +8,22 @@ methods to verify the values of the collected data.
 """
 import sys
 sys.path.append("../")
-from exceptions import ProfileNotFound, BasicProfileDataNotFound
+from exceptions import ProfileNotFound, BasicProfileDataNotFound, RelathionshipsListNotFound, LikersDictNotFound, IdNotFound, PostsDictNotFound
 
 class CommonData:
     
-    def __init__(self, profileUser, followers, following):
+    def __init__(self, profileUser, posts, likers, followers, followings):
+        """Creates a data object related to the info from an user."""
         self.profileUser = profileUser
+        self.posts = posts
+        self.likers = likers
         self.followers = followers
-        self.following = following
+        self.followings = followings
     
     def check_profile_field(self, field):
+        """Checks if a field exists and has a value."""
         field_value = None
-        """Check if the field exists."""
         if (field in self.profileUser):
-            """Check the value of the field."""
             if (field == None): self.profileUser[field] = "None"
             else: field_value = self.profileUser[field]
         else:
@@ -30,31 +32,85 @@ class CommonData:
         return field_value
             
     def profile_preprocessing(self):
-        name_value = self.check_profile_field('name')
+        """Check if the user profile exists."""
+        if (self.profileUser == None or len(self.profileUser) == 0): 
+            raise ProfileNotFound("User profile not provided")
+        """Checks the structure of a provided profile and their values of its
+            fields."""
         username_value = self.check_profile_field('username')
-        email_value = self.check_profile_field('email')
+        self.check_profile_field('name')
+        self.check_profile_field('email')
         self.check_profile_field('biography')
         self.check_profile_field('gender')
         self.check_profile_field('profile_pic')
         self.check_profile_field('location')
         self.check_profile_field('birthday')
-        self.check_profile_field('data_joined')
+        self.check_profile_field('date_joined')
         self.check_profile_field('private_account')
+        self.check_profile_field('n_followers')
+        self.check_profile_field('n_followings')
         """To string."""
         if (self.profileUser['private_account'] == True): self.profileUser['private_account'] = 'Yes'
         elif (self.profileUser['private_account'] == False): self.profileUser['private_account'] = 'No'
         
-        if (name_value == None or username_value == None or email_value == None):
+        if (username_value == None):
             raise BasicProfileDataNotFound("Basic profile data not found.")
                     
         return self.profileUser
     
+    def relationships_preprocessing(self):
+        """Checks if the followers/followings list exist. If they're not, they'll be
+            initialized as empty lists."""
+        if (self.followers == None): self.followers = []
+        if (self.followings == None): self.followings = []
+        """Checks the types."""
+        if (type(self.followers) != list and self.followers != None):
+            raise RelathionshipsListNotFound("Followers should be a list.")
+        if (type(self.followings) != list and self.followings != None):
+            raise RelathionshipsListNotFound("Followings should be a list.")
+        """Removes None followings/followers."""
+        validFollowers = [follower for follower in self.followers if follower is not None]
+        validFollowings = [following for following in self.followings if following is not None]
+        """Update followers/followings."""
+        self.followers = validFollowers
+        self.followings = validFollowings
+        return True
+    
+    def likers_preprocessing(self):
+        """Checks if there are some posts. If there aren't, likers can't exist."""
+        if (len(self.posts) == 0):
+            raise PostsDictNotFound("Posts should be a dict.")
+        """Checks if the dict of likers exists."""
+        if (self.likers == None): self.likers = {}
+        """Checks the list of people who like the posts of the user."""
+        if (type(self.likers) != dict and self.likers != None):
+            raise LikersDictNotFound("Likers should be a dict.")
+        """Removes None followings/followers."""
+        validLikers = {k:v for k,v in self.likers.items() if v is not None}
+        """Update likers"""
+        self.likers = validLikers
+        return True
+    
+    def posts_preprocessing(self):
+        """Checks if the dict of posts exists."""
+        if (self.posts == None): self.posts = {}
+        """Checks the list of posts of the user."""
+        if (type(self.posts) != dict and self.posts != None):
+            raise PostsDictNotFound("Posts should be a dict.")
+        """Preprocessing the value of the fields of the posts dict"""
+        for post in self.posts:
+            if (post == None): raise IdNotFound("Error. A post doesn't have an id.")
+            if (self.posts[post]['likes'] == None): self.posts[post]['likes'] = str(0)
+            if (self.posts[post]['comments'] == None): self.posts[post]['comments'] = str(0)
+        """Check complete"""
+        return True
+    
     def preprocessing(self):
-        """Check the provided profile."""
-        if (self.profileUser == None or len(self.profileUser) == 0): raise ProfileNotFound("Profile not provided")
-        self.profileUser = self.profile_preprocessing()
-        """Check the followers and following fields."""
-        if (self.followers == None): self.followers = {}
-        if (self.following == None): self.following = {}
-        data = {'profile':self.profileUser, 'followers':self.followers, 'following':self.following}
+        """Checks user data."""
+        self.profile_preprocessing()
+        self.relationships_preprocessing()
+        self.likers_preprocessing()
+        self.posts_preprocessing()
+        data = {'profile':self.profileUser, 'posts':self.posts, 'likers':self.likers,
+                'followers':self.followers, 'followings':self.followings}
         return data
