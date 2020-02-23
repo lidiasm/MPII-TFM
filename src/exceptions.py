@@ -62,8 +62,8 @@ class RelathionshipsListNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class LikersDictNotFound(Exception):
-    """Class exception to point out that likers should be a dict."""
+class LikersListNotFound(Exception):
+    """Class exception to point out that likers should be a list."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
