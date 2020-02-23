@@ -9,6 +9,7 @@ methods to verify the values of the collected data.
 import sys
 sys.path.append("../")
 from exceptions import ProfileNotFound, BasicProfileDataNotFound, RelathionshipsListNotFound, LikersDictNotFound, IdNotFound, PostsDictNotFound
+#from datetime import date
 
 class CommonData:
     
@@ -19,6 +20,7 @@ class CommonData:
         self.likers = likers
         self.followers = followers
         self.followings = followings
+        #self.mongodb = mongodb
     
     def check_profile_field(self, field):
         """Checks if a field exists and has a value."""
@@ -114,3 +116,15 @@ class CommonData:
         data = {'profile':self.profileUser, 'posts':self.posts, 'likers':self.likers,
                 'followers':self.followers, 'followings':self.followings}
         return data
+    
+#    def add_user_data(self):
+#        """Preprocesses the provided user data."""
+#        userData = self.preprocessing()
+#        """Id = username, date = today date. These will be the two fields which insert
+#            method will have into account in order to insert a new element."""
+#        userData['id'] = userData['profile']['username']
+#        userData['date'] = date.today()
+#        return self.mongodb.insert(userData)
+#    
+#    def get_user_data(self, username):
+        
