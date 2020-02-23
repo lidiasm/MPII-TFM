@@ -6,4 +6,4 @@ test:
 	# Execute the tests for the project classes.
 	python3 -B -m pytest --disable-warnings tests/*
 	# Coverage tests.
-	python3 -B -m pytest --cov=api --cov=commondata --cov=mongodb --cov=api tests/
+	python3 -B -m pytest --disable-warnings --cov=commondata --cov=mongodb --cov=api tests/
