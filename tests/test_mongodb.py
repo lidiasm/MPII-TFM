@@ -13,9 +13,11 @@ import os
 import pytest
 from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound
 from mongodb import MongoDB
+from datetime import date
+
 """Connection to a test database with a test collection."""
 testConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
-    
+
 def test1_insert():
     """Test to check the insert method with a valid new item. In the first place,
         we try to empty the collection."""
@@ -23,7 +25,8 @@ def test1_insert():
         testConnection.empty_collection()
     except EmptyCollection:
         print("Empty collection")
-    data = {'id':'1', 'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
+    data = {'id':'1', 'date':str(date.today()), 
+            'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
             'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
     id_new_item = testConnection.insert(data)
     assert id_new_item != None
@@ -39,7 +42,8 @@ def test3_insert():
         do that we create another connection and modify to make it invalid."""
     invalidTestConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
     invalidTestConnection.collection = None
-    data = {'id':'1', 'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
+    data = {'id':'1', 'date':str(date.today()), 
+            'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
             'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
     with pytest.raises(CollectionNotFound):
         invalidTestConnection.insert(data)
@@ -47,7 +51,8 @@ def test3_insert():
 def test1_get_item():
     """Test to chech the get item method. In order to do that we insert a new item
         to get it after."""
-    new_item = {'id':'2', 'data':{'profile':{'username':'mariadb', 'name':'maria', 'email':'maria@gmail.es'},
+    new_item = {'id':'2', 'date':str(date.today()), 
+            'data':{'profile':{'username':'mariadb', 'name':'maria', 'email':'maria@gmail.es'},
             'followers':{'1':'lidia'}, 'following':{'1':'lidia'}}}
     testConnection.insert(new_item)
     item = testConnection.get_item('id', '2')
@@ -70,6 +75,9 @@ def test4_get_item():
     invalidTestConnection.collection = None
     with pytest.raises(CollectionNotFound):
         invalidTestConnection.get_item('id', '1')
+
+def test1_collection_size():
+    assert type(testConnection.collection_size()) == int
 
 def test1_get_collection():
     """Test to check the get collection method with the current collection."""

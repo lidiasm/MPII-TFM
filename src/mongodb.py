@@ -12,6 +12,7 @@ import pymongo
 import sys
 sys.path.append('src/exceptions')
 from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound
+from datetime import date
 
 class MongoDB:
     
@@ -26,8 +27,11 @@ class MongoDB:
             raise CollectionNotFound("There's no connection to the database.")
         if (new_item == None or len(new_item) == 0):
             raise NewItemNotFound("The new item doesn't exist.")
-        """Insert the new element if it's not already in the database."""
-        if (self.get_item('id', new_item['id']) == None):
+        
+        """Insert the new element if it's not already in the collection. If it
+            is, new data from the user can't be inserted in the same day."""
+        item = self.get_item('id', new_item['id'])
+        if (item == None or item['date'] != date.today()):
             id_new_item = self.collection.insert_one(new_item.copy()).inserted_id
             return str(id_new_item)
             
