@@ -76,7 +76,31 @@ def test4_get_item():
     with pytest.raises(CollectionNotFound):
         invalidTestConnection.get_item('id', '1')
 
+def test1_get_item_rows():
+    """Test to check the get item rows method which returns a set of the records
+        related to an user. In order to do that first we insert two records of the same user."""
+    data1User = {'id':'pacogp', 'date':str(date.today()), 
+            'data':{'profile':{'username':'pacogp', 'name':'Paco', 'email':None},
+            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
+    data2User = {'id':'pacogp', 'date':'2020-02-20', 
+            'data':{'profile':{'username':'pacogp', 'name':'Paquillo', 'email':None},
+            'followers':['lidiasm', 'luciav'], 'following':['lidiasm', 'lucia']}}
+    testConnection.insert(data1User)
+    testConnection.insert(data2User)
+    result = testConnection.get_item_records('id', 'pacogp')
+    assert type(result) == dict
+    
+def test2_get_item_rows():
+    """Test to check the get item rows method without a right connection to the 
+        database."""
+    newConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    newConnection.collection = None
+    with pytest.raises(CollectionNotFound):
+        newConnection.get_item_records('id', 'pacogp')
+
 def test1_collection_size():
+    """Test to check the method which returns the number of documents which are
+        contained in the current collection."""
     assert type(testConnection.collection_size()) == int
 
 def test1_get_collection():

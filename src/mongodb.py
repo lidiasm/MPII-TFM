@@ -31,7 +31,8 @@ class MongoDB:
         """Insert the new element if it's not already in the collection. If it
             is, new data from the user can't be inserted in the same day."""
         item = self.get_item('id', new_item['id'])
-        if (item == None or item['date'] != date.today()):
+        print(item)
+        if (item == None or item['date'] != str(date.today())):
             id_new_item = self.collection.insert_one(new_item.copy()).inserted_id
             return str(id_new_item)
             
@@ -45,6 +46,21 @@ class MongoDB:
         if (item != None): item['_id'] = str(item['_id'])
         return item
     
+    def get_item_records(self, key, value):
+        """Check the connection to the database."""
+        if (self.collection == None or self.client == None):
+            raise CollectionNotFound("There's no connection to the database.")
+        """Return the rows related to an item."""
+        item_rows = self.collection.find({key:value})
+        documents = {}
+        document_index = 0
+        for item_r in item_rows:
+            """Transform the id from the database to string."""
+            item_r['_id'] = str(item_r['_id'])
+            documents[document_index] = item_r
+            document_index += 1
+        return documents
+        
     def get_collection(self):
         """Check the connection to the database."""
         if (self.collection == None or self.client == None):
