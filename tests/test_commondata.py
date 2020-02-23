@@ -191,10 +191,13 @@ def test1_add_user_data():
     likers = [('lidiasm',5), ('luciav',18)]
     followings = ['anaortiz', 'luciav', 'lidiasm']
     followers = ['anaortiz', 'lidiasm']
-    data = commondata.CommonData(testCollection, profile, posts, likers, followings, followers)
-    if (data.get_user_data('eva') != None):
-        data.mongodb.delete_item('id', 'eva')
-    
+    try:
+        data = commondata.CommonData(testCollection, profile, posts, likers, followings, followers)
+        if (data.get_user_data('eva') != None):
+            data.mongodb.delete_item('id', 'eva')
+    except IdNotFound:
+        print("The user is not in the database.")
+        
     result = data.add_user_data()
     assert result != None
 
