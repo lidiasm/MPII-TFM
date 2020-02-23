@@ -8,19 +8,21 @@ methods to verify the values of the collected data.
 """
 import sys
 sys.path.append("../")
-from exceptions import ProfileNotFound, BasicProfileDataNotFound, RelathionshipsListNotFound, LikersDictNotFound, IdNotFound, PostsDictNotFound
-#from datetime import date
+from exceptions import ProfileNotFound, BasicProfileDataNotFound, RelathionshipsListNotFound, LikersListNotFound, IdNotFound, PostsDictNotFound, UsernameNotFound
+from datetime import date
 
 class CommonData:
     
-    def __init__(self, profileUser, posts, likers, followers, followings):
-        """Creates a data object related to the info from an user."""
+    def __init__(self, mongodb, profileUser={}, posts={}, likers=[], followers=[], followings=[]):
+        """Constructor. You can create an instance from this class using two different ways.
+            1) Only passing the database object to connect to it and sending queries.
+            2) Also passing the user data to preprocess and insert them to the database."""
         self.profileUser = profileUser
         self.posts = posts
         self.likers = likers
         self.followers = followers
         self.followings = followings
-        #self.mongodb = mongodb
+        self.mongodb = mongodb
     
     def check_profile_field(self, field):
         """Checks if a field exists and has a value."""
@@ -85,12 +87,8 @@ class CommonData:
         """Checks if the dict of likers exists."""
         if (self.likers == None): self.likers = {}
         """Checks the list of people who like the posts of the user."""
-        if (type(self.likers) != dict and self.likers != None):
-            raise LikersDictNotFound("Likers should be a dict.")
-        """Removes None followings/followers."""
-        validLikers = {k:v for k,v in self.likers.items() if v is not None}
-        """Update likers"""
-        self.likers = validLikers
+        if (type(self.likers) != list and self.likers != None):
+            raise LikersListNotFound("Likers should be a list.")
         return True
     
     def posts_preprocessing(self):
@@ -117,14 +115,21 @@ class CommonData:
                 'followers':self.followers, 'followings':self.followings}
         return data
     
-#    def add_user_data(self):
-#        """Preprocesses the provided user data."""
-#        userData = self.preprocessing()
-#        """Id = username, date = today date. These will be the two fields which insert
-#            method will have into account in order to insert a new element."""
-#        userData['id'] = userData['profile']['username']
-#        userData['date'] = date.today()
-#        return self.mongodb.insert(userData)
-#    
-#    def get_user_data(self, username):
+    def add_user_data(self):
+        """Preprocesses the provided user data."""
+        userData = self.preprocessing()
+        """Id = username, date = today date. These will be the two fields which insert
+            method will have into account in order to insert a new element."""
+        userData['id'] = userData['profile']['username']
+        userData['date'] = str(date.today())
+        return self.mongodb.insert(userData)
+    
+    def get_user_data(self, username):
+        """Gets all rows related to a username from a collection."""
+        if (username == None or type(username) != str or username == ""):
+            raise UsernameNotFound("You should specify a valid username.")
         
+        userData = self.mongodb.get_item_records('id', username)
+        if (userData == None or len(userData) == 0):
+            raise IdNotFound("The specified username doesn't exist in the database.")
+        return userData
