@@ -8,121 +8,135 @@ methods to verify the values of the collected data.
 """
 import sys
 sys.path.append("../")
-from exceptions import ProfileNotFound, BasicProfileDataNotFound, RelathionshipsListNotFound, LikersListNotFound, IdNotFound, PostsDictNotFound, UsernameNotFound
+from exceptions import ProfileDictNotFound, UsernameNotFound, ContactsListsNotFound \
+, LikersListNotFound, IdNotFound, PostsDictNotFound, CommentsListNotFound
+
 from datetime import date
 
 class CommonData:
     
-    def __init__(self, mongodb, profileUser={}, posts={}, likers=[], followers=[], followings=[]):
+    def __init__(self, mongodb, user_data={}):
         """Constructor. You can create an instance from this class using two different ways.
             1) Only passing the database object to connect to it and sending queries.
             2) Also passing the user data to preprocess and insert them to the database."""
-        self.profileUser = profileUser
-        self.posts = posts
-        self.likers = likers
-        self.followers = followers
-        self.followings = followings
         self.mongodb = mongodb
+        self.user_data = user_data
     
-    def check_profile_field(self, field):
-        """Checks if a field exists and has a value."""
-        field_value = None
-        if (field in self.profileUser):
-            if (field == None): self.profileUser[field] = "None"
-            else: field_value = self.profileUser[field]
+    def preprocess_profile(self):
+        """Check the values of the profile and the fields on it. If there isn't some
+            mandatory field, it'll be added with default value."""
+        if ('profile' in self.user_data): 
+            user_profile = self.user_data['profile']
+            """Check the type."""
+            if (type(user_profile) != dict or user_profile == None):
+                raise ProfileDictNotFound("ERROR. User profile should be a dict.")
+            """Username has to exist because it identifiers the user."""
+            if ('username' not in user_profile):
+                raise UsernameNotFound("Username not provided.")
+            elif (user_profile['username'] == None or user_profile['username'] == ""):
+                raise UsernameNotFound("Username not provided.")
+            
+            """Mandatory fields"""
+            required_fields = ['userid', 'username', 'name', 'biography', 'gender', 'profile_pic',
+              'location', 'birthday', 'data_joined', 'n_followers', 'n_followings']
+            """Copy of the user profile to remove not required fields."""
+            preprocessed_user_profile = {}
+            for field in user_profile:
+                if field in required_fields:
+                    preprocessed_user_profile[field] = user_profile[field]
+                    if user_profile[field] == None: 
+                        preprocessed_user_profile[field] = 'None'
+            return preprocessed_user_profile
         else:
-            self.profileUser[field] = "None"
-            
-        return field_value
-            
-    def profile_preprocessing(self):
-        """Check if the user profile exists."""
-        if (self.profileUser == None or len(self.profileUser) == 0): 
-            raise ProfileNotFound("User profile not provided")
-        """Checks the structure of a provided profile and their values of its
-            fields."""
-        username_value = self.check_profile_field('username')
-        self.check_profile_field('name')
-        self.check_profile_field('email')
-        self.check_profile_field('biography')
-        self.check_profile_field('gender')
-        self.check_profile_field('profile_pic')
-        self.check_profile_field('location')
-        self.check_profile_field('birthday')
-        self.check_profile_field('date_joined')
-        self.check_profile_field('private_account')
-        self.check_profile_field('n_followers')
-        self.check_profile_field('n_followings')
-        """To string."""
-        if (self.profileUser['private_account'] == True): self.profileUser['private_account'] = 'Yes'
-        elif (self.profileUser['private_account'] == False): self.profileUser['private_account'] = 'No'
+            raise ProfileDictNotFound("ERROR. User profile not provided.")
+    
+    def preprocess_contacts(self):
+        """Checks the followers/followings of an user. If there aren't, both lists
+            will be initialized as empty lists."""
+        user_followers = []
+        user_followings = []
+        if ('followers' in self.user_data): user_followers = self.user_data['followers']
+        if ('followings' in self.user_data): user_followings = self.user_data['followings']
+        """Check types."""
+        if (type(user_followers) != list or user_followers == None or 
+            type(user_followings) != list or user_followings == None):
+            raise ContactsListsNotFound('ERROR. Followings and followers should be lists.')
         
-        if (username_value == None):
-            raise BasicProfileDataNotFound("Basic profile data not found.")
-                    
-        return self.profileUser
+        """Removes 'None' followings/followers."""
+        validFollowers = [follower for follower in user_followers if follower is not None]
+        validFollowings = [following for following in user_followings if following is not None]
+        
+        return {'followers':validFollowers, 'followings':validFollowings}
     
-    def relationships_preprocessing(self):
-        """Checks if the followers/followings list exist. If they're not, they'll be
-            initialized as empty lists."""
-        if (self.followers == None): self.followers = []
-        if (self.followings == None): self.followings = []
-        """Checks the types."""
-        if (type(self.followers) != list and self.followers != None):
-            raise RelathionshipsListNotFound("Followers should be a list.")
-        if (type(self.followings) != list and self.followings != None):
-            raise RelathionshipsListNotFound("Followings should be a list.")
-        """Removes None followings/followers."""
-        validFollowers = [follower for follower in self.followers if follower is not None]
-        validFollowings = [following for following in self.followings if following is not None]
-        """Update followers/followings."""
-        self.followers = validFollowers
-        self.followings = validFollowings
-        return True
+    def preprocess_posts(self):
+        """Checks the user posts provdided."""
+        posts = {}
+        if ('posts' in self.user_data):
+            posts = self.user_data['posts']
+            """Check type"""
+            if (type(posts) != dict or posts == None):
+                raise PostsDictNotFound("ERROR. Posts should be a dict.")
+            """Check likers and comments fields. They should be integers."""
+            for id_post in posts:
+                if (id_post == None or id_post == "" or type(id_post) != str):
+                    raise IdNotFound("ERROR. Invalid id post.")
+                try:
+                    int(posts[id_post]['likes'])
+                    int(posts[id_post]['comments'])
+                    posts[id_post]['likes'] = str(posts[id_post]['likes'])
+                    posts[id_post]['comments'] = str(posts[id_post]['comments'])
+                except ValueError:
+                    raise ValueError("ERROR. Likers and comments should be numbers.")
+        return posts
     
-    def likers_preprocessing(self):
-        """Checks if there are some posts. If there aren't, likers can't exist."""
-        if (len(self.posts) == 0):
-            raise PostsDictNotFound("Posts should be a dict.")
-        """Checks if the dict of likers exists."""
-        if (self.likers == None): self.likers = {}
-        """Checks the list of people who like the posts of the user."""
-        if (type(self.likers) != list and self.likers != None):
-            raise LikersListNotFound("Likers should be a list.")
-        return True
+    def preprocess_likers(self):
+        """Checks if there are some posts. If there are, then it checks the people
+            who like them."""
+        if ('posts' in self.user_data):
+            likers = []
+            if ('likers' in self.user_data):
+                likers = self.user_data['likers']
+            """Check type."""
+            if (type(likers) != list or likers == None):
+                raise LikersListNotFound("ERROR. Likers should be a list.")
+            
+            return likers
+        else:
+            raise PostsDictNotFound("There aren't any posts so likers can't be analyzed.")
+            
+    def preprocess_comments(self):
+        """Checks if there are some posts. If there are, then it checks the comments
+            on them."""
+        if ('posts' in self.user_data):
+            comments = []
+            if ('comments' in self.user_data):
+                comments = self.user_data['comments']
+            """Check type."""
+            if (type(comments) != list or comments == None):
+                raise CommentsListNotFound("ERROR. Post comments should be a list.")
+            
+            return comments
+        else:
+            raise PostsDictNotFound("There aren't any posts so their comments can't be analyzed.")
     
-    def posts_preprocessing(self):
-        """Checks if the dict of posts exists."""
-        if (self.posts == None): self.posts = {}
-        """Checks the list of posts of the user."""
-        if (type(self.posts) != dict and self.posts != None):
-            raise PostsDictNotFound("Posts should be a dict.")
-        """Preprocessing the value of the fields of the posts dict"""
-        for post in self.posts:
-            if (post == None): raise IdNotFound("Error. A post doesn't have an id.")
-            if (self.posts[post]['likes'] == None): self.posts[post]['likes'] = str(0)
-            if (self.posts[post]['comments'] == None): self.posts[post]['comments'] = str(0)
-        """Check complete"""
-        return True
-    
-    def preprocessing(self):
-        """Checks user data."""
-        self.profile_preprocessing()
-        self.relationships_preprocessing()
-        self.likers_preprocessing()
-        self.posts_preprocessing()
-        data = {'profile':self.profileUser, 'posts':self.posts, 'likers':self.likers,
-                'followers':self.followers, 'followings':self.followings}
+    def preprocess_user_data(self):
+        """Checks all user data."""
+        profile = self.preprocess_profile()
+        contacts = self.preprocess_contacts()
+        posts = self.preprocess_posts()
+        likers = self.preprocess_likers()
+        comments = self.preprocess_comments()
+        data = {'profile':profile, 'posts':posts, 'likers':likers, 'comments':comments,
+                'followers':contacts['followers'], 'followings':contacts['followings']}
         return data
     
     def add_user_data(self):
         """Preprocesses the provided user data."""
-        userData = self.preprocessing()
-        """Id = username, date = today date. These will be the two fields which insert
-            method will have into account in order to insert a new element."""
-        userData['id'] = userData['profile']['username']
-        userData['date'] = str(date.today())
-        return self.mongodb.insert(userData)
+        preprocessed_user_data = self.preprocess_user_data()
+        """Primary keys: id (username), date (today date)."""
+        preprocessed_user_data['id'] = preprocessed_user_data['profile']['username']
+        preprocessed_user_data['date'] = str(date.today())
+        return self.mongodb.insert(preprocessed_user_data)
     
     def get_user_data(self, username):
         """Gets all rows related to a username from a collection."""
@@ -132,4 +146,5 @@ class CommonData:
         userData = self.mongodb.get_item_records('id', username)
         if (userData == None or len(userData) == 0):
             raise IdNotFound("The specified username doesn't exist in the database.")
+            
         return userData

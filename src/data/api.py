@@ -11,7 +11,8 @@ stored in the database.
 import os
 import sys
 sys.path.append("../")
-from exceptions import SingletonClass, InvalidCredentials, UsernameNotFound, MaxRequestsExceed
+from exceptions import SingletonClass, InvalidCredentials, UsernameNotFound \
+, MaxRequestsExceed, PostsDictNotFound
 from InstagramAPI import InstagramAPI
 import time 
 
@@ -47,102 +48,156 @@ class Api:
         return api
     
     @staticmethod
-    def get_instagram_user_posts(api, userid):
-        """Get their posts, likes and comments count."""
-        posts = {}
-        morePosts = True
-        maxId = ""
-        likers = {}
-        while morePosts:
-            """Get media user."""
-            api.getUserFeed(userid, maxId)
-            if (api.LastJson['more_available'] == False):
-                morePosts = False
-            """We only save a media id, likes and comments count."""
-            maxId = api.LastJson.get('next_max_id', '')
-            itemsList = api.LastJson['items']
-            for i in itemsList:
-                posts[str(i['id'])] = {'likes':str(i['like_count']), 'comments':str(i['comment_count'])}
-                api.getMediaLikers(i['id'])
-                if (api.LastJson['status'].lower() != 'ok'):
-                    raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+    def get_instagram_profile(api, search_user):
+        """Gets and preprocesses data of an user's profile."""
+        if (search_user == None or type(search_user) != str or search_user == ""):
+            raise UsernameNotFound("ERROR. Invalid username.")
+        
+        """Search the id of the user."""
+        api.searchUsername(search_user)
+        if (api.LastJson['status'].lower() != 'ok'):
+                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
                 
-                users = api.LastJson['users']
-                for user in users:
-                    if (user['username'] in likers):
-                        likers[user['username']] += 1
-                    else:
-                        likers[user['username']] = 1
-
-            """Wait some time to avoid flooding the servers."""
-            time.sleep(2)
-        
-        return [posts, likers]
-    
-    @staticmethod
-    def get_instagram_user_people(api, userid):
-        """Get max 100 followings."""
-        api.getUserFollowings(userid)
-        if (api.LastJson['status'].lower() != 'ok'):
-            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-        
-        """Get the usernames of the followings."""
-        followingsUsernames = []
-        followings = api.LastJson['users']
-        for following in followings:
-            followingsUsernames.append(following['username'])
-
-        """Get max 100 followers."""
-        api.getUserFollowers(userid)
-        if (api.LastJson['status'].lower() != 'ok'):
-            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-            
-        """Get the usernames of the followers."""
-        followersUsernames = []
-        followers = api.LastJson['users']
-        for follower in followers:
-            followersUsernames.append(follower['username'])
-        
-        return [followingsUsernames, followersUsernames]
-        
-    @staticmethod
-    def instagram_api(searchUser):
-        if (searchUser == None or type(searchUser) != str or searchUser == ""):
-            raise UsernameNotFound("Invalid username.")
-        """Connection."""
-        api = Api.connect_to_instagram_api()
-        userData = {}
-        
         """Get the profile of the search user."""
-        api.searchUsername(searchUser)
-        userid = api.LastJson['user']['pk']
         profile = {}
+        profile['userid'] = api.LastJson['user']['pk']
         profile['name'] = api.LastJson['user']['full_name']
         profile['username'] = api.LastJson['user']['username']
-        profile['email'] = None
         profile['biography'] = api.LastJson['user']['biography']
         profile['gender'] = None
         profile['profile_pic'] = api.LastJson['user']['profile_pic_url']
         profile['location'] = None
         profile['birthday'] = None
         profile['date_joined'] = None
-        profile['private_account'] = api.LastJson['user']['is_private']
         profile['n_followers'] = api.LastJson['user']['follower_count']
         profile['n_following'] = api.LastJson['user']['following_count']
         profile['n_medias'] = api.LastJson['user']['media_count']
-        """Add the profile to the final dict."""
-        userData['profile'] = profile
         
-        """Add the posts and ordered likers."""
-        posts_likers = Api.get_instagram_user_posts(api, userid)
-        userData['posts'] = posts_likers[0]
-        likers = posts_likers[1]
-        sortedLikers = sorted(likers.items(), key=lambda k:k[1], reverse=True) 
-        userData['likers'] = sortedLikers
+        return profile
         
-        """Add the usernames of the followers and followings."""
-        people = Api.get_instagram_user_people(api, userid)
-        userData['followings'] = people[0]
-        userData['followers'] = people[1]
+    @staticmethod
+    def get_instagram_posts(api, userid):
+        """Gets data related to the posts of an user such as their ids, number
+            of likes and number of comments."""
+        posts = {}
+        more_posts = True
+        max_id = ""
+        while more_posts:
+            """Get media user."""
+            api.getUserFeed(userid, max_id)
+            if (api.LastJson['more_available'] == False):
+                more_posts = False
+            """We only save media id, likes and comments count."""
+            max_id = api.LastJson.get('next_max_id', '')
+            items_list = api.LastJson['items']
+            for i in items_list:
+                posts[i['id']] = {'likes':i['like_count'], 'comments':i['comment_count']}
+            
+            """Wait some time to avoid flooding the servers."""
+            time.sleep(2)
+            
+        return posts
+
+    @staticmethod
+    def get_instagram_posts_likers(api, userid, posts, username):
+        """Gets people who like the posts of an user. They're in descending order."""
+        if (posts == None or type(posts) != dict):
+            raise PostsDictNotFound("ERROR. There aren't any posts so their likers can't be got.")
+        if (username == None or type(username) != str):
+            raise UsernameNotFound("ERROR. Invalid username.")
         
-        return userData
+        likers = {}
+        for post in posts:
+            api.getMediaLikers(post)
+            if (api.LastJson['status'].lower() != 'ok'):
+                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+            """Get likers"""
+            if ('users' in api.LastJson):
+                users = api.LastJson['users']
+                for user in users:
+                    if (user['username'] in likers):
+                        likers[user['username']] += 1
+                    elif (user['username'] != username):
+                        likers[user['username']] = 1
+            """Wait some time to avoid flooding the servers."""
+            time.sleep(2)
+                    
+        return likers
+    
+    @staticmethod
+    def get_instagram_posts_comments(api, userid, posts, username):
+        """Gets people who like the posts of an user. They're in descending order."""
+        if (posts == None or type(posts) != dict):
+            raise PostsDictNotFound("ERROR. There aren't any posts so their likers can't be got.")
+        if (username == None or type(username) != str):
+            raise UsernameNotFound("ERROR. Invalid username.")
+        
+        comments = {}
+        for post in posts:
+            api.getMediaComments(post)
+            # Get max 20 comments
+            if (api.LastJson['status'].lower() != 'ok'):
+                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+            
+            if ('comments' in api.LastJson):
+                post_comments = api.LastJson['comments']
+                comments_list = []
+                for comm in post_comments:
+                    if (comm['user']['username'] != username):
+                        comments_list.append({'user':comm['user']['username'], 'comment':comm['text']})
+                
+                """Add the comments of the post"""
+                comments[post] = comments_list
+            
+            """Wait some time to avoid flooding the servers."""
+            time.sleep(2)
+        
+        return comments
+
+    @staticmethod
+    def get_instagram_contacts(api, userid):
+        """Gets the followers and followings of an user."""
+        # Max 100 followers
+        api.getUserFollowings(userid)
+        if (api.LastJson['status'].lower() != 'ok'):
+            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+        """Get the usernames of the followings."""
+        followings_usernames = []
+        followings = api.LastJson['users']
+        for following in followings:
+            followings_usernames.append(following['username'])
+
+        # Max 100 followings
+        api.getUserFollowers(userid)
+        if (api.LastJson['status'].lower() != 'ok'):
+            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")    
+        """Get the usernames of the followers."""
+        followers_usernames = []
+        followers = api.LastJson['users']
+        for follower in followers:
+            followers_usernames.append(follower['username'])
+        
+        return [followings_usernames, followers_usernames]
+    
+    @staticmethod
+    def get_instagram_data(search_user):
+        """Gets all type of data from a Instagram user."""
+        # Connection to the Instagram API
+        api = Api.connect_to_instagram_api()
+        user_data = {}
+        user_data['profile'] = Api.get_instagram_profile(api, search_user)
+        user_data['posts'] = Api.get_instagram_posts(api, user_data['profile']['userid'])
+        likers = Api.get_instagram_posts_likers(api, user_data['profile']['userid'],
+                user_data['posts'], user_data['profile']['username'])
+        
+        """Likers in descending order to show the fans first."""
+        sorted_likers = sorted(likers.items(), key=lambda k:k[1], reverse=True) 
+        user_data['likers'] = sorted_likers
+        
+        user_data['comments'] = Api.get_instagram_posts_comments(api, user_data['profile']['userid'],
+                user_data['posts'], user_data['profile']['username'])
+        contacts = Api.get_instagram_contacts(api, user_data['profile']['userid'])
+        user_data['followings'] = contacts[0]
+        user_data['followers'] = contacts[1]
+        
+        return user_data
