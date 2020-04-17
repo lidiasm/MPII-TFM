@@ -13,200 +13,266 @@ sys.path.append("src")
 from mongodb import MongoDB
 sys.path.append("src/data")
 import commondata 
-from exceptions import ProfileNotFound, BasicProfileDataNotFound, RelathionshipsListNotFound, LikersListNotFound, PostsDictNotFound, IdNotFound, UsernameNotFound
+from exceptions import UsernameNotFound, ProfileDictNotFound, ContactsListsNotFound \
+, PostsDictNotFound, LikersListNotFound, IdNotFound, CommentsListNotFound, EmptyCollection
 
 """Creates a object to connect to the database."""
-testCollection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+test_collection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
 
-def test1_check_profile_field():
-    """Test to check if the field 'birthday' exists in a JSON dict. In this case
-        it doesn't so it will return None"""
-    profile = {'username':'lidia', 'name':'Lidia', 'email':'lidia@lidia.es'}
-    followings = {'1':'Ana Ortiz', '2':'Eva García'}
-    followers = {'1':'Ana Ortiz', '2':'Paloma Peña'}
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert data1.check_profile_field('birthday') == None
+def test1_preprocess_profile():
+    """Test to check the provided profile. In this case it's right because it has
+        at least the username."""
+    profile = {'username':'lidia', 'name':'Lidia'}
+    user_data = {'profile':profile}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_profile()
+    assert type(result) == dict
 
-def test2_check_profile_field():
-    """Test to check if the field 'username' exists in a JSON dict. In this case
-        it does so it will return its value."""
-    profile = {'username':'lidia', 'name':'Lidia', 'email':'lidia@lidia.es'}
-    followings = {'1':'Ana Ortiz', '2':'Eva García'}
-    followers = {'1':'Ana Ortiz', '2':'Paloma Peña'}
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert type(data1.check_profile_field('username')) == str and data1.check_profile_field('username') != "None"
+def test2_preprocess_profile():
+    """Test to check the provided profile. In this case it's not right because it
+        hasn't got a valid username. It'll raise an exception."""
+    profile = {'username':None, 'name':'Lidia'}
+    user_data = {'profile':profile}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(UsernameNotFound):
+        assert data.preprocess_profile()
 
-def test3_check_profile_field():
-    """Test to check if a None value is changed to 'None' string."""
-    profile = {'username':'lidia', 'name':'Lidia', 'email':'lidia@lidia.es', 'location':None}
-    followings = {'1':'Ana Ortiz', '2':'Eva García'}
-    followers = {'1':'Ana Ortiz', '2':'Paloma Peña'}
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert data1.check_profile_field('location') == None
-
-def test1_profile_preprocessing():
-    """Test to check if the provided profile is valid. In this case it is so
-        after the preprocessing it will be returned."""
-    profile = {'username':'lidia', 'name':'Lidia', 'email':'lidia@lidia.es'}
-    followings = {'1':'Ana Ortiz', '2':'Eva García'}
-    followers = {'1':'Ana Ortiz', '2':'Paloma Peña'}
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert type(data1.profile_preprocessing()) == dict
-
-def test2_profile_preprocessing():
-    """Test to check if the provided profile is valid. In this case it's not
-        so the method will raise an exception."""
-    profile = {'username':None}
-    followings = {'1':'Ana Ortiz', '2':'Eva García'}
-    followers = {'1':'Ana Ortiz', '2':'Paloma Peña'}
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    with pytest.raises(BasicProfileDataNotFound):
-        assert data1.profile_preprocessing()
-
-def test3_profile_preprocessing():
-    """Test to check if the provided profile is valid. In this case it's not
-        so the method will raise an exception."""
-    data1 = commondata.CommonData(testCollection, {}, {}, {}, {}, {})
-    with pytest.raises(ProfileNotFound):
-        assert data1.profile_preprocessing()
+def test3_preprocess_profile():
+    """Test to check the behaviour of the class when the user profile is not provided.
+        It should raise an exception."""
+    data = commondata.CommonData(test_collection)
+    with pytest.raises(ProfileDictNotFound):
+        assert data.preprocess_profile()
         
-def test1_relationships_preprocessing():
-    """Test to check if the followers/followings are lists. In this case followings
-        isn't so the method will raise an exception."""
-    profile = {'username':None}
+def test4_preprocess_profile():
+    """Test to check the behaviour of the class when there isn't the username
+        in the data user."""
+    profile = {'name':'Lidia'}
+    user_data = {'profile':profile}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(UsernameNotFound):
+        assert data.preprocess_profile()
+
+def test5_preprocess_profile():
+    """Test to check the behaviour if one of the required fields has a None value."""
+    profile = {'username':'Lidia', 'name':'Lidia', 'gender':None}
+    user_data = {'profile':profile}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_profile()
+    assert type(result) == dict
+        
+def test6_preprocess_profile():
+    """Test to check the behaviour of the class if there's a not required field.
+        It should be removed."""
+    profile = {'username':'Lidia', 'name':'Lidia', 'pets':'No'}
+    user_data = {'profile':profile}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_profile()
+    assert type(result) == dict
+
+def test7_preprocess_profile():
+    """Test to check the behaviour of the class when the profile is not a dict."""
+    profile = []
+    user_data = {'profile':profile}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(ProfileDictNotFound):
+        assert data.preprocess_profile()
+        
+def test1_preprocess_contacts():
+    """Test to check the behaviour of the class when followings aren't in a list.
+        It should raise an exception."""
+    profile = {'username':'Lidia'}
     followings = "Hey"
     followers = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    with pytest.raises(RelathionshipsListNotFound):
-        assert data1.relationships_preprocessing()
+    user_data = {'profile':profile, 'followings':followings, 'followers':followers}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(ContactsListsNotFound):
+        assert data.preprocess_contacts()
         
-def test2_relationships_preprocessing():
-    """Test to check if the followers/followings are lists. In this case followers
-        isn't so the method will raise an exception."""
-    profile = {'username':None}
-    followers = "Hola"
+def test2_preprocess_contacts():
+    """Same test than the previous one except in this case followers aren't in a list."""
+    profile = {'username':'Lidia'}
+    followers = "Hey"
     followings = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    with pytest.raises(RelathionshipsListNotFound):
-        assert data1.relationships_preprocessing()
+    user_data = {'profile':profile, 'followings':followings, 'followers':followers}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(ContactsListsNotFound):
+        assert data.preprocess_contacts()
 
-def test3_relationships_preprocessing():
-    """Test to check if the followers/followings are lists. In this case both are"""
-    profile = {'username':None}
+def test3_preprocess_contacts():
+    """Test to check if the followers/followings are lists. In this case both are."""
+    profile = {'username':'Lidia'}
     followers = ['anaortiz', 'luciav']
-    followings = ['anaortiz', 'luciav', 'zuck', 'nick']
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert data1.relationships_preprocessing() == True
-    
-def test4_relationships_preprocessing():
-    """Test to check if the followers/followings are lists and removes the None values."""
-    profile = {'username':None}
-    followers = ['anaortiz', None, 'anita']
-    followings = ['anaortiz', 'luciav', 'zuck', 'nick']
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert data1.relationships_preprocessing() == True
-    
-def test5_relationships_preprocessing():
-    """Test to check if the followers/followings are lists and removes the None values."""
-    profile = {'username':None}
-    followers = ['anaortiz', 'anita']
-    followings = ['anaortiz', None, None, 'zuck', 'nick']
-    data1 = commondata.CommonData(testCollection, profile, {}, {}, followings, followers)
-    assert data1.relationships_preprocessing() == True
+    followings = ['anaortiz', 'luciav']
+    user_data = {'profile':profile, 'followings':followings, 'followers':followers}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_contacts() 
+    assert type(result) == dict and type(result['followers']) == list and type(result['followings']) == list
 
-def test1_likers_preprocessing():
-    """Test to check the likers method when there aren't any posts."""
-    profile = {'username':None}
-    followers = ['zuck', 'luciav', 'ana']
+def test4_preprocess_contacts():
+    """Test to check if the followers/followings are lists and removes the None values."""
+    profile = {'username':'Lidia'}
+    followers = ['anaortiz', None]
     followings = ['anaortiz', 'luciav']
-    likers = [('luciav',5), ('ana',10)]
-    data1 = commondata.CommonData(testCollection, profile, {}, likers, followings, followers)
+    user_data = {'profile':profile, 'followings':followings, 'followers':followers}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_contacts() 
+    assert type(result) == dict and type(result['followers']) == list and type(result['followings']) == list
+    
+def test1_preprocess_posts():
+    """Test to check the type of the posts, which should be a dict. In this case it's not,
+        so the method will raise an exception."""
+    profile = {'username':'Lidia'}
+    posts = []
+    user_data = {'profile':profile, 'posts':posts}
+    data = commondata.CommonData(test_collection, user_data)
     with pytest.raises(PostsDictNotFound):
-        assert data1.likers_preprocessing()
-        
-def test2_likers_preprocessing():
-    """Test to check the type of likers dict."""
-    profile = {'username':'lidia'}
-    posts = {'id':'1', 'likes':'23', 'comments':'3'}
-    followers = ['zuck', 'luciav', 'ana']
-    followings = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, posts, "Hey", followings, followers)
-    with pytest.raises(LikersListNotFound):
-        assert data1.likers_preprocessing()
-        
-def test3_likers_preprocessing():
-    """Test to check the likers dict. In this case, it's correct."""
-    profile = {'username':'lidia'}
-    posts = {'id':'1', 'likes':'23', 'comments':'3'}
-    likers = [('luciav',5), ('ana',10)]
-    followers = ['zuck', 'luciav', 'ana']
-    followings = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, posts, likers, followings, followers)
-    assert data1.likers_preprocessing() == True
-        
-def test1_posts_preprocessing():
-    """Test to check if the posts dict exists or not. In this case, there isn't."""
-    profile = {'username':None}
-    followers = ['zuck', 'luciav', 'ana']
-    followings = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, [], {}, followings, followers)
-    with pytest.raises(PostsDictNotFound):
-        assert data1.posts_preprocessing()
+       assert data.preprocess_posts()
 
-def test2_posts_preprocessing():
-    """Test to check the structure of the posts dict. In this case, it's correct."""
-    profile = {'username':None}
-    posts = {'1': {'likes':'23', 'comments':'3'}, '2': {'likes':'5', 'comments':'1'}}
-    followers = ['zuck', 'luciav', 'ana']
-    followings = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, posts, [], followings, followers)
-    assert data1.posts_preprocessing() == True
-        
-def test3_posts_preprocessing():
-    """Test to check the structure of the posts dict. None keys are not valid."""
-    profile = {'username':None}
-    posts = {'1': {'likes':'23', 'comments':'3'}, None: {'likes':'23', 'comments':'3'}}
-    followers = ['zuck', 'luciav', 'ana']
-    followings = ['anaortiz', 'luciav']
-    data1 = commondata.CommonData(testCollection, profile, posts, [], followings, followers)
+def test2_preprocess_posts():
+    """Test to check that each post has an id. In this case some hasn't so an
+        exception will be raised."""
+    profile = {'username':'Lidia'}
+    posts = {'123':{'likes':'367', 'comments':'23'}, '':{'likes':'54', 'comments':'78'}}
+    user_data = {'profile':profile, 'posts':posts}
+    data = commondata.CommonData(test_collection, user_data)
     with pytest.raises(IdNotFound):
-        assert data1.posts_preprocessing()
+       assert data.preprocess_posts()
+
+def test3_preprocess_posts():
+    """Test to check that likes and comments are integer numbers. In this case some
+        of them aren't so an exception will be raised."""
+    profile = {'username':'Lidia'}
+    posts = {'123':{'likes':'367', 'comments':'23'}, '654':{'likes':'hey', 'comments':'78'}}
+    user_data = {'profile':profile, 'posts':posts}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(ValueError):
+       assert data.preprocess_posts()
+       
+def test4_preprocess_posts():
+    """Test to check that posts are in a dict and their fields are correct. In this
+        case they are."""
+    profile = {'username':'Lidia'}
+    posts = {'123':{'likes':'367', 'comments':'23'}, '654':{'likes':'45', 'comments':'78'}}
+    user_data = {'profile':profile, 'posts':posts}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_posts()
+    assert type(result) == dict
+    
+def test1_preprocess_likers():
+    """Test to check the preprocess likers method when there aren't any posts."""
+    profile = {'username':'Lidia'}
+    likers = [('luciav',5), ('ana',10)]
+    user_data = {'profile':profile, 'likers':likers}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(PostsDictNotFound):
+        assert data.preprocess_likers()
         
-def test1_preprocessing():
-    """Test to check if the data are correct. In this case, they are so the
-        method will return them."""
-    profile = {'username':'lidia', 'name':'Lidia', 'email':'lidia@lidia.es'}
-    posts = {'1': {'likes':'23', 'comments':'3'}, '2': {'likes':'5', 'comments':'1'}}
+def test2_preprocess_likers():
+    """Test to check that likers are in a list. In this case there aren't so it
+        should raise an exception."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    likers = {}
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(LikersListNotFound):
+        assert data.preprocess_likers()
+        
+def test3_preprocess_likers():
+    """Test to check that likers are in a list. In this case they are."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    likers = [('ana',84), ('maria',54)]
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_likers()
+    assert type(result) == list
+    
+def test1_preprocess_comments():
+    """Test to check the preprocess comments method when there aren't any posts."""
+    profile = {'username':'Lidia'}
+    comments = [{'123':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    user_data = {'profile':profile, 'comments':comments}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(PostsDictNotFound):
+        assert data.preprocess_comments()
+        
+def test2_preprocess_comments():
+    """Test to check that comments are in a list. In this case there aren't so it
+        should raise an exception."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = {}
+    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(CommentsListNotFound):
+        assert data.preprocess_comments()
+        
+def test3_preprocess_comments():
+    """Test to check that comments are in a list. In this case they are."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = [{'123654':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_comments()
+    assert type(result) == list
+    
+def test1_preprocess_user_data():
+    """Test to check the method which preprocess all user data with the previous
+        tested methods."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = [{'123654':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    likers = [('ana',84), ('maria',54)]
+    followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
-    followers = ['anaortiz']
-    data1 = commondata.CommonData(testCollection, profile, posts, [], followings, followers)
-    assert type(data1.preprocessing()) == dict
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
+                 'comments':comments, 'followers':followers, 'followings':followings}
+    
+    data = commondata.CommonData(test_collection, user_data)
+    result = data.preprocess_user_data()
+    assert type(result) == dict
 
 def test1_add_user_data():
-    """Test to check the insert method into the database. If the new record has the
-        same username and date, then it will no be inserted. Otherwise, it will.
-        In order to test the method, we first check if the user is already in the database."""
-    profile = {'username':'eva', 'name':'Eva'}
-    posts = {'1': {'likes':'23', 'comments':'3'}, '2': {'likes':'5', 'comments':'1'}}
-    likers = [('lidiasm',5), ('luciav',18)]
-    followings = ['anaortiz', 'luciav', 'lidiasm']
-    followers = ['anaortiz', 'lidiasm']
+    """Test to check that user data is preprocessed and inserted in the test 
+        collection of the database. We make sure the user data don't already exist by
+        deleting the collection."""
     try:
-        data = commondata.CommonData(testCollection, profile, posts, likers, followings, followers)
-        if (data.get_user_data('eva') != None):
-            data.mongodb.delete_item('id', 'eva')
-    except IdNotFound:
-        print("The user is not in the database.")
+        test_collection.empty_collection()
+    except EmptyCollection:
+        print('Collection was already empty')
         
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = [{'123654':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    likers = [('ana',84), ('maria',54)]
+    followers = ['anaortiz', 'luciav']
+    followings = ['anaortiz', 'luciav']
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
+                 'comments':comments, 'followers':followers, 'followings':followings}
+    
+    data = commondata.CommonData(test_collection, user_data)
     result = data.add_user_data()
-    assert result != None
+    assert type(result) == str
+
+def test1_get_user_data():
+    """Test to check the behaviour of the get method when there's not username provided.
+        It should raise an exception."""
+    data = commondata.CommonData(test_collection)
+    with pytest.raises(UsernameNotFound):
+        assert data.get_user_data("")
 
 def test2_get_user_data():
-    data1 = commondata.CommonData(testCollection)
-    with pytest.raises(UsernameNotFound):
-        assert data1.get_user_data("")
-
-def test3_get_user_data():
-    data1 = commondata.CommonData(testCollection)
+    """Test to check the behaviour of the get method when the username provided doesn't exist.
+        It should raise an exception."""
+    data = commondata.CommonData(test_collection)
     with pytest.raises(IdNotFound):
-        assert data1.get_user_data('heyyy')
+        assert data.get_user_data('heyyy')
+        
+def test3_get_user_data():
+    """Test to check the behaviour of the get method when the username exists."""
+    data = commondata.CommonData(test_collection)
+    result = data.get_user_data('Lidia')
+    assert type(result) == dict
