@@ -5,13 +5,20 @@ Class which contains the specific exceptions for the project.
 
 @author: Lidia Sánchez Mérida
 """
-class ProfileNotFound(Exception):
+
+class UsernameNotFound(Exception):
+    """Class exception to point out that the provided profile is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class ProfileDictNotFound(Exception):
     """Class exception to point out that there's not profile."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-class BasicProfileDataNotFound(Exception):
-    """Class exception to point out that the provided profile is not right."""
+        
+class ContactsListsNotFound(Exception):
+    """Class exception to point out that the lists of followers and followings 
+        don't exist."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
@@ -50,23 +57,17 @@ class MaxRequestsExceed(Exception):
         exceed. You'll have to wait some time to do more."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-class UsernameNotFound(Exception):
-    """Class exception to point out that the username specified doesn't exist."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class RelathionshipsListNotFound(Exception):
-    """Class exception to point out that the lists of followers and followings 
-        don't exist."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
         
 class LikersListNotFound(Exception):
     """Class exception to point out that likers should be a list."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-        
+
+class CommentsListNotFound(Exception):
+    """Class exception to point out that post comments should be a list."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+                
 class IdNotFound(Exception):
     """Class exception to point out that a record doesn't have an id."""
     def __init__(self, mensaje):
