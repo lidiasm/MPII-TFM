@@ -48,35 +48,7 @@ def test3_insert():
     with pytest.raises(CollectionNotFound):
         invalidTestConnection.insert(data)
 
-def test1_get_item():
-    """Test to chech the get item method. In order to do that we insert a new item
-        to get it after."""
-    new_item = {'id':'2', 'date':str(date.today()), 
-            'data':{'profile':{'username':'mariadb', 'name':'maria', 'email':'maria@gmail.es'},
-            'followers':{'1':'lidia'}, 'following':{'1':'lidia'}}}
-    testConnection.insert(new_item)
-    item = testConnection.get_item('id', '2')
-    assert type(item) == dict
-    
-def test2_get_item():
-    """Test to chech the get item method without a valid key."""
-    item = testConnection.get_item('whatever', '2')
-    assert item == None
-
-def test3_get_item():
-    """Test to chech the get item method without a valid value for the specified key."""
-    item = testConnection.get_item('id', '-1')
-    assert item == None
-    
-def test4_get_item():
-    """Test to check the get item method without a valid collection. In order to
-        do that we create another connection and modify to make it invalid."""
-    invalidTestConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
-    invalidTestConnection.collection = None
-    with pytest.raises(CollectionNotFound):
-        invalidTestConnection.get_item('id', '1')
-
-def test1_get_item_rows():
+def test1_get_item_records():
     """Test to check the get item rows method which returns a set of the records
         related to an user. In order to do that first we insert two records of the same user."""
     data1User = {'id':'pacogp', 'date':str(date.today()), 
@@ -90,7 +62,7 @@ def test1_get_item_rows():
     result = testConnection.get_item_records('id', 'pacogp')
     assert type(result) == dict
     
-def test2_get_item_rows():
+def test2_get_item_records():
     """Test to check the get item rows method without a right connection to the 
         database."""
     newConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
@@ -124,27 +96,27 @@ def test3_get_collection():
         newConnection.get_collection()
     
 def test1_delete_item():
-    """Test to check the delete item method to remove an existing item."""
-    result = testConnection.delete_item('id', '1')
+    """Test to check if all the records of a user are deleted."""
+    result = testConnection.delete_item_records('id', 'pacogp')
     assert result.acknowledged == True 
 
 def test2_delete_item():
-    """Test to check the delete item method when the item to delete doesn't exist."""
+    """Test to check the delete method when the item to delete doesn't exist."""
     with pytest.raises(ItemNotFound):
-        testConnection.delete_item('id', '-1')
+        testConnection.delete_item_records('id', '-1')
 
 def test3_delete_item():
-    """Test to check the delete item method when the item to delete doesn't exist."""
+    """Test to check the delete method when the item to delete doesn't exist."""
     with pytest.raises(ItemNotFound):
-        testConnection.delete_item('whatever', '1')
+        testConnection.delete_item_records('whatever', '1')
 
 def test4_delete_item():
-    """Test to check the delete item method when the collection doesn't exist.
+    """Test to check the delete method when the collection doesn't exist.
         In order to do that we create another connection and set it to None."""
     newConnection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
     newConnection.collection = None
     with pytest.raises(CollectionNotFound):
-        newConnection.delete_item('whatever', '1')
+        newConnection.delete_item_records('whatever', '1')
 
 def test1_empty_collection():
     """Test to check the delete method when the collection doesn't exist. In order

@@ -22,7 +22,8 @@ class MongoDB:
         self.collection = self.client[db][collection]
     
     def insert(self, new_item):
-        """Check the connection to the database and the new element."""
+        """Inserts a new element into the specified collection, if the user data
+            don't already exist in the same date."""
         if (self.collection == None or self.client == None):
             raise CollectionNotFound("There's no connection to the database.")
         if (new_item == None or len(new_item) == 0):
@@ -30,24 +31,13 @@ class MongoDB:
         
         """Insert the new element if it's not already in the collection. If it
             is, new data from the user can't be inserted in the same day."""
-        item = self.get_item('id', new_item['id'])
-        print(item)
-        if (item == None or item['date'] != str(date.today())):
+        items = self.get_item_records('id', new_item['id'])
+        if (items == None or str(date.today()) not in items):
             id_new_item = self.collection.insert_one(new_item.copy()).inserted_id
             return str(id_new_item)
-            
-    def get_item(self, key, value):
-        """Check the connection to the database."""
-        if (self.collection == None or self.client == None):
-            raise CollectionNotFound("There's no connection to the database.")
-        """Return the item if the key exists."""
-        item = self.collection.find_one({key:value})
-        """Transform the id of the database to string."""
-        if (item != None): item['_id'] = str(item['_id'])
-        return item
     
     def get_item_records(self, key, value):
-        """Check the connection to the database."""
+        """Gets the all records of an user."""
         if (self.collection == None or self.client == None):
             raise CollectionNotFound("There's no connection to the database.")
         """Return the rows related to an item."""
@@ -60,9 +50,18 @@ class MongoDB:
             documents[document_index] = item_r
             document_index += 1
         return documents
+    
+    def delete_item_records(self, key, value):
+        """Check the connection to the database."""
+        if (self.collection == None or self.client == None):
+            raise CollectionNotFound("There's no connection to the database.")
+        """Delete the item."""
+        result = self.collection.delete_many({key:value})
+        if (result.deleted_count == 0): raise ItemNotFound("The item doesn't exist.")
+        return result
         
     def get_collection(self):
-        """Check the connection to the database."""
+        """Gets all records of a collection."""
         if (self.collection == None or self.client == None):
             raise CollectionNotFound("There's no connection to the database.")
         """Go down the documents of the collection."""
@@ -78,17 +77,8 @@ class MongoDB:
         if (len(documents) == 0): raise EmptyCollection('The collection is empty.')
         return documents
     
-    def delete_item(self, key, value):
-        """Check the connection to the database."""
-        if (self.collection == None or self.client == None):
-            raise CollectionNotFound("There's no connection to the database.")
-        """Delete the item."""
-        result = self.collection.delete_one({key:value})
-        if (result.deleted_count == 0): raise ItemNotFound("The item doesn't exist.")
-        return result
-    
     def empty_collection(self):
-        """Check the connection to the database."""
+        """Deletes all records of a collection."""
         if (self.collection == None or self.client == None):
             raise CollectionNotFound("There's no connection to the database.")
         """Delete the documents of the collection, not the collection itself."""
@@ -97,5 +87,5 @@ class MongoDB:
         return result
 
     def collection_size(self):
-        """Return the size of the collection."""
+        """Returns the size of a collection."""
         return self.collection.count_documents({})
