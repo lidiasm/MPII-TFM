@@ -77,7 +77,6 @@ def test2_get_instagram_profile():
 
 def test1_get_instagram_posts():
     """Test to check the method which gets data posts of an user."""
-    username = "pabloalvarezss"
     global connection
     try:
         global user_profile

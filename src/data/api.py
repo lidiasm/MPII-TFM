@@ -185,19 +185,28 @@ class Api:
         # Connection to the Instagram API
         api = Api.connect_to_instagram_api()
         user_data = {}
-        user_data['profile'] = Api.get_instagram_profile(api, search_user)
-        user_data['posts'] = Api.get_instagram_posts(api, user_data['profile']['userid'])
-        likers = Api.get_instagram_posts_likers(api, user_data['profile']['userid'],
-                user_data['posts'], user_data['profile']['username'])
-        
-        """Likers in descending order to show the fans first."""
-        sorted_likers = sorted(likers.items(), key=lambda k:k[1], reverse=True) 
-        user_data['likers'] = sorted_likers
-        
-        user_data['comments'] = Api.get_instagram_posts_comments(api, user_data['profile']['userid'],
-                user_data['posts'], user_data['profile']['username'])
-        contacts = Api.get_instagram_contacts(api, user_data['profile']['userid'])
-        user_data['followings'] = contacts[0]
-        user_data['followers'] = contacts[1]
+        try:
+            user_data['profile'] = Api.get_instagram_profile(api, search_user)
+            time.sleep(5)
+            user_data['posts'] = Api.get_instagram_posts(api, user_data['profile']['userid'])
+            time.sleep(5)
+            likers = Api.get_instagram_posts_likers(api, user_data['profile']['userid'],
+                    user_data['posts'], user_data['profile']['username'])
+            
+            """Likers in descending order to show the fans first."""
+            sorted_likers = sorted(likers.items(), key=lambda k:k[1], reverse=True) 
+            user_data['likers'] = sorted_likers
+            time.sleep(5)
+            
+            user_data['comments'] = Api.get_instagram_posts_comments(api, user_data['profile']['userid'],
+                    user_data['posts'], user_data['profile']['username'])
+            time.sleep(5)
+            contacts = Api.get_instagram_contacts(api, user_data['profile']['userid'])
+            time.sleep(5)
+            user_data['followings'] = contacts[0]
+            user_data['followers'] = contacts[1]
+            
+        except MaxRequestsExceed:
+            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
         
         return user_data
