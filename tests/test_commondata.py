@@ -14,7 +14,8 @@ from mongodb import MongoDB
 sys.path.append("src/data")
 import commondata 
 from exceptions import UsernameNotFound, ProfileDictNotFound, ContactsListsNotFound \
-, PostsDictNotFound, LikersListNotFound, IdNotFound, CommentsListNotFound, EmptyCollection
+, PostsDictNotFound, LikersListNotFound, IdNotFound, CommentsDictNotFound, EmptyCollection \
+, UserDataNotFound, CollectionNotFound
 
 """Creates a object to connect to the database."""
 test_collection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
@@ -192,7 +193,7 @@ def test3_preprocess_likers():
 def test1_preprocess_comments():
     """Test to check the preprocess comments method when there aren't any posts."""
     profile = {'username':'Lidia'}
-    comments = [{'123':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
     user_data = {'profile':profile, 'comments':comments}
     data = commondata.CommonData(test_collection, user_data)
     with pytest.raises(PostsDictNotFound):
@@ -203,28 +204,28 @@ def test2_preprocess_comments():
         should raise an exception."""
     profile = {'username':'Lidia'}
     posts = {'123654': {'likes': '367', 'comments': '12'}}
-    comments = {}
+    comments = []
     user_data = {'profile':profile, 'posts':posts, 'comments':comments}
     data = commondata.CommonData(test_collection, user_data)
-    with pytest.raises(CommentsListNotFound):
+    with pytest.raises(CommentsDictNotFound):
         assert data.preprocess_comments()
         
 def test3_preprocess_comments():
     """Test to check that comments are in a list. In this case they are."""
     profile = {'username':'Lidia'}
     posts = {'123654': {'likes': '367', 'comments': '12'}}
-    comments = [{'123654':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
     user_data = {'profile':profile, 'posts':posts, 'comments':comments}
     data = commondata.CommonData(test_collection, user_data)
     result = data.preprocess_comments()
-    assert type(result) == list
+    assert type(result) == dict
     
 def test1_preprocess_user_data():
     """Test to check the method which preprocess all user data with the previous
         tested methods."""
     profile = {'username':'Lidia'}
     posts = {'123654': {'likes': '367', 'comments': '12'}}
-    comments = [{'123654':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
     likers = [('ana',84), ('maria',54)]
     followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
@@ -246,16 +247,57 @@ def test1_add_user_data():
         
     profile = {'username':'Lidia'}
     posts = {'123654': {'likes': '367', 'comments': '12'}}
-    comments = [{'123654':[{'user': 'ana', 'comment': 'Hey hey!'}]}]
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
     likers = [('ana',84), ('maria',54)]
     followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
     user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
                  'comments':comments, 'followers':followers, 'followings':followings}
-    
     data = commondata.CommonData(test_collection, user_data)
-    result = data.add_user_data()
+    prep_data = data.preprocess_user_data()
+    result = data.add_user_data(profile['username'], prep_data, 'test')
     assert type(result) == str
+
+def test2_add_user_data():
+    """Test to check the add method when there aren't any user data provided.
+        An exception will be raised."""
+    data = commondata.CommonData(test_collection)
+    with pytest.raises(UserDataNotFound):
+        assert data.add_user_data('lidia', ['hey'], 'test')
+
+def test3_add_user_data():
+    """Test to check the add method when there's not collection name provided.
+        An exception will be raised."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
+    likers = [('ana',84), ('maria',54)]
+    followers = ['anaortiz', 'luciav']
+    followings = ['anaortiz', 'luciav']
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
+                 'comments':comments, 'followers':followers, 'followings':followings}
+    data = commondata.CommonData(test_collection, user_data)
+    prep_data = data.preprocess_user_data()
+    
+    with pytest.raises(CollectionNotFound):
+        assert data.add_user_data('lidia', prep_data, '')
+        
+def test4_add_user_data():
+    """Test to check the add method when there's not collection name provided.
+        An exception will be raised."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
+    likers = [('ana',84), ('maria',54)]
+    followers = ['anaortiz', 'luciav']
+    followings = ['anaortiz', 'luciav']
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
+                 'comments':comments, 'followers':followers, 'followings':followings}
+    data = commondata.CommonData(test_collection, user_data)
+    prep_data = data.preprocess_user_data()
+    
+    with pytest.raises(UsernameNotFound):
+        assert data.add_user_data('', prep_data, 'test')
 
 def test1_get_user_data():
     """Test to check the behaviour of the get method when there's not username provided.

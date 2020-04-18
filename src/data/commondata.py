@@ -9,7 +9,7 @@ methods to verify the values of the collected data.
 import sys
 sys.path.append("../")
 from exceptions import ProfileDictNotFound, UsernameNotFound, ContactsListsNotFound \
-, LikersListNotFound, IdNotFound, PostsDictNotFound, CommentsListNotFound
+, LikersListNotFound, IdNotFound, PostsDictNotFound, CommentsDictNotFound, UserDataNotFound, CollectionNotFound
 
 from datetime import date
 
@@ -108,12 +108,12 @@ class CommonData:
         """Checks if there are some posts. If there are, then it checks the comments
             on them."""
         if ('posts' in self.user_data):
-            comments = []
+            comments = {}
             if ('comments' in self.user_data):
                 comments = self.user_data['comments']
             """Check type."""
-            if (type(comments) != list or comments == None):
-                raise CommentsListNotFound("ERROR. Post comments should be a list.")
+            if (type(comments) != dict or comments == None):
+                raise CommentsDictNotFound("ERROR. Post comments should be a list.")
             
             return comments
         else:
@@ -130,13 +130,22 @@ class CommonData:
                 'followers':contacts['followers'], 'followings':contacts['followings']}
         return data
     
-    def add_user_data(self):
-        """Preprocesses the provided user data."""
-        preprocessed_user_data = self.preprocess_user_data()
-        """Primary keys: id (username), date (today date)."""
-        preprocessed_user_data['id'] = preprocessed_user_data['profile']['username']
-        preprocessed_user_data['date'] = str(date.today())
-        return self.mongodb.insert(preprocessed_user_data)
+    def add_user_data(self, username, user_data, collection):
+        if (username == None or type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. Invalid username.")
+        if (user_data == None or len(user_data) == 0 or type(user_data) != dict):
+            raise UserDataNotFound("ERROR. There aren't any user data to store.")
+        if (collection == None or collection == "" or type(collection) != str):
+            raise CollectionNotFound("ERROR. Invalid collection name.")
+            
+        """Stores user data in the specified collection of a Mongo database."""
+        # Primary keys: (user id, date)
+        user_data['id'] = username
+        user_data['date'] = str(date.today())
+        # Update the collection
+        self.mongodb.set_collection(collection)
+        
+        return self.mongodb.insert(user_data)
     
     def get_user_data(self, username):
         """Gets all rows related to a username from a collection."""
