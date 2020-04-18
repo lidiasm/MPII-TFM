@@ -19,7 +19,16 @@ class MongoDB:
     def __init__(self, uri, db, collection):
         """Creates a new MongoDB client to access a specific collection."""
         self.client = pymongo.MongoClient(uri)
+        self.db = db
         self.collection = self.client[db][collection]
+        
+    def set_collection(self, new_collection):
+        """Sets a new collection."""
+        if (new_collection == None or new_collection == "" or type(new_collection) != str):
+            raise CollectionNotFound("ERROR. Invalid collection name.")
+        self.collection = self.client[self.db][new_collection]
+        
+        return self.collection
     
     def insert(self, new_item):
         """Inserts a new element into the specified collection, if the user data
@@ -32,7 +41,13 @@ class MongoDB:
         """Insert the new element if it's not already in the collection. If it
             is, new data from the user can't be inserted in the same day."""
         items = self.get_item_records('id', new_item['id'])
-        if (items == None or str(date.today()) not in items):
+        item_exists = False
+        for item in items:
+            if (items[item]['date'] == str(date.today())):
+                item_exists = True
+                break
+            
+        if (items == None or not item_exists):
             id_new_item = self.collection.insert_one(new_item.copy()).inserted_id
             return str(id_new_item)
     
