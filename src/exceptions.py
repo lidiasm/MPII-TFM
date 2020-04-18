@@ -63,7 +63,7 @@ class LikersListNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
-class CommentsListNotFound(Exception):
+class CommentsDictNotFound(Exception):
     """Class exception to point out that post comments should be a list."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
@@ -75,5 +75,10 @@ class IdNotFound(Exception):
         
 class PostsDictNotFound(Exception):
     """Class exception to point out that a record doesn't have an id."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class UserDataNotFound(Exception):
+    """Class exception to point out that there aren't any user data."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
