@@ -122,6 +122,7 @@ class CommonData:
     def preprocess_user_data(self):
         """Checks all user data."""
         profile = self.preprocess_profile()
+        data = {'profile':profile}
         contacts = self.preprocess_contacts()
         posts = self.preprocess_posts()
         likers = self.preprocess_likers()
@@ -145,7 +146,7 @@ class CommonData:
         # Update the collection
         self.mongodb.set_collection(collection)
         
-        return self.mongodb.insert(user_data)
+        return [self.mongodb.insert(user_data), user_data]
     
     def get_user_data(self, username):
         """Gets all rows related to a username from a collection."""

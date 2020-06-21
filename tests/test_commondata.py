@@ -256,7 +256,7 @@ def test1_add_user_data():
     data = commondata.CommonData(test_collection, user_data)
     prep_data = data.preprocess_user_data()
     result = data.add_user_data(profile['username'], prep_data, 'test')
-    assert type(result) == str
+    assert type(result[0]) == str and type(result[1] == dict)
 
 def test2_add_user_data():
     """Test to check the add method when there aren't any user data provided.
