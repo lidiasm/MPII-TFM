@@ -6,11 +6,32 @@ Class which contains the specific exceptions for the project.
 @author: Lidia Sánchez Mérida
 """
 
+class InvalidCredentials(Exception):
+    """Class exception to point out that the provided credentials are wrong."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
 class UsernameNotFound(Exception):
     """Class exception to point out that the provided profile is not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-        
+
+class MaxRequestsExceed(Exception):
+    """Class exception to point out that the maximum requests to the API has been
+        exceed. You'll have to wait some time to do more."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class InvalidUserId(Exception):
+    """Class exception to point out that the provided user id is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class InvalidLimit(Exception):
+    """Class exception to point out that the provided limit is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
 class ProfileDictNotFound(Exception):
     """Class exception to point out that there's not profile."""
     def __init__(self, mensaje):
@@ -39,22 +60,6 @@ class EmptyCollection(Exception):
     
 class ItemNotFound(Exception):
     """Class exception to point out that the specific item doesn't exist."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class SingletonClass(Exception):
-    """Class exception to point out that the class API is a singleton class."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class InvalidCredentials(Exception):
-    """Class exception to point out that the provided credentials are wrong."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class MaxRequestsExceed(Exception):
-    """Class exception to point out that the maximum requests to the API has been
-        exceed. You'll have to wait some time to do more."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
