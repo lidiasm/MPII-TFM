@@ -12,163 +12,152 @@ import pytest
 sys.path.append("src")
 sys.path.append("src/data")
 from api import Api
-from exceptions import UsernameNotFound, MaxRequestsExceed, SingletonClass \
-, InvalidCredentials, PostsDictNotFound
+from exceptions import InvalidCredentials, UsernameNotFound, MaxRequestsExceed \
+    , InvalidUserId, InvalidLimit, PostsDictNotFound
 import os
 
-"""Username to sign in the API."""
-username = os.environ["INSTAGRAM_USER"]
+"""Store the right username to connect to the API to test the connection
+    method setting invalid credentials."""
+username = os.environ["INSTAGRAM_USER2"]
 
-def test1_init():
-    """Test to check the singleton class in order to not allow creating more than
-        one instance."""
-    _ = Api()
-    with pytest.raises(SingletonClass):
-        assert Api()
-        
-def test1_get_instance():
-    """Test to check the singleton class in order to create the instance if it's not
-        or return it."""
-    assert Api.get_instance() != None
+"""Username to test the class with."""
+search_user = "lidia.96.sm"
 
-def test1_connect_to_instagram_api():
-    """Test to check a wrong connection to the Instagram Api without
-        providing the username. In order to do that we modify the env variable 
-        of that field."""
-    os.environ["INSTAGRAM_USER"] = ""
+"""API object"""
+api = Api()
+
+def test1_connect_levpasha_instagram_api():
+    """Test to check the behaviour of the method which connects to LevPasha
+        Instagram API without providing a right username. In order to do that,
+        we set the env username variable to an empty string. It will raise an exception."""
+    os.environ["INSTAGRAM_USER2"] = ""
     with pytest.raises(InvalidCredentials):
-        Api.connect_to_instagram_api()
+        api.connect_levpasha_instagram_api(use_session_file=False)
 
-def test2_connect_to_instagram_api():
-    """Test to check a wrong connection to the Instagram Api providing
-        wrong credentials."""
-    os.environ["INSTAGRAM_USER"] = "hi"
+def test2_connect_levpasha_instagram_api():
+    """Test to check the behaviour of the method which connects to LevPasha
+        Instagram API providing invalid credentials. In order to do that,
+        we set the env username variable to an invalid value. It will raise an exception."""
+    os.environ["INSTAGRAM_USER2"] = "hey"
     with pytest.raises(InvalidCredentials):
-        Api.connect_to_instagram_api()
+        api.connect_levpasha_instagram_api(use_session_file=False)
 
-def test3_connect_to_instagram_api():
-    """Test to check a right connection to the Instagram Api. To do that
-        we set de right username."""
-    os.environ["INSTAGRAM_USER"] = username
-    """Global variable which stores the connection to the Instagram API."""
-    global connection 
-    connection = Api.connect_to_instagram_api()
-    assert connection.LastJson['status'] == 'ok'
+def test3_connect_levpasha_instagram_api():
+    """Test to connect to LevPasha using Instagram credentials and then save the
+        connection object into a file."""
+    os.environ["INSTAGRAM_USER2"] = username
+    result = api.connect_levpasha_instagram_api(use_session_file=False)
+    assert result.LastJson['status'] == 'ok'
 
-def test1_get_instagram_profile():
-    """Test to check the method which gets the profile of an user."""
-    search_user = "pabloalvarezss"
-    global connection
+def test4_connect_levpasha_instagram_api():
+    """Test to connect to LevPasha using the previous file in which there is
+        a connection object to login again."""
+    result = api.connect_levpasha_instagram_api(session_file=1234)
+    assert result.LastJson['status'] == 'ok'
+
+def test1_get_levpasha_instagram_profile():
+    """Test to check the behaviour of the method which gets the user profile
+        without providing a right username."""
+    with pytest.raises(UsernameNotFound):
+        api.get_levpasha_instagram_profile(None)
+
+def test2_get_levpasha_instagram_profile():
+    """Test to downloads the Instagram profile of a specific user using
+        the LevPasha Instagram API."""
     try:
-        """Global variable to store the user id to test the next methods without
-            sending more requests to get that."""
-        global user_profile
-        user_profile = Api.get_instagram_profile(connection, search_user)
-        assert type(user_profile) == dict
+        global profile
+        profile = api.get_levpasha_instagram_profile(search_user)
+        assert type(profile) == dict
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
 
-def test2_get_instagram_profile():
-    """Test to check the method which gets the profile of an user when the username
-        is not provided. An exception should be raised."""
-    global connection
-    with pytest.raises(UsernameNotFound):
-        Api.get_instagram_profile(connection, None)
+def test1_get_levpasha_instagram_posts():
+    """Test to check the behaviour of the method which gets the posts of an user
+        without providing a right user id. It will raise an exception."""
+    with pytest.raises(InvalidUserId):
+        api.get_levpasha_instagram_posts(user_id=None)
 
-def test1_get_instagram_posts():
-    """Test to check the method which gets data posts of an user."""
-    global connection
-    try:
-        global user_profile
-        """Global variable which stores the posts of the user to get the likers
-            and comments without sending another request."""
+def test2_get_levpasha_instagram_posts():
+    """Test to check the behaviour of the method which gets the posts of an user
+        without providing a right limit. It will raise an exception."""
+    with pytest.raises(InvalidLimit):
+        api.get_levpasha_instagram_posts(user_id=1234, limit=0)
+
+def test3_get_levpasha_instagram_posts():
+    """Test to download the posts of a specific user using their user id and the
+        LevPasha Instagram API."""
+    global profile     
+    if (type(profile) == dict):
         global posts
-        posts = Api.get_instagram_posts(connection, user_profile['userid'])
+        posts = api.get_levpasha_instagram_posts(user_id=profile['userid'])
         assert type(posts) == dict
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")
 
-def test1_get_instagram_posts_likers():
-    """Test to check the method which gets the users who like the posts of an 
-        user. """
-    username = "pabloalvarezss"
-    global connection
-    try:
-        global user_profile
-        """Global variable which stores the posts of the user to get the likers
-            and comments without sending another request."""
-        global posts
-        likers = Api.get_instagram_posts_likers(connection, user_profile['userid'], posts, username)
+def test1_get_levpasha_instagram_posts_likers():
+    """Test to check the behaviour of the method which gets the usernames of 
+        the Instagram users who liked the posts of the specific user without
+        providing a right username. It will raise an exception."""
+    with pytest.raises(UsernameNotFound):
+        api.get_levpasha_instagram_posts_likers(None, None)
+
+def test2_get_levpasha_instagram_posts_likers():
+    """Test to check the behaviour of the method which gets the usernames of 
+        the Instagram users who liked the posts of the specific user without
+        providing their posts. It will raise an exception."""
+    with pytest.raises(PostsDictNotFound):
+        api.get_levpasha_instagram_posts_likers(search_user, {})
+
+def test3_get_levpasha_instagram_posts_likers():
+    """Test to get the usernames of the Instagram users who liked the posts
+        of a specific user."""
+    global posts
+    if (type(posts) == dict):
+        likers = api.get_levpasha_instagram_posts_likers(search_user, posts)
         assert type(likers) == dict
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")
-
-def test2_get_instagram_posts_likers():
-    """Test the behaviour of the get likers method when there aren't any posts provided.
-        An exception should be raised."""
-    username = "pabloalvarezss"
-    global connection
-    global user_profile
-    with pytest.raises(PostsDictNotFound):
-        Api.get_instagram_posts_likers(connection, user_profile['userid'], [], username)
-
-def test3_get_instagram_posts_likers():
-    """Test the behaviour of the get likers method when a username is not provided.
-        An exception should be raised."""
-    global connection
-    global user_profile
-    global posts
-    with pytest.raises(UsernameNotFound):
-        Api.get_instagram_posts_likers(connection, user_profile['userid'], posts, None)
-
-def test1_get_instagram_posts_comments():
-    """Test to check the method which gets the comments of an user's posts."""
-    username = "pabloalvarezss"
-    global connection
-    global user_profile
-    try:
-        """Global variable which stores the posts of the user to get the likers
-            and comments without sending another request."""
-        global posts
-        comments = Api.get_instagram_posts_comments(connection, user_profile['userid'], posts, username)
-        assert type(comments) == dict
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")
-
-def test2_get_instagram_posts_comments():
-    """Test to check the method which gets the comments of an user's posts
-        when there aren't any posts provided. An exception should be raised."""
-    username = "pabloalvarezss"
-    global connection
-    global user_profile
-    with pytest.raises(PostsDictNotFound):
-        Api.get_instagram_posts_comments(connection, user_profile['userid'], [], username)
-
-def test3_get_instagram_posts_comments():
-    """Test to check the method which gets the comments of an user's posts
-        when the username is not provided. An exception should be raised."""
-    global connection
-    global user_profile
-    global posts
-    with pytest.raises(UsernameNotFound):
-        Api.get_instagram_posts_comments(connection, user_profile['userid'], posts, None)
         
-def test1_get_instagram_contacts():
-    """Test to check the method which gets the followers and followings of an user."""
-    global connection
-    global user_profile
-    try:
-        result = Api.get_instagram_contacts(connection, user_profile['userid'])
-        assert type(result) == list
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")    
+def test1_get_levpasha_instagram_posts_comments():
+    """Test to check the behaviour of the method which gets the comments wrote
+        by Instagram users to the posts of a specific user without
+        providing a right username. It will raise an exception."""
+    with pytest.raises(UsernameNotFound):
+        api.get_levpasha_instagram_posts_comments(None, None)
 
-def test1_get_instagram_data():
-    """Test to check the process which gets all Instagram data type of an user."""
-    username = "pabloalvarezss"
-    global connection
-    try:
-        result = Api.get_instagram_data(username)
-        assert type(result) == dict
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")
+def test2_get_levpasha_instagram_posts_comments():
+    """Test to check the behaviour of the method which gets the comments wrote
+        by Instagram users to the posts of a specific user without
+        providing their posts. It will raise an exception."""
+    with pytest.raises(PostsDictNotFound):
+        api.get_levpasha_instagram_posts_comments(search_user, {})
+
+def test3_get_levpasha_instagram_posts_comments():
+    """Test to get the the comments wrote by Instagram users to the posts
+        of a specific user. Their usernames will be stored too."""
+    global posts
+    if (type(posts) == dict):
+        comments = api.get_levpasha_instagram_posts_comments(search_user, posts)
+        assert type(comments) == dict
+
+def test1_get_levpasha_instagram_contacts():
+    """Test to check the behaviour of the method which gets the followers and
+        followings of a specific user without providing their right user id.
+        It will raise an exception."""
+    with pytest.raises(InvalidUserId):
+        api.get_levpasha_instagram_contacts(user_id=-90)
+
+def test2_get_levpasha_instagram_contacts():
+    """Test to download the usernames of the followers and followings of a
+        specific user account (max 100 for each one)."""
+    global profile
+    if (type(profile) == dict):
+        contacts = api.get_levpasha_instagram_contacts(user_id=profile['userid'])
+        assert type(contacts[0]) == list and type(contacts[1]) == list
+
+def test1_get_levpasha_instagram_data():
+    """Test to get the Instagram data of a specific user account using the previous
+        methods. In this case an exception will be raised because the username isn't correct."""
+    with pytest.raises(UsernameNotFound):
+        api.get_levpasha_instagram_data(1234)
+
+def test2_get_levpasha_instagram_data():
+    """Test to download Instagram data of a specific user using LevPasha Instagram API."""
+    user_data = api.get_levpasha_instagram_data(search_user)
+    assert type(user_data) == dict

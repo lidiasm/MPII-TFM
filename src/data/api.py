@@ -1,146 +1,162 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Singleton class to establish a connection with one APIs among many APIs in order to download
-and preprocess data related to social networks. This information will be
-stored in the database.
+Class in which there are many APIs to connect to in order to download and get
+interesting data related to an user social media account. Then, this information
+will be stored in the database.
 
 @author: Lidia Sánchez Mérida
 """
 
 import os
+from os import path
 import sys
 sys.path.append("../")
-from exceptions import SingletonClass, InvalidCredentials, UsernameNotFound \
-, MaxRequestsExceed, PostsDictNotFound
+from exceptions import InvalidCredentials, UsernameNotFound, MaxRequestsExceed \
+    , InvalidUserId, InvalidLimit, PostsDictNotFound
 from InstagramAPI import InstagramAPI
 import time 
+import pickle
 
 class Api:
-    __instance = None
     
     def __init__(self):
-        """Creates the instance if it doesn't exist."""
-        if Api.__instance != None: raise SingletonClass("Singleton class can't have more than one instance.")
-        else: Api.__instance = self
-    
-    @staticmethod
-    def get_instance():
-        """Gets the current and unique instance. If it doesn't exist, it will be created."""
-        if Api.__instance == None: Api()
-        return Api.__instance
-    
-    @staticmethod
-    def connect_to_instagram_api():
-        """Connects to the api with the username and password of your Instagram account.
-            For safety reasons your credentials should be in env variables in your sistem."""
-        username = os.environ.get("INSTAGRAM_USER")
-        pswd = os.environ.get("INSTAGRAM_PSWD")
-        if (type(username) != str or type(pswd) != str or username == None or
-            pswd == None or username == "" or pswd == ""):
-            raise InvalidCredentials("Username and/or password are not right.")
+        """Creates a new API object which contains the connection stablished to
+            an API."""
+        self.connection = None
         
-        api = InstagramAPI(username, pswd)
-        api.login()
-        if (api.LastJson['status'] != 'ok'):
-            raise InvalidCredentials("Invalid Instagram credentials.")
-        
-        return api
-    
-    @staticmethod
-    def get_instagram_profile(api, search_user):
-        """Gets and preprocesses data of an user's profile."""
-        if (search_user == None or type(search_user) != str or search_user == ""):
-            raise UsernameNotFound("ERROR. Invalid username.")
-        
-        """Search the id of the user."""
-        api.searchUsername(search_user)
-        if (api.LastJson['status'].lower() != 'ok'):
-                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+    def connect_levpasha_instagram_api(self, use_session_file=True, session_file="./levpasha_session.txt"):
+        """Connects to LevPasha Instagram API using:
+            - A file in which there is the connection object stored.
+            - The credentials of your Instagram account. For safety reasons 
+                there should be as env variables in the sistem."""
+        if (path.exists(session_file) and use_session_file):
+            self.connection = pickle.load(open(session_file, "rb"))
+        else:
+            username = os.environ.get("INSTAGRAM_USER2")
+            pswd = os.environ.get("INSTAGRAM_PSWD2")
+            if (type(username) != str or type(pswd) != str or username == None or
+                pswd == None or username == "" or pswd == ""):
+                raise InvalidCredentials("Username and/or password are not right.")
+            
+            self.connection = InstagramAPI(username, pswd)
+            self.connection.login()
+            if (self.connection.LastJson['status'] != 'ok'):
+                raise InvalidCredentials("Invalid Instagram credentials.")
+            
+            if (type(session_file) != str or session_file == ""):
+                session_file = "./levpasha_session.txt"
                 
-        """Get the profile of the search user."""
+            pickle.dump(self.connection, open(session_file, "wb"))
+        
+        return self.connection
+    
+    def get_levpasha_instagram_profile(self, search_user):
+        """Downloads the profile of a specific user from LevPasha Instagram 
+            API and returns a dict with the interesting data of the user profile."""
+        if (type(search_user) != str or search_user == ""):
+            raise UsernameNotFound("ERROR. The username should be a non empty string.")
+        
+        # Gets the profile of the user
+        self.connection.searchUsername(search_user)
+        # Exception when the max number of requests has been exceeded
+        if (self.connection.LastJson['status'].lower() != 'ok'):
+            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+            
+        # Profile with the interesting fields
         profile = {}
-        profile['userid'] = api.LastJson['user']['pk']
-        profile['name'] = api.LastJson['user']['full_name']
-        profile['username'] = api.LastJson['user']['username']
-        profile['biography'] = api.LastJson['user']['biography']
+        profile['userid'] = self.connection.LastJson['user']['pk']
+        profile['name'] = self.connection.LastJson['user']['full_name']
+        profile['username'] = self.connection.LastJson['user']['username']
+        profile['biography'] = self.connection.LastJson['user']['biography']
         profile['gender'] = None
-        profile['profile_pic'] = api.LastJson['user']['profile_pic_url']
+        profile['profile_pic'] = self.connection.LastJson['user']['profile_pic_url']
         profile['location'] = None
         profile['birthday'] = None
         profile['date_joined'] = None
-        profile['n_followers'] = api.LastJson['user']['follower_count']
-        profile['n_following'] = api.LastJson['user']['following_count']
-        profile['n_medias'] = api.LastJson['user']['media_count']
+        profile['n_followers'] = self.connection.LastJson['user']['follower_count']
+        profile['n_following'] = self.connection.LastJson['user']['following_count']
+        profile['n_medias'] = self.connection.LastJson['user']['media_count']
         
         return profile
+    
+    def get_levpasha_instagram_posts(self, user_id, limit=100):
+        """Gets some posts of an user providing their user id, which can be
+            found in their profile. The number of posts downloaded can be specified."""
+        # Check the user id
+        if (type(user_id) != int or user_id < 0):
+            raise InvalidUserId("ERROR. The user id should be a positive number.")
+        # Check the limit
+        if (type(limit) != int or limit <= 0):
+            raise InvalidLimit("ERROR. The post limit should be a number greater than 0.")
         
-    @staticmethod
-    def get_instagram_posts(api, userid):
-        """Gets data related to the posts of an user such as their ids, number
-            of likes and number of comments."""
         posts = {}
         more_posts = True
         max_id = ""
+        n_downloaded_posts = 0
+        # Gets posts while there are still more posts
         while more_posts:
-            """Get media user."""
-            api.getUserFeed(userid, max_id)
-            if (api.LastJson['more_available'] == False):
+            self.connection.getUserFeed(user_id, max_id)
+            if (self.connection.LastJson['more_available'] == False):
                 more_posts = False
-            """We only save media id, likes and comments count."""
-            max_id = api.LastJson.get('next_max_id', '')
-            items_list = api.LastJson['items']
+                
+            """Save the media id, its number of likes and comments."""
+            max_id = self.connection.LastJson.get('next_max_id', '')
+            items_list = self.connection.LastJson['items']
             for i in items_list:
+                #n_downloaded_posts += 1
                 posts[i['id']] = {'likes':i['like_count'], 'comments':i['comment_count']}
             
+            n_downloaded_posts += len(items_list)
+            if (n_downloaded_posts >= limit): break
             """Wait some time to avoid flooding the servers."""
-            time.sleep(2)
+            time.sleep(20)
             
         return posts
-
-    @staticmethod
-    def get_instagram_posts_likers(api, userid, posts, username):
-        """Gets people who like the posts of an user. They're in descending order."""
-        if (posts == None or type(posts) != dict):
-            raise PostsDictNotFound("ERROR. There aren't any posts so their likers can't be got.")
-        if (username == None or type(username) != str):
-            raise UsernameNotFound("ERROR. Invalid username.")
+    
+    def get_levpasha_instagram_posts_likers(self, username, posts):
+        """Downloads the username of the Instagram accounts who liked the
+            user posts."""
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non empty string.")
+        if (type(posts) != dict or len(posts) == 0):
+            raise PostsDictNotFound("ERROR. There aren't any posts to get their likers.")
         
         likers = {}
         for post in posts:
-            api.getMediaLikers(post)
-            if (api.LastJson['status'].lower() != 'ok'):
+            self.connection.getMediaLikers(post)
+            if (self.connection.LastJson['status'].lower() != 'ok'):
                 raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-            """Get likers"""
-            if ('users' in api.LastJson):
-                users = api.LastJson['users']
+                
+            # Get likers and their number of likes
+            if ('users' in self.connection.LastJson):
+                users = self.connection.LastJson['users']
                 for user in users:
                     if (user['username'] in likers):
                         likers[user['username']] += 1
                     elif (user['username'] != username):
                         likers[user['username']] = 1
             """Wait some time to avoid flooding the servers."""
-            time.sleep(2)
+            time.sleep(20)
                     
         return likers
     
-    @staticmethod
-    def get_instagram_posts_comments(api, userid, posts, username):
-        """Gets people who like the posts of an user. They're in descending order."""
-        if (posts == None or type(posts) != dict):
-            raise PostsDictNotFound("ERROR. There aren't any posts so their likers can't be got.")
-        if (username == None or type(username) != str):
-            raise UsernameNotFound("ERROR. Invalid username.")
+    def get_levpasha_instagram_posts_comments(self, username, posts):
+        """Gets the comments made by Instagram users to the posts of a specific user."""
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non empty string.")
+        if (type(posts) != dict or len(posts) == 0):
+            raise PostsDictNotFound("ERROR. There aren't any posts to get their likers.")
         
         comments = {}
         for post in posts:
-            api.getMediaComments(post)
-            # Get max 20 comments
-            if (api.LastJson['status'].lower() != 'ok'):
+            # MAX 20 COMMENTS
+            self.connection.getMediaComments(post)
+            if (self.connection.LastJson['status'].lower() != 'ok'):
                 raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-            
-            if ('comments' in api.LastJson):
-                post_comments = api.LastJson['comments']
+            # Save the user who wrote the comment and the text
+            if ('comments' in self.connection.LastJson):
+                post_comments = self.connection.LastJson['comments']
                 comments_list = []
                 for comm in post_comments:
                     if (comm['user']['username'] != username):
@@ -150,59 +166,75 @@ class Api:
                 comments[post] = comments_list
             
             """Wait some time to avoid flooding the servers."""
-            time.sleep(2)
+            time.sleep(20)
         
         return comments
-
-    @staticmethod
-    def get_instagram_contacts(api, userid):
-        """Gets the followers and followings of an user."""
-        # Max 100 followers
-        api.getUserFollowings(userid)
-        if (api.LastJson['status'].lower() != 'ok'):
+    
+    def get_levpasha_instagram_contacts(self, user_id):
+        """Downloads the usernames of the followers and followings of a 
+            specific user using their user id."""
+        # Check the user id
+        if (type(user_id) != int or user_id < 0):
+            raise InvalidUserId("ERROR. The user id should be a positive number.")
+            
+        # Max 100 followings
+        self.connection.getUserFollowings(user_id)
+        if (self.connection.LastJson['status'].lower() != 'ok'):
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-        """Get the usernames of the followings."""
+        # List of usernames of the followings 
         followings_usernames = []
-        followings = api.LastJson['users']
+        followings = self.connection.LastJson['users']
         for following in followings:
             followings_usernames.append(following['username'])
-
-        # Max 100 followings
-        api.getUserFollowers(userid)
-        if (api.LastJson['status'].lower() != 'ok'):
-            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")    
-        """Get the usernames of the followers."""
+        
+        """Wait some time to avoid flooding the servers."""
+        time.sleep(20)
+            
+        # Max 100 followers
+        self.connection.getUserFollowers(user_id)
+        if (self.connection.LastJson['status'].lower() != 'ok'):
+            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")  
+        # List of usernames of the followers
         followers_usernames = []
-        followers = api.LastJson['users']
+        followers = self.connection.LastJson['users']
         for follower in followers:
             followers_usernames.append(follower['username'])
         
         return [followings_usernames, followers_usernames]
     
-    @staticmethod
-    def get_instagram_data(search_user):
-        """Gets all type of data from a Instagram user."""
-        # Connection to the Instagram API
-        api = Api.connect_to_instagram_api()
+    def get_levpasha_instagram_data(self, search_user, use_session_file=True, session_file="./levpasha_session.txt"):
+        """Downloads Instagram data from a specific user account. In order to do
+            that, the previous method will be used to get the profile, followers
+            followings, posts, users who liked them as well as the comments."""
+        if (type(search_user) != str or search_user == ""):
+            raise UsernameNotFound("ERROR. The username should be a non empty string.")
+            
+        # Connect to LevPasha Instagram API
+        self.connect_levpasha_instagram_api(use_session_file, session_file)
         user_data = {}
         try:
-            user_data['profile'] = Api.get_instagram_profile(api, search_user)
-            time.sleep(5)
-            user_data['posts'] = Api.get_instagram_posts(api, user_data['profile']['userid'])
-            time.sleep(5)
-            likers = Api.get_instagram_posts_likers(api, user_data['profile']['userid'],
-                    user_data['posts'], user_data['profile']['username'])
+            # Profile
+            user_data['profile'] = self.get_levpasha_instagram_profile(search_user)
+            time.sleep(30)
             
+            # Posts
+            user_data['posts'] = self.get_levpasha_instagram_posts(user_data['profile']['userid'])
+            time.sleep(30)
+            # Likers
+            likers = self.get_levpasha_instagram_posts_likers(user_data['profile']['username'],
+                user_data['posts'])
             """Likers in descending order to show the fans first."""
             sorted_likers = sorted(likers.items(), key=lambda k:k[1], reverse=True) 
             user_data['likers'] = sorted_likers
-            time.sleep(5)
+            time.sleep(30)
+            # Comments of the posts
+            user_data['comments'] = self.get_levpasha_instagram_posts_comments(
+                user_data['profile']['username'], user_data['posts'])
+            time.sleep(30)
             
-            user_data['comments'] = Api.get_instagram_posts_comments(api, user_data['profile']['userid'],
-                    user_data['posts'], user_data['profile']['username'])
-            time.sleep(5)
-            contacts = Api.get_instagram_contacts(api, user_data['profile']['userid'])
-            time.sleep(5)
+            # Followers and followings
+            contacts = self.get_levpasha_instagram_contacts(user_data['profile']['userid'])
+            time.sleep(30)
             user_data['followings'] = contacts[0]
             user_data['followers'] = contacts[1]
             
