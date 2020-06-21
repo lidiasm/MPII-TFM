@@ -15,7 +15,7 @@ def test1_get_user_instagram_data():
     """Test to check if the method can get, preprocess and store an Instagram user data."""
     try:
         mo = main_ops.MainOperations()
-        username = "pabloalvarezss"
+        username = "lidia.96.sm"
         result = mo.get_user_instagram_data(username)
         assert result['profile'] != None and result['contacts'] != None and result['posts'] != None
     except MaxRequestsExceed:
