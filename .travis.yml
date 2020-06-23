@@ -10,6 +10,8 @@ before_install:
 services:
 - mongodb
 - postgresql
+before_script:
+  - psql -c "CREATE DATABASE SocialNetworksDB;" -U postgres
 script:
 - make test
 after_success:
