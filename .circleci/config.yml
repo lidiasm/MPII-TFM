@@ -6,12 +6,21 @@ jobs:
       - image: circleci/mongo:latest
       - image: circleci/postgres:latest
         environment:
+          POSTGRES_USER: $POSTGRES_USER
           POSTGRES_PASSWORD: $POSTGRES_PWD
     steps:
       - checkout
       - run:
+          name: Wait por PostgreSQL database
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
+      - run:
           name: Install dependencies.
-          command: make install
+          command: |
+            make install
+            sudo apt-get install postgresql-client
+      - run:
+          name: Create database.
+          command: psql -c "create database SocialNetworksDB" -U postgres
       - run:
           name: Run tests.
           command: make test
