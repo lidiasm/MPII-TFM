@@ -12,7 +12,7 @@ services:
 - postgresql
 before_script:
   - psql -c "CREATE DATABASE SocialNetworksDB;" -U postgres
-  - psql -c "CREATE USER "+POSTGRES_USER+" WITH PASSWORD " + POSETGRES_PSWD ";" -U postgres
+  - psql -c "CREATE USER POSTGRES_USER WITH PASSWORD POSETGRES_PSWD;" -U postgres
 script:
 - make test
 after_success:
