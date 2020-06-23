@@ -11,7 +11,7 @@ services:
 - mongodb
 - postgresql
 before_script:
-  - psql -c "CREATE DATABASE SocialNetworksDB;" -U postgres
+  - psql -c "CREATE DATABASE SocialNetworksDB;" -U lidia
 script:
 - make test
 after_success:
