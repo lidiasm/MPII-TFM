@@ -87,3 +87,26 @@ class UserDataNotFound(Exception):
     """Class exception to point out that there aren't any user data."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
+
+class TableNotFound(Exception):
+    """Class exception to point out that the specified table is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class DatabaseFieldsNotFound(Exception):
+    """Class exception to point out that the item does not contain all the database
+        fields which are required."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidFieldsToGet(Exception):
+    """Class exception to point out that the fields to return in select procedures
+        are not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidConditions(Exception):
+    """Class exception to point out that the conditions for selecting some rows
+        from the PostgresSQL database are not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
