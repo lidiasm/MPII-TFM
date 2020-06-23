@@ -11,7 +11,8 @@ services:
 - mongodb
 - postgresql
 before_script:
-  - psql -c "CREATE DATABASE SocialNetworksDB;" -U lidia
+  - psql -c "CREATE DATABASE SocialNetworksDB;" -U POSTGRES_USER
+  - psql -c "CREATE USER "+POSTGRES_USER+" WITH PASSWORD " + POSETGRES_PSWD ";" -U POSTGRES_USER
 script:
 - make test
 after_success:
