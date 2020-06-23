@@ -24,7 +24,7 @@ class PostgreSQL:
             - A cursor which can be used to make queries to the database.
             - The fields which are contained in each table of the database.
             - The allowed commands to use in select query conditions."""
-        self.connection = psycopg2.connect(database=db, user=user, password=pswd)
+        self.connection = psycopg2.connect(database=db, user=user, password=pswd, host='localhost', port=5433)
         self.cursor = self.connection.cursor()
         self.fields = {'profile':['username', 'date', 'name', 'userid', 'biography',
                           'gender', 'profile_pic', 'location', 'birthday', 'date_joined',
