@@ -5,18 +5,17 @@ jobs:
       - image: circleci/python:3.7
       - image: circleci/mongo:latest
       - image: circleci/postgres:latest
-        environment:
-          POSTGRES_USER: $POSTGRES_USER
-          POSTGRES_PASSWORD: $POSTGRES_PWD
     steps:
       - checkout
       - run:
           name: Install dependencies.
           command: make install
       - run:
+          name: Prueba PostgreSQL
+          command: docker run -e POSTGRES_PASSWORD=$POSTGRES_PSWD -d postgres:latest
+      - run:
           name: Run tests.
           command: make test
 machine:
   services:
     - mongodb
-    - postgresql
