@@ -20,7 +20,7 @@ jobs:
             sudo apt-get install postgresql-client
       - run:
           name: Create database.
-          command: psql -c "create database SocialNetworksDB" -U postgres
+          command: psql -c "create database SocialNetworksDB" -h localhost -p 5432 -U postgres
       - run:
           name: Run tests.
           command: make test
