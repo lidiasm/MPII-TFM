@@ -17,20 +17,20 @@ from exceptions import TableNotFound, NewItemNotFound, DatabaseFieldsNotFound \
     , InvalidConditions, InvalidFieldsToGet
 
 class PostgreSQL:
-    
+
     def __init__(self, db, user, pswd):
         """PostgreSQL constructor. It creates an object with two attributes:
             - A connection to the PostgreSQL database which contains Instagram data.
             - A cursor which can be used to make queries to the database.
             - The fields which are contained in each table of the database.
             - The allowed commands to use in select query conditions."""
-        self.connection = psycopg2.connect(database=db, user=user, host="postgres", password=pswd, port=5433)
+        self.connection = psycopg2.connect(database=db, user=user, host="travis.dev", password=pswd, port=5433)
         self.cursor = self.connection.cursor()
         self.fields = {'profile':['username', 'date', 'name', 'userid', 'biography',
                           'gender', 'profile_pic', 'location', 'birthday', 'date_joined',
                           'n_followers', 'n_followings', 'n_medias']}
         self.condition_commands = ['WHERE', 'ORDER BY']
-    
+
     def insert_item(self, new_item, table):
         """Method which inserts a new item into a existing table of the database.
             The new item should have the same required fields that the table has
@@ -48,21 +48,21 @@ class PostgreSQL:
         for f in self.fields[table]:
             if (f not in new_item):
                 raise DatabaseFieldsNotFound("Some required fields are not in the new item, like: "+f)
-        
+
         table_fields_str = '(' + ','.join(self.fields[table]) + ')'
         insert_query = "INSERT INTO "+ table + " " + table_fields_str \
             + " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         list_values = []
         for f in self.fields[table]:
             list_values.append(new_item[f])
-            
+
         values = tuple(list_values)
         prev_rowcount = self.cursor.rowcount
         self.cursor.execute(insert_query, values)
         self.connection.commit()
-        
+
         return prev_rowcount < self.cursor.rowcount
-    
+
     def get_item_records(self, table, fields=[], conditions={}):
         """Method to get the rows of a select query choosing:
             - All fields or some of them. They should be non empty strings, stored
@@ -76,7 +76,7 @@ class PostgreSQL:
         # Check if the specified table name is in the database
         if (table not in self.fields):
             raise TableNotFound("The specified table does not exist in the database.")
-        # Check the fields to return. 
+        # Check the fields to return.
         if (type(fields) != list):
             raise InvalidFieldsToGet("The fields to return should be stored in a list.")
         for field in fields:
@@ -88,7 +88,7 @@ class PostgreSQL:
         for command in conditions:
             if (command not in self.condition_commands):
                 raise InvalidConditions("The allowed commands are: "+ ','.join(self.condition_commands))
-        
+
         """Make and send the select query"""
         select_query = "SELECT "
         # Select every field
@@ -113,14 +113,14 @@ class PostgreSQL:
                         select_query += " " + key + " "
             if ('ORDER BY' in conditions):
                 select_query += " ORDER BY " + conditions['ORDER BY']
-        
+
         # Send the select query
         self.cursor.execute(select_query)
         rows = self.cursor.fetchall()
-        
+
         return rows
-            
-        
+
+
     def empty_table(self, table):
         """Method to delete all rows of a specific table without deleting it."""
         # Check the specified table name
@@ -129,10 +129,10 @@ class PostgreSQL:
         # Check if the specified table name is in the database
         if (table not in self.fields):
             raise TableNotFound("The specified table does not exist in the database.")
-        
+
         prev_rowcount = self.cursor.rowcount
         delete_query = "TRUNCATE " + table
         self.cursor.execute(delete_query)
         self.connection.commit()
-                
+
         return prev_rowcount-self.cursor.rowcount == 0
