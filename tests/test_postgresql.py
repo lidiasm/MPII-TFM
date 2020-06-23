@@ -16,7 +16,7 @@ from postgresql import PostgreSQL
 
 """Connection to test the PostgresSQL database operations."""
 test_connection = PostgreSQL('SocialNetworksDB',
-          os.environ.get("POSTGRES_USER"), os.environ.get("POSTGRES_PSWD"))
+          os.environ.get("postgres"), os.environ.get("POSTGRES_PSWD"))
 
 """Table which will be used to test the PostgresSQL class"""
 TABLE = "profile"
@@ -26,13 +26,13 @@ def test1_empty_table():
         raise an exception."""
     with pytest.raises(TableNotFound):
         test_connection.empty_table(1234)
-        
+
 def test2_empty_table():
-    """Test to check the delete method when the table does not exist in the database. 
+    """Test to check the delete method when the table does not exist in the database.
         It will raise an exception."""
     with pytest.raises(TableNotFound):
         test_connection.empty_table("Hi")
-        
+
 def test3_empty_table():
     """Test to delete the rows of a specific table."""
     result = test_connection.empty_table(TABLE)
@@ -70,9 +70,9 @@ def test5_insert_item():
         of this method. The new item should be a dict which contains every table
         field in order to get all required values to insert them as a new row."""
     data = {"userid":2040068873, "name":"Lidia Sánchez", "username":"lidia.96.sm",
-            "biography":"\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.", 
-            "gender":"None", "profile_pic":"https://instagram.fsvq2-1.fna.fbcdn.net/v/t51.2885-19/s150x150/41339801_165526391018445_41443638382690304_n.jpg?_nc_ht=instagram.fsvq2-1.fna.fbcdn.net&_nc_ohc=hW7KS56GF7gAX_uMtm4&oh=1e8b084cced54e7208f8d459cff3ed95&oe=5F1A6F0A", 
-            "location":"None", "birthday":"None", "n_followers":60, "n_followings":80, 
+            "biography":"\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
+            "gender":"None", "profile_pic":"https://instagram.fsvq2-1.fna.fbcdn.net/v/t51.2885-19/s150x150/41339801_165526391018445_41443638382690304_n.jpg?_nc_ht=instagram.fsvq2-1.fna.fbcdn.net&_nc_ohc=hW7KS56GF7gAX_uMtm4&oh=1e8b084cced54e7208f8d459cff3ed95&oe=5F1A6F0A",
+            "location":"None", "birthday":"None", "n_followers":60, "n_followings":80,
             "date_joined":"None", "n_medias":6, "id":"lidia.96.sm", "date":"2020-06-21" }
     result = test_connection.insert_item(data, TABLE)
     assert result == True
@@ -82,7 +82,7 @@ def test1_get_item_records():
         raise an exception."""
     with pytest.raises(TableNotFound):
         test_connection.get_item_records(1234)
-        
+
 def test2_get_item_records():
     """Test to check the get item records method when the table is not provided. It will
         raise an exception."""
@@ -94,7 +94,7 @@ def test3_get_item_records():
         not stored in a list."""
     with pytest.raises(InvalidFieldsToGet):
         test_connection.get_item_records(TABLE, fields={})
-        
+
 def test4_get_item_records():
     """Test to check the get item records method when the fields to return are
         not strings."""
@@ -111,26 +111,26 @@ def test6_get_item_records():
     """Test to check the get item records method when the command condition is not allowed ."""
     with pytest.raises(InvalidConditions):
         test_connection.get_item_records(TABLE, fields=["username"], conditions={'COMMAND':{}})
-        
+
 def test7_get_item_records():
     """Test to check the get item records method when the type of each condition is
         not a dict."""
     with pytest.raises(InvalidConditions):
         test_connection.get_item_records(TABLE, fields=["username"], conditions={'WHERE':1234})
-        
+
 def test8_get_item_records():
     """Test to get all the rows of a specific table without any conditions."""
     result = test_connection.get_item_records(TABLE)
     assert type(result) == list
-    
+
 def test9_get_item_records():
     """Test to get some fields of a specific table without any conditions."""
     result = test_connection.get_item_records(TABLE, fields=["username", "n_followings", "n_followers"])
     assert type(result) == list
-    
+
 def test10_get_item_records():
     """Test to get some fields of a specific table with some conditions WHERE and ORDER BY"""
-    result = test_connection.get_item_records(TABLE, 
-              fields=["username", "name", "n_followers"], 
+    result = test_connection.get_item_records(TABLE,
+              fields=["username", "name", "n_followers"],
               conditions={'WHERE':{'and':'n_followers>50', '-':'n_followings>5'}, 'ORDER BY':'n_followers'})
     assert type(result) == list

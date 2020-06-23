@@ -12,8 +12,7 @@ services:
 - postgresql
 before_script:
   - psql -c "CREATE DATABASE SocialNetworksDB;" -U postgres
-  - psql -c "CREATE USER lidia WITH PASSWORD 'lidia';" -U postgres
-  - psql --host=localhost --dbname=SocialNetworksDB --username=lidia
+  - psql -c "ALTER USER postgres PASSWORD 'POSTGRES_PSWD';" -U postgres
 script:
 - make test
 after_success:
