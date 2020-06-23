@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Tests to check the right behaviour of the methods included to the Single Source
-of Truth which has the operations with the database.
+Tests to check the right behaviour of the methods included in the Single Source
+of Truth which has the operations with the MongoDB database.
 
 @author: Lidia Sánchez Mérida.
 """

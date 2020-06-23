@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Class which represents the Single Source of Truth which contains the methods
-to do things with the database. This common class could be used for all classes
-of the project.
+Class which represents the Single Source of Truth and contains the requested
+operations to work with a MongoDB database. 
+
+This class will be used for all the classes which need to operate with the 
+MongoDB database.
 
 @author: Lidia Sánchez Mérida.
 """
