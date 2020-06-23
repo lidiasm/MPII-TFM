@@ -6,7 +6,8 @@ jobs:
       - image: circleci/mongo:latest
       - image: circleci/postgres:latest
         environment:
-          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_USER: $POSTGRES_USER
+          POSTGRES_PASSWORD: $POSTGRES_PWD
     steps:
       - checkout
       - run:
