@@ -4,6 +4,7 @@ jobs:
     docker:
       - image: circleci/python:3.7
       - image: circleci/mongo:latest
+      - image: circleci/postgres:latest
     steps:
       - checkout
       - run:
@@ -15,3 +16,4 @@ jobs:
 machine:
   services:
     - mongodb
+    - postgresql
