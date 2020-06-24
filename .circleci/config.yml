@@ -17,7 +17,6 @@ jobs:
           name: Install dependencies.
           command: |
             make install
-            sudo apt-get install -y postgressql
             sudo apt-get install -y postgresql-client
       - run:
           name: Create database.
