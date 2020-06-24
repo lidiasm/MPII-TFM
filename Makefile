@@ -4,9 +4,10 @@ install:
 
 test:
 	# Execute the tests for the project classes.
-	python3 -B -m pytest --disable-warnings tests/test_postgresql.py #tests/*
+	python3 -B -m pytest --disable-warnings tests/*
 	# Coverage tests.
-	#python3 -B -m pytest --disable-warnings --cov=main_ops --cov=api --cov=commondata --cov=mongodb --cov=postgresql tests/
+	python3 -B -m pytest --disable-warnings --cov-report=html --cov=mongodb \
+	 --cov=postgresql --cov=commondata --cov=main_ops --cov=api tests/
 
 	##--cov=main_ops --cov=api --cov=commondata --cov=mongodb tests/
 	## --cov-report=html
