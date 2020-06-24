@@ -3,4 +3,4 @@ pytest-cov>=2.10.0
 codecov
 pymongo
 InstagramApi
-pg8000>=1.15.3
+psycopg2>=2.8.5
