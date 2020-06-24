@@ -16,6 +16,9 @@ CREATE TABLE public.profile (
     n_followings integer NOT NULL,
     n_medias integer NOT NULL
 );
+
+ALTER TABLE public.profile OWNER TO lidia;
+
 --
 -- Name: profile profile_pkey; Type: CONSTRAINT; Schema: public;
 --
