@@ -13,7 +13,6 @@ services:
 before_script:
   - psql -c "CREATE USER ${POSTGRES_USER} WITH PASSWORD '${POSTGRES_PSWD}';"
   - psql -c "CREATE DATABASE SocialNetworksDB WITH OWNER=${POSTGRES_USER};"
-  - psql --dbname=SocialNetworksDB --file=postgresql_tables.sql
 script:
 - make test
 after_success:
