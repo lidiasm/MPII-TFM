@@ -6,7 +6,8 @@ jobs:
       - image: circleci/mongo:latest
       - image: circleci/postgres:latest
         environment:
-          POSTGRES_USER: postgres
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: circleci_test
     steps:
       - checkout
       - run:
@@ -20,7 +21,7 @@ jobs:
       - run:
           name: Create database.
           command: |
-            psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE socialnetworksdb;"
+            psql -h 127.0.0.1 -U root -c "CREATE DATABASE socialnetworksdb;"
       - run:
           name: Run tests.
           command: make test
