@@ -18,14 +18,14 @@ jobs:
             make install
             sudo apt-get install -y postgresql-client
       - run:
-          name: Create database.
-          command: psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE socialnetworksdb;"
-      - run:
           name: Create user.
-          command: psql -h 127.0.0.1 -U postgres -c "CREATE USER POSTGRES_USER WITH PASSWORD 'POSTGRES_PSWD'; GRANT ALL PRIVILEGES ON DATABASE socialnetworksdb TO POSTGRES_USER;"
+          command: psql -h 127.0.0.1 -U postgres -c "CREATE USER POSTGRES_USER WITH PASSWORD 'POSTGRES_PSWD';"
+      - run:
+          name: Create database.
+          command: psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE socialnetworksdb WITH OWNER=POSTGRES_USER;"
       - run:
           name: Create tables.
-          command: psql --dbname=socialnetworksdb --file=postgresql_tables.sql
+          command: psql -h 127.0.0.1 -U POSTGRES_USER --dbname=socialnetworksdb --file=postgresql_tables.sql
       - run:
           name: Run tests.
           command: make test
