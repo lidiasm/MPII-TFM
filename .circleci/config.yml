@@ -25,7 +25,7 @@ jobs:
           command: psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE socialnetworksdb WITH OWNER=POSTGRES_USER;"
       - run:
           name: Create tables.
-          command: psql -h 127.0.0.1 -U POSTGRES_USER --dbname=socialnetworksdb --file=postgresql_tables.sql
+          command: psql -h 127.0.0.1 -U lidia --dbname=socialnetworksdb --file=postgresql_tables.sql
       - run:
           name: Run tests.
           command: make test
