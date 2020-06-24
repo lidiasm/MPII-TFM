@@ -25,7 +25,7 @@ jobs:
           command: psql -h 127.0.0.1 -U postgres -c "CREATE USER POSTGRES_USER WITH PASSWORD 'POSTGRES_PSWD'; GRANT ALL PRIVILEGES ON DATABASE socialnetworksdb TO POSTGRES_USER;"
       - run:
           name: Create tables.
-          run: psql --dbname=socialnetworksdb --file=postgresql_tables.sql
+          command: psql --dbname=socialnetworksdb --file=postgresql_tables.sql
       - run:
           name: Run tests.
           command: make test
