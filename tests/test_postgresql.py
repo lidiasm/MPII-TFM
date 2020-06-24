@@ -15,7 +15,7 @@ from exceptions import NewItemNotFound, TableNotFound, DatabaseFieldsNotFound \
 from postgresql import PostgreSQL
 
 """Connection to test the PostgresSQL database operations."""
-test_connection = PostgreSQL('SocialNetworksDB',
+test_connection = PostgreSQL('socialnetworksdb',
           os.environ.get("POSTGRES_USER"), os.environ.get("POSTGRES_PSWD"))
 
 """Table which will be used to test the PostgresSQL class"""
