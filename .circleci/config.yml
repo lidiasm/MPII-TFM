@@ -7,7 +7,7 @@ jobs:
       - image: circleci/postgres:latest
         environment:
           POSTGRES_USER: $POSTGRES_USER
-          POSTGRES_PASSWORD: $POSTGRES_PWD
+          POSTGRES_PASSWORD: $POSTGRES_PSWD
     steps:
       - checkout
       - run:
@@ -17,11 +17,13 @@ jobs:
           name: Install dependencies.
           command: |
             make install
-            apt-get install postgresql-client
+            sudo apt-get install -y postgressql
+            sudo apt-get install -y postgresql-client
       - run:
           name: Create database.
           command: |
-            psql --host localhost -c "CREATE USER lidia WITH PASSWORD 'lidia';"
+            psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE socialnetworksdb;"
+            psql -h 127.0.0.1 -U postgres -c "CREATE USER {$POSTGRES_USER} WITH PASSWORD '{$POSTGRES_PSWD}'; GRANT ALL PRIVILEGES ON DATABASE socialnetworksdb TO {$POSTGRES_USER};"
       - run:
           name: Run tests.
           command: make test
