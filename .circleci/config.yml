@@ -5,25 +5,21 @@ jobs:
       - image: circleci/python:3.7
       - image: circleci/mongo:latest
       - image: circleci/postgres:latest
-        environment:
-          POSTGRES_USER: $POSTGRES_USER
-          POSTGRES_PASSWORD: $POSTGRES_PWD
     steps:
       - checkout
       - run:
-          name: Wait por PostgreSQL database
-          command: dockerize -wait tcp://localhost:5432 -timeout 1m
-      - run:
           name: Install dependencies.
-          command: |
-            make install
-            sudo apt-get install postgresql-client
+          command: make install
       - run:
           name: Create database.
-          command: psql -c "create database SocialNetworksDB" -h localhost -p 5432 -U $POSTGRES_USER
+          command: |
+            psql -c "CREATE USER ${POSTGRES_USER} WITH PASSWORD '${POSTGRES_PSWD}';"
+            psql -c "CREATE DATABASE socialnetworksdb WITH OWNER=${POSTGRES_USER};"
+            psql --dbname=socialnetworksdb --file=postgresql_tables.sql
       - run:
           name: Run tests.
           command: make test
 machine:
   services:
     - mongodb
+    - postgresql
