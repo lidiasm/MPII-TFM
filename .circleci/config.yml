@@ -18,9 +18,9 @@ jobs:
       - run:
           name: Create database.
           command: |
-            psql -c "CREATE USER ${POSTGRES_USER} WITH PASSWORD '${POSTGRES_PSWD}';"
-            psql -c "CREATE DATABASE socialnetworksdb WITH OWNER=${POSTGRES_USER};"
-            psql --dbname=socialnetworksdb --file=postgresql_tables.sql
+            psql -h localhost -p 5432 -c "CREATE USER ${POSTGRES_USER} WITH PASSWORD '${POSTGRES_PSWD}';"
+            psql -h localhost -p 5432 -c "CREATE DATABASE socialnetworksdb WITH OWNER=${POSTGRES_USER};"
+            psql -h localhost -p 5432 --dbname=socialnetworksdb --file=postgresql_tables.sql
       - run:
           name: Run tests.
           command: make test
