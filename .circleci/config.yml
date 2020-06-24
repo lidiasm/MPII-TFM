@@ -5,11 +5,16 @@ jobs:
       - image: circleci/python:3.7
       - image: circleci/mongo:latest
       - image: circleci/postgres:latest
+        environment:
+          POSTGRES_USER: $POSTGRES_USER
+          POSTGRES_PASSWORD: $POSTGRES_PWD
     steps:
       - checkout
       - run:
           name: Install dependencies.
-          command: make install
+          command: |
+            make install
+            sudo apt-get install postgresql-client
       - run:
           name: Create database.
           command: |
