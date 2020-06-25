@@ -26,7 +26,7 @@ class PostgreSQL:
             - The allowed commands to use in select query conditions."""
         self.connection = pg8000.connect(user=user, password=pswd, database=db)
         self.cursor = self.connection.cursor()
-        self.fields = {'profile':['username', 'date', 'name', 'userid', 'biography',
+        self.fields = {'profiles':['username', 'date', 'name', 'userid', 'biography',
                           'gender', 'profile_pic', 'location', 'birthday', 'date_joined',
                           'n_followers', 'n_followings', 'n_medias']}
         self.condition_commands = ['WHERE', 'ORDER BY']

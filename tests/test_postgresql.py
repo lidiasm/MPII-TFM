@@ -19,7 +19,7 @@ test_connection = PostgreSQL('socialnetworksdb',
           os.environ.get("POSTGRES_USER"), os.environ.get("POSTGRES_PSWD"))
 
 """Table which will be used to test the PostgresSQL class"""
-TABLE = "profile"
+TABLE = "profiles"
 
 def test1_empty_table():
     """Test to check the delete table method when the table is not provided. It will
