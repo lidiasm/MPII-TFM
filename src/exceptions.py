@@ -47,6 +47,11 @@ class CollectionNotFound(Exception):
     """Class exception to point out that the current collection doesn't exist."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
+        
+class InvalidSocialMediaSource(Exception):
+    """Class exception to point out that the social media source is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
 
 class NewItemNotFound(Exception):
     """Class exception to point out that the new item to insert doesn't exist."""
