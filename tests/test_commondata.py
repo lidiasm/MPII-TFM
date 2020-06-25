@@ -15,7 +15,7 @@ sys.path.append("src/data")
 import commondata 
 from exceptions import UsernameNotFound, ProfileDictNotFound, ContactsListsNotFound \
 , PostsDictNotFound, LikersListNotFound, IdNotFound, CommentsDictNotFound, EmptyCollection \
-, UserDataNotFound, CollectionNotFound
+, UserDataNotFound, CollectionNotFound, InvalidSocialMediaSource
 
 """Creates a object to connect to the database."""
 test_collection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
@@ -255,7 +255,7 @@ def test1_add_user_data():
                  'comments':comments, 'followers':followers, 'followings':followings}
     data = commondata.CommonData(test_collection, user_data)
     prep_data = data.preprocess_user_data()
-    result = data.add_user_data(profile['username'], prep_data, 'test')
+    result = data.add_user_data(profile['username'], prep_data, 'test', 'Instagram')
     assert type(result[0]) == str and type(result[1] == dict)
 
 def test2_add_user_data():
@@ -263,7 +263,7 @@ def test2_add_user_data():
         An exception will be raised."""
     data = commondata.CommonData(test_collection)
     with pytest.raises(UserDataNotFound):
-        assert data.add_user_data('lidia', ['hey'], 'test')
+        assert data.add_user_data('lidia', ['hey'], 'test', 'Instagram')
 
 def test3_add_user_data():
     """Test to check the add method when there's not collection name provided.
@@ -280,7 +280,7 @@ def test3_add_user_data():
     prep_data = data.preprocess_user_data()
     
     with pytest.raises(CollectionNotFound):
-        assert data.add_user_data('lidia', prep_data, '')
+        assert data.add_user_data('lidia', prep_data, '', 'Instagram')
         
 def test4_add_user_data():
     """Test to check the add method when there's not collection name provided.
@@ -297,7 +297,24 @@ def test4_add_user_data():
     prep_data = data.preprocess_user_data()
     
     with pytest.raises(UsernameNotFound):
-        assert data.add_user_data('', prep_data, 'test')
+        assert data.add_user_data('', prep_data, 'test', 'Instagram')
+        
+def test5_add_user_data():
+    """Test to check the add method when there's not collection name provided.
+        An exception will be raised."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = {'123':[{'user': 'ana', 'comment': 'Hey hey!'}, {'user': 'eva', 'comment': 'So cool!'}]}
+    likers = [('ana',84), ('maria',54)]
+    followers = ['anaortiz', 'luciav']
+    followings = ['anaortiz', 'luciav']
+    user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
+                 'comments':comments, 'followers':followers, 'followings':followings}
+    data = commondata.CommonData(test_collection, user_data)
+    prep_data = data.preprocess_user_data()
+    
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.add_user_data('lidia', prep_data, 'test', None)
 
 def test1_get_user_data():
     """Test to check the behaviour of the get method when there's not username provided.

@@ -28,25 +28,30 @@ class MainOperations:
         result = {'profile':None, 'posts':None, 'contacts': None}
         inst_api = Api()
         try:
+            """Download Instagram user data"""
             user_instagram_data = inst_api.get_levpasha_instagram_data(search_user)
-            # Preprocess data
+            """Preprocess data"""
             cd = commondata.CommonData(self.mongodb, user_instagram_data)
             prep_user_data = cd.preprocess_user_data()        
-            profile = cd.add_user_data(prep_user_data['profile']['username'], prep_user_data['profile'], 'profiles')            
+            """Store preprocessed user profile to MongoDB collection 'profiles'"""
+            profile = cd.add_user_data(prep_user_data['profile']['username'],
+               prep_user_data['profile'], 'profiles', 'Instagram')            
             
-            """Posts, their likers and comments in the same dict."""
+            """Store user posts, their likers and comments into the same MongoDB collection 'posts'"""
             all_posts = {}
             all_posts['posts'] = prep_user_data['posts']
             all_posts['likers'] = prep_user_data['likers']
             all_posts['comments'] = prep_user_data['comments']
-            posts = cd.add_user_data(prep_user_data['profile']['username'], all_posts, 'posts')
-            """Followings and followers in the same dict."""
+            posts = cd.add_user_data(prep_user_data['profile']['username'],
+                 all_posts, 'posts', 'Instagram')
+            """Store the user followings and followers into the same MongoDB collection 'contacts'."""
             all_contacts = {}
             all_contacts['followings'] = prep_user_data['followings']
             all_contacts['followers'] = prep_user_data['followers']
-            contacts = cd.add_user_data(prep_user_data['profile']['username'], all_contacts, 'contacts')
+            contacts = cd.add_user_data(prep_user_data['profile']['username'], 
+                all_contacts, 'contacts', 'Instagram')
             
-            """Updates the results"""
+            """Returns the final user data"""
             result['profile'] = profile[1]
             result['contacts'] = contacts[1]
             result['posts'] = posts[1]

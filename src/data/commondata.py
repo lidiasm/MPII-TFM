@@ -9,7 +9,8 @@ methods to verify the values of the collected data.
 import sys
 sys.path.append("../")
 from exceptions import ProfileDictNotFound, UsernameNotFound, ContactsListsNotFound \
-, LikersListNotFound, IdNotFound, PostsDictNotFound, CommentsDictNotFound, UserDataNotFound, CollectionNotFound
+    , LikersListNotFound, IdNotFound, PostsDictNotFound, CommentsDictNotFound \
+    , UserDataNotFound, CollectionNotFound, InvalidSocialMediaSource
 
 from datetime import date
 
@@ -131,18 +132,22 @@ class CommonData:
                 'followers':contacts['followers'], 'followings':contacts['followings']}
         return data
     
-    def add_user_data(self, username, user_data, collection):
-        if (username == None or type(username) != str or username == ""):
+    def add_user_data(self, username, user_data, collection, social_media):
+        if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. Invalid username.")
-        if (user_data == None or len(user_data) == 0 or type(user_data) != dict):
+        if (len(user_data) == 0 or type(user_data) != dict):
             raise UserDataNotFound("ERROR. There aren't any user data to store.")
-        if (collection == None or collection == "" or type(collection) != str):
+        if (collection == "" or type(collection) != str):
             raise CollectionNotFound("ERROR. Invalid collection name.")
+        if (type(social_media) != str or social_media == ""):
+            raise InvalidSocialMediaSource("ERROR. Invalid social media source.")
             
         """Stores user data in the specified collection of a Mongo database."""
         # Primary keys: (user id, date)
         user_data['id'] = username
         user_data['date'] = str(date.today())
+        # Social media data source
+        user_data['social_media'] = social_media
         # Update the collection
         self.mongodb.set_collection(collection)
         
@@ -150,7 +155,7 @@ class CommonData:
     
     def get_user_data(self, username):
         """Gets all rows related to a username from a collection."""
-        if (username == None or type(username) != str or username == ""):
+        if (type(username) != str or username == ""):
             raise UsernameNotFound("You should specify a valid username.")
         
         userData = self.mongodb.get_item_records('id', username)
