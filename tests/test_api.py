@@ -86,11 +86,14 @@ def test2_get_levpasha_instagram_posts():
 def test3_get_levpasha_instagram_posts():
     """Test to download the posts of a specific user using their user id and the
         LevPasha Instagram API."""
-    global profile     
-    if (type(profile) == dict):
-        global posts
-        posts = api.get_levpasha_instagram_posts(user_id=profile['userid'])
-        assert type(posts) == dict
+    try:
+        global profile     
+        if (type(profile) == dict):
+            global posts
+            posts = api.get_levpasha_instagram_posts(user_id=profile['userid'])
+            assert type(posts) == dict
+    except MaxRequestsExceed:
+        print("Max requests exceed. Please wait to send more.")
 
 def test1_get_levpasha_instagram_posts_likers():
     """Test to check the behaviour of the method which gets the usernames of 
@@ -109,10 +112,13 @@ def test2_get_levpasha_instagram_posts_likers():
 def test3_get_levpasha_instagram_posts_likers():
     """Test to get the usernames of the Instagram users who liked the posts
         of a specific user."""
-    global posts
-    if (type(posts) == dict):
-        likers = api.get_levpasha_instagram_posts_likers(search_user, posts)
-        assert type(likers) == dict
+    try:
+        global posts
+        if (type(posts) == dict):
+            likers = api.get_levpasha_instagram_posts_likers(search_user, posts)
+            assert type(likers) == dict
+    except MaxRequestsExceed:
+        print("Max requests exceed. Please wait to send more.")
         
 def test1_get_levpasha_instagram_posts_comments():
     """Test to check the behaviour of the method which gets the comments wrote
@@ -131,11 +137,14 @@ def test2_get_levpasha_instagram_posts_comments():
 def test3_get_levpasha_instagram_posts_comments():
     """Test to get the the comments wrote by Instagram users to the posts
         of a specific user. Their usernames will be stored too."""
-    global posts
-    if (type(posts) == dict):
-        comments = api.get_levpasha_instagram_posts_comments(search_user, posts)
-        assert type(comments) == dict
-
+    try:
+        global posts
+        if (type(posts) == dict):
+            comments = api.get_levpasha_instagram_posts_comments(search_user, posts)
+            assert type(comments) == dict
+    except MaxRequestsExceed:
+        print("Max requests exceed. Please wait to send more.")
+        
 def test1_get_levpasha_instagram_contacts():
     """Test to check the behaviour of the method which gets the followers and
         followings of a specific user without providing their right user id.
@@ -146,10 +155,13 @@ def test1_get_levpasha_instagram_contacts():
 def test2_get_levpasha_instagram_contacts():
     """Test to download the usernames of the followers and followings of a
         specific user account (max 100 for each one)."""
-    global profile
-    if (type(profile) == dict):
-        contacts = api.get_levpasha_instagram_contacts(user_id=profile['userid'])
-        assert type(contacts[0]) == list and type(contacts[1]) == list
+    try:
+        global profile
+        if (type(profile) == dict):
+            contacts = api.get_levpasha_instagram_contacts(user_id=profile['userid'])
+            assert type(contacts[0]) == list and type(contacts[1]) == list
+    except MaxRequestsExceed:
+        print("Max requests exceed. Please wait to send more.")
 
 def test1_get_levpasha_instagram_data():
     """Test to get the Instagram data of a specific user account using the previous
@@ -159,5 +171,8 @@ def test1_get_levpasha_instagram_data():
 
 def test2_get_levpasha_instagram_data():
     """Test to download Instagram data of a specific user using LevPasha Instagram API."""
-    user_data = api.get_levpasha_instagram_data(search_user)
-    assert type(user_data) == dict
+    try:
+        user_data = api.get_levpasha_instagram_data(search_user)
+        assert type(user_data) == dict
+    except MaxRequestsExceed:
+        print("Max requests exceed. Please wait to send more.")
