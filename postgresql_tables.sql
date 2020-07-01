@@ -4,19 +4,20 @@
 -- Table profiles which stores user personal data related to their social media accounts.
 --
 CREATE TABLE public.profiles (
-    username character varying(20) NOT NULL,
-    date character varying(20) NOT NULL,
-    name character varying(100),
+    username VARCHAR(20) NOT NULL,
+    date VARCHAR(20) NOT NULL,
+    name VARCHAR(100),
     userid bigint NOT NULL,
-    biography character varying(200),
-    gender character varying(20),
-    profile_pic character varying(400),
-    location character varying(100),
-    birthday character varying(30),
-    date_joined character varying(20),
-    n_followers integer NOT NULL,
-    n_followings integer NOT NULL,
-    n_medias integer NOT NULL
+    biography VARCHAR(200),
+    gender VARCHAR(20),
+    profile_pic VARCHAR(400),
+    location VARCHAR(100),
+    birthday VARCHAR(30),
+    date_joined VARCHAR(20),
+    n_followers INTEGER NOT NULL,
+    n_followings INTEGER NOT NULL,
+    n_medias INTEGER NOT NULL,
+    social_media VARCHAR(20) NOT NULL
 );
 
 -- 
@@ -39,7 +40,8 @@ ALTER TABLE ONLY public.profiles
 CREATE TABLE followers(
     id_follower SERIAL PRIMARY KEY, 
     id_profile VARCHAR(20) NOT NULL, 
-    username VARCHAR(20) NOT NULL
+    username VARCHAR(20) NOT NULL,
+    social_media VARCHAR(20) NOT NULL
 );
 
 -- 
@@ -54,7 +56,8 @@ ALTER TABLE public.followers OWNER TO lidia;
 CREATE TABLE followings(
     id_following SERIAL PRIMARY KEY, 
     id_profile VARCHAR(20) NOT NULL, 
-    username VARCHAR(20) NOT NULL
+    username VARCHAR(20) NOT NULL,
+    social_media VARCHAR(20) NOT NULL
 );
 
 -- 
@@ -73,7 +76,8 @@ CREATE TABLE posts(
     id_media VARCHAR(100) PRIMARY KEY, 
     username VARCHAR(20) NOT NULL, 
     like_count INTEGER NOT NULL CHECK (like_count>=0), 
-    com_count INTEGER NOT NULL CHECK (com_count>=0)
+    com_count INTEGER NOT NULL CHECK (com_count>=0),
+    social_media VARCHAR(20) NOT NULL
 );
 
 -- 
@@ -89,7 +93,8 @@ CREATE TABLE likers(
     id_liker SERIAL PRIMARY KEY, 
     id_profile VARCHAR(20) NOT NULL, 
     username VARCHAR(20) NOT NULL, 
-    n_likes INTEGER NOT NULL CHECK (n_likes>=0)
+    n_likes INTEGER NOT NULL CHECK (n_likes>=0),
+    social_media VARCHAR(20) NOT NULL
 );
 
 -- 
@@ -107,7 +112,8 @@ CREATE TABLE comments(
     id_profile VARCHAR(20) NOT NULL, 
     id_media VARCHAR(100) NOT NULL REFERENCES posts(id_media), 
     username VARCHAR(20) NOT NULL, 
-    text VARCHAR(500) NOT NULL
+    text VARCHAR(500) NOT NULL,
+    social_media VARCHAR(20) NOT NULL
 );
 
 -- 
