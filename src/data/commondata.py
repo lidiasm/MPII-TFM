@@ -13,6 +13,10 @@ from exceptions import ProfileDictNotFound, UsernameNotFound, ContactsListsNotFo
     , UserDataNotFound, CollectionNotFound, InvalidSocialMediaSource
 
 from datetime import date
+from googletrans import Translator
+import re
+from nltk.corpus import stopwords
+import emoji
 
 class CommonData:
     
@@ -39,7 +43,7 @@ class CommonData:
             
             """Mandatory fields"""
             required_fields = ['userid', 'username', 'name', 'biography', 'gender', 'profile_pic',
-              'location', 'birthday', 'data_joined', 'n_followers', 'n_followings']
+              'location', 'birthday', 'date_joined', 'n_followers', 'n_followings']
             """Copy of the user profile to remove not required fields."""
             preprocessed_user_profile = {}
             for field in user_profile:
@@ -121,7 +125,8 @@ class CommonData:
             raise PostsDictNotFound("There aren't any posts so their comments can't be analyzed.")
     
     def preprocess_user_data(self):
-        """Checks all user data."""
+        """Checks all user data using the previous methods which preprocess each
+            type of user data such as the profile, posts, likers, comments, and so on."""
         profile = self.preprocess_profile()
         data = {'profile':profile}
         contacts = self.preprocess_contacts()
@@ -132,7 +137,56 @@ class CommonData:
                 'followers':contacts['followers'], 'followings':contacts['followings']}
         return data
     
+    def preprocess_text_comments(self):
+        """Preprocesses the text of the post comments in order to clean this kind
+            of data to analyze them later. The next techniques will be used:
+                - Translate the text to English language.
+                - Remove punctuation marks, stop words, numbers and non-sense words.
+                - Transform each letter to lower-case.
+                - Transform emojis to text."""
+        # Check if there are comments
+        if ('comments' in self.user_data):
+            comments = self.user_data['comments']
+            if (type(comments) != dict or len(comments) == 0):
+                raise CommentsDictNotFound("ERROR. Post comments should be a non-empty list.")
+                
+            preprocessed_comments = []
+            """Google Translator object."""
+            translator = Translator()
+            """Pattern to get the stop words in English"""
+            pattern = re.compile(r'\b(' + r'|'.join(stopwords.words('english')) + r')\b\s*')
+            for post in comments:
+                for comment in comments[post]:
+                    # Translate to English
+                    p_com = (translator.translate(comment['comment'], dest="en")).text
+                    # Lower-case
+                    p_com = p_com.lower()
+                    # Remove numbers
+                    p_com = re.sub(r"\d+", "", p_com)
+                    # Remove stop words in English
+                    p_com = pattern.sub('', p_com)
+                    # Remove punctuation marks
+                    p_com = re.sub(r'[¡#@¿\'\"\[!#?\],.:";*]', '', p_com)
+                    # Remove non-sense words, like loose letters
+                    p_com = ' '.join( [w for w in p_com.split() if len(w)>1] )
+                    # Emojis to text
+                    p_com = emoji.demojize(p_com)
+                    p_com = p_com.replace(":"," ")
+                    p_com = ' '.join(p_com.split())
+                    """Store the preprocessed comment text"""
+                    preprocessed_comments.append({'user':comment['user'], 'preproc_comment':p_com})
+            
+            return preprocessed_comments
+        else:
+            raise CommentsDictNotFound("ERROR. There aren't any comments to preprocess.")
+    
+    ###########################################################################
+    ######################### MONGODB OPERATIONS #########################
     def add_user_data(self, username, user_data, collection, social_media):
+        """Inserts user data into a MongoDB collection adding three fields:
+            - An id which is the username.
+            - The current date, which along the previous field, they are the 'primary key'.
+            - The social media source from the user data have been downloaded."""
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. Invalid username.")
         if (len(user_data) == 0 or type(user_data) != dict):

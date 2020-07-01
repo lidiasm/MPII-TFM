@@ -236,6 +236,45 @@ def test1_preprocess_user_data():
     result = data.preprocess_user_data()
     assert type(result) == dict
 
+def test1_preprocess_text_comments():
+    """Test the behaviour of the method which preprocesses the text of the post
+        comments providing a empty comments list. It will raise an exception."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = []
+    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(CommentsDictNotFound):
+        assert data.preprocess_text_comments()
+        
+def test2_preprocess_text_comments():
+    """Test the behaviour of the method which preprocesses the text of the post
+        comments without providing them. It will raise an exception."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    user_data = {'profile':profile, 'posts':posts}
+    data = commondata.CommonData(test_collection, user_data)
+    with pytest.raises(CommentsDictNotFound):
+        assert data.preprocess_text_comments()
+        
+def test3_preprocess_text_comments():
+    """Test the behaviour of the method which preprocesses the text of the post
+        comments. A list of preprocessed comments will be returned."""
+    profile = {'username':'Lidia'}
+    posts = {'123654': {'likes': '367', 'comments': '12'}}
+    comments = {'123654':[{'user': 'je', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
+       {'user': 'je2', 'comment': '🤤🤤🤤'}, 
+       {'user': 'je3', 'comment': 'quien volviera'},
+       {'user': 'je4', 'comment': 'Te como'}, 
+       {'user': 'je5', 'comment': 'Guapo 😍'}, 
+       {'user': 'je6', 'comment': '😍😍😍'}, 
+       {'user': 'je7', 'comment': 'Que cara tieneees'}, 
+       {'user': 'je8', 'comment': 'Tu que eres tan guapo y tan listoooo'}]}
+    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+    data = commondata.CommonData(test_collection, user_data)
+    preprocessed_comments = data.preprocess_text_comments()
+    assert type(preprocessed_comments) == list
+
 def test1_add_user_data():
     """Test to check that user data is preprocessed and inserted in the test 
         collection of the database. We make sure the user data don't already exist by
@@ -252,7 +291,7 @@ def test1_add_user_data():
     followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
     user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
-                 'comments':comments, 'followers':followers, 'followings':followings}
+                  'comments':comments, 'followers':followers, 'followings':followings}
     data = commondata.CommonData(test_collection, user_data)
     prep_data = data.preprocess_user_data()
     result = data.add_user_data(profile['username'], prep_data, 'test', 'Instagram')
@@ -275,7 +314,7 @@ def test3_add_user_data():
     followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
     user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
-                 'comments':comments, 'followers':followers, 'followings':followings}
+                  'comments':comments, 'followers':followers, 'followings':followings}
     data = commondata.CommonData(test_collection, user_data)
     prep_data = data.preprocess_user_data()
     
@@ -292,7 +331,7 @@ def test4_add_user_data():
     followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
     user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
-                 'comments':comments, 'followers':followers, 'followings':followings}
+                  'comments':comments, 'followers':followers, 'followings':followings}
     data = commondata.CommonData(test_collection, user_data)
     prep_data = data.preprocess_user_data()
     
@@ -309,7 +348,7 @@ def test5_add_user_data():
     followers = ['anaortiz', 'luciav']
     followings = ['anaortiz', 'luciav']
     user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
-                 'comments':comments, 'followers':followers, 'followings':followings}
+                  'comments':comments, 'followers':followers, 'followings':followings}
     data = commondata.CommonData(test_collection, user_data)
     prep_data = data.preprocess_user_data()
     
