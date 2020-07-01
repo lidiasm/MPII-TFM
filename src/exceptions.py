@@ -115,3 +115,18 @@ class InvalidConditions(Exception):
         from the PostgresSQL database are not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
+        
+class APIKeyNotFound(Exception):
+    """Class exception to point out that the MonkeyLearn API Key has not been provided."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class ModelIdNotFound(Exception):
+    """Class exception to point out that the model ID of the MonkeyLearn API is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class CommentsListNotFound(Exception):
+    """Class exception to point out that post comments should be a list."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
