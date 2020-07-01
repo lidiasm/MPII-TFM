@@ -15,6 +15,8 @@ from exceptions import ProfileDictNotFound, UsernameNotFound, ContactsListsNotFo
 from datetime import date
 from googletrans import Translator
 import re
+import nltk 
+nltk.download('stopwords')
 from nltk.corpus import stopwords
 import emoji
 
