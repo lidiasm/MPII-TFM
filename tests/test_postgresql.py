@@ -73,7 +73,7 @@ def test5_insert_item():
             "biography":"\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
             "gender":"None", "profile_pic":"https://instagram.fsvq2-1.fna.fbcdn.net/v/t51.2885-19/s150x150/41339801_165526391018445_41443638382690304_n.jpg?_nc_ht=instagram.fsvq2-1.fna.fbcdn.net&_nc_ohc=hW7KS56GF7gAX_uMtm4&oh=1e8b084cced54e7208f8d459cff3ed95&oe=5F1A6F0A",
             "location":"None", "birthday":"None", "n_followers":60, "n_followings":80,
-            "date_joined":"None", "n_medias":6, "id":"lidia.96.sm", "date":"2020-06-21" }
+            "date_joined":"None", "n_medias":6, "social_media":"Instagram", "id":"lidia.96.sm", "date":"2020-06-21" }
     result = test_connection.insert_item(data, TABLE)
     assert result == True
 

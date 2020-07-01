@@ -28,7 +28,7 @@ class PostgreSQL:
         self.cursor = self.connection.cursor()
         self.fields = {'profiles':['username', 'date', 'name', 'userid', 'biography',
                           'gender', 'profile_pic', 'location', 'birthday', 'date_joined',
-                          'n_followers', 'n_followings', 'n_medias']}
+                          'n_followers', 'n_followings', 'n_medias', 'social_media']}
         self.condition_commands = ['WHERE', 'ORDER BY']
 
     def insert_item(self, new_item, table):
@@ -51,7 +51,7 @@ class PostgreSQL:
 
         table_fields_str = '(' + ','.join(self.fields[table]) + ')'
         insert_query = "INSERT INTO "+ table + " " + table_fields_str \
-            + " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            + " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         list_values = []
         for f in self.fields[table]:
             list_values.append(new_item[f])
