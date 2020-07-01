@@ -12,6 +12,23 @@ import main_ops
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
     , InvalidSocialMediaSource
 
+def test1_get_user_instagram_common_data():
+    """Test to check if the method can get, preprocess and store an Instagram user data."""
+    try:
+        mo = main_ops.MainOperations()
+        username = "lidia.96.sm"
+        result = mo.get_user_instagram_common_data(username)
+        assert result['profile'] != None and result['contacts'] != None and result['posts'] != None
+    except MaxRequestsExceed:
+        print("Max requests exceed. Wait to send more.")
+
+def test2_get_user_instagram_common_data():
+    """Test to check if the method can get, preprocess and store an Instagram user
+        data without specifing the username."""
+    mo = main_ops.MainOperations()
+    with pytest.raises(UsernameNotFound):
+        assert mo.get_user_instagram_common_data('')
+        
 def test1_preprocess_and_store_common_data():
     """Test to check the method which preprocesses and stores user data without
         providing the user data."""
@@ -39,20 +56,3 @@ def test3_preprocess_and_store_common_data():
     mo = main_ops.MainOperations()
     result = mo.preprocess_and_store_common_data(user_data, "Instagram")
     assert type(result) == dict
-    
-def test1_get_user_instagram_common_data():
-    """Test to check if the method can get, preprocess and store an Instagram user data."""
-    try:
-        mo = main_ops.MainOperations()
-        username = "lidia.96.sm"
-        result = mo.get_user_instagram_common_data(username)
-        assert result['profile'] != None and result['contacts'] != None and result['posts'] != None
-    except MaxRequestsExceed:
-        print("Max requests exceed. Wait to send more.")
-
-def test2_get_user_instagram_common_data():
-    """Test to check if the method can get, preprocess and store an Instagram user
-        data without specifing the username."""
-    mo = main_ops.MainOperations()
-    with pytest.raises(UsernameNotFound):
-        assert mo.get_user_instagram_common_data('')
