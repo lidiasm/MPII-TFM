@@ -7,5 +7,5 @@ test:
 	python3 -B -m pytest --disable-warnings tests/*
 	# Coverage tests.
 	## --cov-report=html
-	python3 -B -m pytest --disable-warnings --cov=mongodb \
+	python3 -B -m pytest --disable-warnings --cov=data_analyzer --cov=mongodb \
     	--cov=postgresql --cov=commondata --cov=main_ops --cov=api tests/
