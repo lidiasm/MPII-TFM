@@ -116,17 +116,39 @@ class InvalidConditions(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class APIKeyNotFound(Exception):
-    """Class exception to point out that the MonkeyLearn API Key has not been provided."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class ModelIdNotFound(Exception):
-    """Class exception to point out that the model ID of the MonkeyLearn API is not found."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
 class CommentsListNotFound(Exception):
     """Class exception to point out that post comments should be a list."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class SentimentAnalysisNotFound(Exception):
+    """Class exception to point out that the sentiment analysis is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class BehaviourAnalysisNotFound(Exception):
+    """Class exception to point out that the behaviour patterns found by the
+        sentiment analysis is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class InvalidSentiment(Exception):
+    """Class exception to point out that the specified sentiment for the behaviour
+        patterns is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class ProfilesListNotFound(Exception):
+    """Class exception to point out that the list of profiles is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidBarPlotData(Exception):
+    """Class exception to point out that the provided data to draw a bar plot are not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class InvalidBarPlotColors(Exception):
+    """Class exception to point out that the provided colors to draw a bar plot are not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
