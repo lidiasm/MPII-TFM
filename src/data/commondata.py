@@ -201,7 +201,7 @@ class CommonData:
         """Stores user data in the specified collection of a Mongo database."""
         # Primary keys: (user id, date)
         user_data['id'] = username
-        user_data['date'] = str(date.today())
+        user_data['date'] = (date.today()).strftime("%d-%m-%Y")
         # Social media data source
         user_data['social_media'] = social_media
         # Update the collection
