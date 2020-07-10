@@ -143,12 +143,12 @@ class ProfilesListNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class InvalidBarPlotData(Exception):
-    """Class exception to point out that the provided data to draw a bar plot are not right."""
+class InvalidPlotData(Exception):
+    """Class exception to point out that the provided data to draw some kind of plot are not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
-class InvalidBarPlotColors(Exception):
-    """Class exception to point out that the provided colors to draw a bar plot are not right."""
+class InvalidPlotType(Exception):
+    """Class exception to point out that the provided plot type is not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje

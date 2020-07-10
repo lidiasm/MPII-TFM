@@ -8,10 +8,13 @@ These methods are:
 
 @author: Lidia Sánchez Mérida
 """
+import random
 import os
 import numpy as np
 from datetime import datetime
 import matplotlib.pyplot as plt
+# Style like R plots
+plt.style.use('ggplot')
 # Sentiment Analysis Library
 import nltk
 nltk.download('vader_lexicon')
@@ -19,8 +22,8 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from exceptions import CommentsListNotFound, CommentsDictNotFound \
     , SentimentAnalysisNotFound, BehaviourAnalysisNotFound, InvalidSentiment \
-    , ProfilesListNotFound, ProfileDictNotFound, UsernameNotFound, InvalidBarPlotData \
-    , InvalidBarPlotColors
+    , ProfilesListNotFound, ProfileDictNotFound, UsernameNotFound, InvalidPlotData \
+    , InvalidPlotType
 
 class DataAnalyzer:
     
@@ -28,46 +31,37 @@ class DataAnalyzer:
         """Constructor. Attributes:
             - The maximum number of users to plot in the method with gets the friends/heaters method.
             - The sentiments to analyze friends/haters users based in their comments.
-            - The general path and the specific paths in which the plots will be saved."""
+            - The general path and the specific paths in which the plots will be saved.
+            - The list of colors avalaible for line plots.
+        """
         self.max_n_users = 10
         self.sentiments = ["pos", "neg"]
         self.common_plots_path = "./images/"
         self.profev_path = "profiles evolutions/"
         self.behaviours_path = "behaviour patterns/"
-    
-    def bar_plot(self, values, x_labels, y_label, plot_title, file_title, colors):
+        self.colors_line_plots = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+
+    def pie_plot(self, values, labels, plot_title, file_title, colors=None):
         """Method which draws a bar plot providing the positions of the elements,
             their values, the labels of the X axis and the color(s) of each bar."""
         # Check the provided data
-        if (type(values) != list or type(x_labels) != list
-            or len(values) == 0 or len(x_labels) == 0):
-            raise InvalidBarPlotData("ERROR. Values and x_labels should be non emtpy list.")
+        if (type(values) != list or type(labels) != list or len(values) == 0  or len(labels) == 0):
+            raise InvalidPlotData("ERROR. Values and labels should be non emtpy lists.")
         # Values and x_labels should have the same lenght to be plotted
-        if (len(values) != len(x_labels)):
-            raise InvalidBarPlotData("ERROR. Values and x_labels should have the same lenght.")
+        if (len(values) != len(labels)):
+            raise InvalidPlotData("ERROR. Values and labels should have the same lenght.")
         # Check strings like y_label, plot_title and file_title
-        if (type(y_label) != str or type(plot_title) != str or type(file_title) != str or
-            file_title == ""):
-            raise InvalidBarPlotData("ERROR. The y_label, plot and file title should be non empty strings.")
-        
-        # Check colors type
+        if (type(plot_title) != str or type(file_title) != str or file_title == ""):
+            raise InvalidPlotData("ERROR. The plot and file title should be non empty strings.")
+        # Check the colors
         if (type(colors) != str and type(colors) != list):
-            raise InvalidBarPlotColors("ERROR. One color should be a non empty strings. Many colors should be in a non emtpy list.")
+            colors = np.random.rand(len(values),3)
         
-        """New bar plot"""
-        plt.figure(figsize=(8, 8))
-        positions = np.arange(len(values))
-        if (type(colors) == str and colors != ""):
-            bars = plt.bar(positions, values, align='center', alpha=0.5, color=colors)
-        
-        if (type(colors) == list and len(colors) > 0):
-            bars = plt.bar(positions, values, align='center', alpha=0.5)
-            for i in range(0, len(colors)):
-                bars[i].set_color(colors[i])
-        
-        plt.xticks(positions, x_labels, rotation='45')
-        plt.ylabel(y_label)
-        plt.title(plot_title)
+        """New pie plot"""
+        plt.figure()
+        plt.pie(values, labels=labels, colors=colors, autopct='%1.1f%%', shadow=True, startangle=140)
+        plt.axis('equal')
+        plt.title(plot_title, pad=25, weight="bold", fontsize=15)
         now = datetime.now()
         current_time = now.strftime("%d_%m_%Y_%H_%M_%S")
         file_title = self.common_plots_path+file_title+"_"+current_time+".png"
@@ -75,6 +69,54 @@ class DataAnalyzer:
         
         return os.path.isfile(file_title)
         
+    def bar_and_line_plot(self, plot_type, values, x_labels, y_label, plot_title, file_title):
+        """Method which draws a bar plot or a line plot by providing the values to
+            represent and the labels for each one of them. A Y title label, the plot
+            title and the file title should also be provided.
+            The color of each bar will be chosen randomly as well as the colors of the line
+            and the marker for the line plots.
+        """
+        # Check the chosen type of plot
+        if (type(plot_type) != str or plot_type == "" or (plot_type != "B" and plot_type != "L")):
+            raise InvalidPlotType("ERROR. The plot type should be 'B' for bar plot or 'L' for line plot.")
+        # Check the provided data
+        if (type(values) != list or type(x_labels) != list or len(values) == 0 or len(x_labels) == 0):
+            raise InvalidPlotData("ERROR. Values and x_labels should be non emtpy list.")
+        # Values and x_labels should have the same lenght to be plotted
+        if (len(values) != len(x_labels)):
+            raise InvalidPlotData("ERROR. Values and x_labels should have the same lenght.")
+        # Check strings like y_label, plot_title and file_title
+        if (type(y_label) != str or type(plot_title) != str or type(file_title) != str or
+            file_title == ""):
+            raise InvalidPlotData("ERROR. The y_label, plot and file title should be non empty strings.")
+        
+        plt.figure(figsize=(8, 8))
+        positions = np.arange(len(values))
+        """New bar plot (B) or new line plot (L)"""
+        if (plot_type == "B"):
+            """Generate the colors for the bar plot."""
+            colors = np.random.rand(len(values),3)
+            plt.bar(positions, values, align='center', alpha=0.5, color=colors)
+        elif (plot_type == "L"):
+            """Choose two colors randomly for the line and the marker."""
+            line_color = random.randint(0, len(values)-1)
+            marker_color = random.randint(0, len(values)-1)
+            while (line_color == marker_color):
+                marker_color = random.randint(0, len(values)-1)
+            # Different colors for the line and the marker
+            plt.plot(positions, values, color=self.colors_line_plots[line_color], 
+                     mec=self.colors_line_plots[marker_color] ,linestyle="--", marker="o", lw=3, mew=5)
+            
+        plt.xticks(positions, x_labels, rotation='45')
+        plt.ylabel(y_label)
+        plt.title(plot_title, weight="bold")
+        now = datetime.now()
+        current_time = now.strftime("%d_%m_%Y_%H_%M_%S")
+        file_title = self.common_plots_path+file_title+"_"+current_time+".png"
+        plt.savefig(file_title)
+        
+        return os.path.isfile(file_title)
+    
     def profile_evolution(self, profiles):
         """Method that analyzes the number of posts, followings and followers of
             the profile of a specific user during a certain period. 
@@ -99,25 +141,35 @@ class DataAnalyzer:
         
         """Sort the profiles by the date."""
         sorted_profiles = sorted(profiles, key = lambda i: i['date'])
-        dates = [prof['date'] for prof in sorted_profiles]
-        n_followers = [prof['n_followers'] for prof in sorted_profiles]
-        n_followings = [prof['n_followings'] for prof in sorted_profiles]
-        n_medias = [prof['n_medias'] for prof in sorted_profiles]
-        users = [prof['username'] for prof in sorted_profiles]
+        """Get each field separately to plot them. (MAX 10 USERS)."""
+        dates = [prof['date'] for prof in sorted_profiles][0:self.max_n_users]
+        n_followers = [prof['n_followers'] for prof in sorted_profiles][0:self.max_n_users]
+        n_followings = [prof['n_followings'] for prof in sorted_profiles][0:self.max_n_users]
+        n_medias = [prof['n_medias'] for prof in sorted_profiles][0:self.max_n_users]
+        users = [prof['username'] for prof in sorted_profiles][0:self.max_n_users]
         
         if ( len(set(users)) > 1 ):
             raise UsernameNotFound("ERROR. All profiles should be from the same user.")
             
         """Plot three graphs for followers, followings and posts evolution."""
-        plot_followers = self.bar_plot(n_followers, dates, "Number of followers", "Followers Evolution of user "+profiles[0]['username'],
-              self.profev_path+"followers_ev_"+profiles[0]['username'], "blue")
-        plot_followings = self.bar_plot(n_followings, dates, "Number of followings", "Followings Evolution of user "+profiles[0]['username'],
-              self.profev_path+"followings_ev_"+profiles[0]['username'], "cyan")
-        plot_medias = self.bar_plot(n_medias, dates, "Number of posts", "Posts Evolution of user "+profiles[0]['username'],
-              self.profev_path+"posts_ev_"+profiles[0]['username'], "magenta")
+        plot_followers = self.bar_and_line_plot("L", n_followers, dates, "Number of followers", "Followers Evolution of user "+profiles[0]['username'],
+              self.profev_path+"followers_ev_"+profiles[0]['username'])
+        plot_followings = self.bar_and_line_plot("L", n_followings, dates, "Number of followings", "Followings Evolution of user "+profiles[0]['username'],
+              self.profev_path+"followings_ev_"+profiles[0]['username'])
+        plot_medias = self.bar_and_line_plot("L", n_medias, dates, "Number of posts", "Posts Evolution of user "+profiles[0]['username'],
+              self.profev_path+"posts_ev_"+profiles[0]['username'])
         
         return plot_followers and plot_followings and plot_medias
     
+    # def get_fav_posts(self, posts):
+    #     """Method which gets the favourites/non favourites posts according to the
+    #         number of likes or comments. The (non) fav posts will be drawn in a bar
+    #         plot in order to represent the results in a image.
+            
+    #         The provided data should be a list of dictionaries in which each one 
+    #         is post data with fields such as the number of likes and comments. 
+    #     """
+            
     def comments_sentiment_analyzer(self, data):
         """Method that analyzes the feelings of the post comments of a specific user
             in order to get the sentiment and its confidence degree. Both fields will
@@ -222,8 +274,8 @@ class DataAnalyzer:
                     "negative\n"+str(round(order_ga['neg'][1]*100,3))+"%"]
         values = [order_ga['pos'][0], order_ga['neu'][0], order_ga['neg'][0]]
         
-        return (self.bar_plot(values, x_labels, "Number of comments", "General Behaviour Patterns",
-                      self.behaviours_path+"general_behaviour", ['green', 'yellow', 'red']))
+        return(self.pie_plot(values, x_labels, "General Behaviour Patterns",
+             self.behaviours_path+"general_behaviour", ['lightgreen', 'gold', 'lightcoral']))
         
     def get_haters_or_friends(self, behaviour_data, sentiment):
         """Method which plots the users who wrote positive/negative comments in the
@@ -267,14 +319,12 @@ class DataAnalyzer:
         """Order the users by their mean confidence degree of the choosen sentiment."""
         sorted_user_analysis = sorted(user_analysis, key = lambda i: (i['n_comments'],i['mean_pol']), reverse=True)
  
-        """Plot the analysis results."""
+        """Plot the analysis results. (MAX 10 USERS)."""
         x_labels = []
         for record in sorted_user_analysis:
             x_labels.append(record['user'] + "\n" + str(round(record['mean_pol']*100,3)) + " %")
             
         values = [record['n_comments'] for record in sorted_user_analysis]
-        color = "red"
-        if (sentiment == 'pos'): color="green"
         
-        return (self.bar_plot(values, x_labels, "Number of comments", "Plot "+sentiment+" comments",
-                      self.behaviours_path+sentiment+"_comments", color))
+        return (self.bar_and_line_plot("B", values[0:self.max_n_users], x_labels[0:self.max_n_users], "Number of comments", "Plot "+sentiment+" comments",
+                      self.behaviours_path+sentiment+"_comments"))
