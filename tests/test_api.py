@@ -13,7 +13,7 @@ sys.path.append("src")
 sys.path.append("src/data")
 from api import Api
 from exceptions import InvalidCredentials, UsernameNotFound, MaxRequestsExceed \
-    , InvalidUserId, InvalidLimit, PostsDictNotFound
+    , InvalidUserId, InvalidLimit, PostsListNotFound, PostDictNotFound
 import os
 
 """Store the right username to connect to the API to test the connection
@@ -88,10 +88,10 @@ def test3_get_levpasha_instagram_posts():
         LevPasha Instagram API."""
     try:
         global profile     
-        if (type(profile) == dict):
+        if (type(profile) == dict and len(profile) > 0):
             global posts
             posts = api.get_levpasha_instagram_posts(user_id=profile['userid'])
-            assert type(posts) == dict
+            assert type(posts) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
 
@@ -106,17 +106,33 @@ def test2_get_levpasha_instagram_posts_likers():
     """Test to check the behaviour of the method which gets the usernames of 
         the Instagram users who liked the posts of the specific user without
         providing their posts. It will raise an exception."""
-    with pytest.raises(PostsDictNotFound):
+    with pytest.raises(PostsListNotFound):
         api.get_levpasha_instagram_posts_likers(search_user, {})
 
 def test3_get_levpasha_instagram_posts_likers():
+    """Test to check the behaviour of the method which gets the usernames of 
+        the Instagram users who liked the posts of the specific user without
+        providing valid posts. It will raise an exception."""
+    invalid_posts = [1234]
+    with pytest.raises(PostDictNotFound):
+        api.get_levpasha_instagram_posts_likers(search_user, invalid_posts)
+        
+def test4_get_levpasha_instagram_posts_likers():
+    """Test to check the behaviour of the method which gets the usernames of 
+        the Instagram users who liked the posts of the specific user without
+        providing valid posts. It will raise an exception."""
+    invalid_posts = [{'post':13}]
+    with pytest.raises(PostDictNotFound):
+        api.get_levpasha_instagram_posts_likers(search_user, invalid_posts)
+
+def test5_get_levpasha_instagram_posts_likers():
     """Test to get the usernames of the Instagram users who liked the posts
         of a specific user."""
     try:
         global posts
-        if (type(posts) == dict):
+        if (type(posts) == list and len(posts) > 0):
             likers = api.get_levpasha_instagram_posts_likers(search_user, posts)
-            assert type(likers) == dict
+            assert type(likers) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
         
@@ -131,17 +147,33 @@ def test2_get_levpasha_instagram_posts_comments():
     """Test to check the behaviour of the method which gets the comments wrote
         by Instagram users to the posts of a specific user without
         providing their posts. It will raise an exception."""
-    with pytest.raises(PostsDictNotFound):
+    with pytest.raises(PostsListNotFound):
         api.get_levpasha_instagram_posts_comments(search_user, {})
 
 def test3_get_levpasha_instagram_posts_comments():
+    """Test to check the behaviour of the method which gets the comments wrote
+        by Instagram users to the posts of a specific user without
+        providing valid posts. It will raise an exception."""
+    invalid_posts = [1234]
+    with pytest.raises(PostDictNotFound):
+        api.get_levpasha_instagram_posts_comments(search_user, invalid_posts)
+        
+def test4_get_levpasha_instagram_posts_comments():
+    """Test to check the behaviour of the method which gets the comments wrote
+        by Instagram users to the posts of a specific user without
+        providing valid posts. It will raise an exception."""
+    invalid_posts = [{'post':13}]
+    with pytest.raises(PostDictNotFound):
+        api.get_levpasha_instagram_posts_comments(search_user, invalid_posts)
+
+def test5_get_levpasha_instagram_posts_comments():
     """Test to get the the comments wrote by Instagram users to the posts
         of a specific user. Their usernames will be stored too."""
     try:
         global posts
-        if (type(posts) == dict):
+        if (type(posts) == list and len(posts) > 0):
             comments = api.get_levpasha_instagram_posts_comments(search_user, posts)
-            assert type(comments) == dict
+            assert type(comments) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
         

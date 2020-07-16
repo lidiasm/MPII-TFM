@@ -13,7 +13,7 @@ from os import path
 import sys
 sys.path.append("../")
 from exceptions import InvalidCredentials, UsernameNotFound, MaxRequestsExceed \
-    , InvalidUserId, InvalidLimit, PostsDictNotFound
+    , InvalidUserId, InvalidLimit, PostsListNotFound, PostDictNotFound
 from InstagramAPI import InstagramAPI
 import time 
 import pickle
@@ -60,7 +60,7 @@ class Api:
         # Gets the profile of the user
         self.connection.searchUsername(search_user)
         # Exception when the max number of requests has been exceeded
-        if (self.connection.LastJson['status'].lower() != 'ok'):
+        if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
             
         # Profile with the interesting fields
@@ -90,7 +90,7 @@ class Api:
         if (type(limit) != int or limit <= 0):
             raise InvalidLimit("ERROR. The post limit should be a number greater than 0.")
         
-        posts = {}
+        posts = []
         more_posts = True
         max_id = ""
         n_downloaded_posts = 0
@@ -104,8 +104,7 @@ class Api:
             max_id = self.connection.LastJson.get('next_max_id', '')
             items_list = self.connection.LastJson['items']
             for i in items_list:
-                #n_downloaded_posts += 1
-                posts[i['id']] = {'likes':i['like_count'], 'comments':i['comment_count']}
+                posts.append({'id_post':i['id'], 'likes':i['like_count'], 'comments':i['comment_count']})
             
             n_downloaded_posts += len(items_list)
             if (n_downloaded_posts >= limit): break
@@ -119,40 +118,56 @@ class Api:
             user posts."""
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
-        if (type(posts) != dict or len(posts) == 0):
-            raise PostsDictNotFound("ERROR. There aren't any posts to get their likers.")
+        if (type(posts) != list or len(posts) == 0):
+            raise PostsListNotFound("ERROR. There aren't any posts to get their likers.")
         
-        likers = {}
+        """Iterate over each post and each user who liked it."""
+        all_likers = []
         for post in posts:
-            self.connection.getMediaLikers(post)
-            if (self.connection.LastJson['status'].lower() != 'ok'):
-                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+            # Check each post
+            if (type(post) != dict or len(post) == 0):
+                raise PostDictNotFound("ERROR. Each post should be a non empty dict.")
+            if ('id_post' not in post):
+                raise PostDictNotFound("ERROR. Each post should have its id.")
                 
-            # Get likers and their number of likes
+            self.connection.getMediaLikers(post['id_post'])
+            # Prevent max requests exception
+            if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
+                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
+            
             if ('users' in self.connection.LastJson):
                 users = self.connection.LastJson['users']
+                # Get the usernames of the people who liked the current post
                 for user in users:
-                    if (user['username'] in likers):
-                        likers[user['username']] += 1
-                    elif (user['username'] != username):
-                        likers[user['username']] = 1
+                    if (user['username'] != username):
+                        all_likers.append(user['username'])
+                    
             """Wait some time to avoid flooding the servers."""
             time.sleep(20)
-                    
-        return likers
-    
+        
+        """Count number of likes for each user and sort them in order to show the fans first."""
+        count_likes = {user:all_likers.count(user) for user in all_likers}
+        
+        return sorted(count_likes.items(), key=lambda k:k[1], reverse=True) 
+     
     def get_levpasha_instagram_posts_comments(self, username, posts):
         """Gets the comments made by Instagram users to the posts of a specific user."""
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
-        if (type(posts) != dict or len(posts) == 0):
-            raise PostsDictNotFound("ERROR. There aren't any posts to get their likers.")
+        if (type(posts) != list or len(posts) == 0):
+            raise PostsListNotFound("ERROR. There aren't any posts to get their likers.")
         
-        comments = {}
+        comments = []
         for post in posts:
-            # MAX 20 COMMENTS
-            self.connection.getMediaComments(post)
-            if (self.connection.LastJson['status'].lower() != 'ok'):
+            # Check each post
+            if (type(post) != dict or len(post) == 0):
+                raise PostDictNotFound("ERROR. Each post should be a non empty dict.")
+            if ('id_post' not in post):
+                raise PostDictNotFound("ERROR. Each post should have its id.")
+                
+            # MAX 20 COMMENTS PER POST
+            self.connection.getMediaComments(post['id_post'])
+            if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
                 raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
             # Save the user who wrote the comment and the text
             if ('comments' in self.connection.LastJson):
@@ -163,7 +178,7 @@ class Api:
                         comments_list.append({'user':comm['user']['username'], 'comment':comm['text']})
                 
                 """Add the comments of the post"""
-                comments[post] = comments_list
+                comments.append({'id_post':post['id_post'], 'comments':comments_list})
             
             """Wait some time to avoid flooding the servers."""
             time.sleep(20)
@@ -179,7 +194,7 @@ class Api:
             
         # Max 100 followings
         self.connection.getUserFollowings(user_id)
-        if (self.connection.LastJson['status'].lower() != 'ok'):
+        if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
         # List of usernames of the followings 
         followings_usernames = []
@@ -192,7 +207,7 @@ class Api:
             
         # Max 100 followers
         self.connection.getUserFollowers(user_id)
-        if (self.connection.LastJson['status'].lower() != 'ok'):
+        if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")  
         # List of usernames of the followers
         followers_usernames = []
@@ -223,9 +238,7 @@ class Api:
             # Likers
             likers = self.get_levpasha_instagram_posts_likers(user_data['profile']['username'],
                 user_data['posts'])
-            """Likers in descending order to show the fans first."""
-            sorted_likers = sorted(likers.items(), key=lambda k:k[1], reverse=True) 
-            user_data['likers'] = sorted_likers
+            user_data['likers'] = dict(likers)
             time.sleep(30)
             # Comments of the posts
             user_data['comments'] = self.get_levpasha_instagram_posts_comments(
@@ -238,7 +251,7 @@ class Api:
             user_data['followings'] = contacts[0]
             user_data['followers'] = contacts[1]
             
-        except MaxRequestsExceed:
+        except MaxRequestsExceed:   # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
         
         return user_data
