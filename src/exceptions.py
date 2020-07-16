@@ -83,8 +83,25 @@ class IdNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class PostsDictNotFound(Exception):
-    """Class exception to point out that a record doesn't have an id."""
+class InvalidPreferences(Exception):
+    """Class exception to point out that the provided preferences for a post evolution
+        are not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class PostDictNotFound(Exception):
+    """Class exception to point out a post should be a dict."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class DuplicatedPost(Exception):
+    """Class exception to point out that one post has been inserted more than once
+        in the same list of posts."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class InvalidMongoDbObject(Exception):
+    """Class exception to point out that the provided MongoDB object is not found."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
@@ -115,9 +132,19 @@ class InvalidConditions(Exception):
         from the PostgresSQL database are not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
+
+class PostCommentNotFound(Exception):
+    """Class exception to point out that the provided post data is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
         
 class CommentsListNotFound(Exception):
     """Class exception to point out that post comments should be a list."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class CommentDictNotFound(Exception):
+    """Class exception to point out that a comment should be a dict."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
@@ -139,6 +166,11 @@ class InvalidSentiment(Exception):
         self.mensaje = mensaje
         
 class ProfilesListNotFound(Exception):
+    """Class exception to point out that the list of profiles is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class PostsListNotFound(Exception):
     """Class exception to point out that the list of profiles is not found."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
