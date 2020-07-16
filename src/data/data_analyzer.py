@@ -19,11 +19,12 @@ plt.style.use('ggplot')
 import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+# Preprocess common data
+import commondata
 
 from exceptions import CommentsListNotFound, CommentsDictNotFound \
     , SentimentAnalysisNotFound, BehaviourAnalysisNotFound, InvalidSentiment \
-    , ProfilesListNotFound, ProfileDictNotFound, UsernameNotFound, InvalidPlotData \
-    , InvalidPlotType
+    , ProfilesListNotFound, UsernameNotFound, InvalidPlotData, InvalidPlotType, InvalidPreferences
 
 class DataAnalyzer:
     
@@ -33,13 +34,20 @@ class DataAnalyzer:
             - The sentiments to analyze friends/haters users based in their comments.
             - The general path and the specific paths in which the plots will be saved.
             - The list of colors avalaible for line plots.
+            - A CommonData object to preprocess the provided data for each analysis.
+            - Allowed values to perform a post evolution in order to specify the 
+                type of the post to analyze as well as the media resource which will be used for it.
         """
         self.max_n_users = 10
         self.sentiments = ["pos", "neg"]
         self.common_plots_path = "./images/"
         self.profev_path = "profiles evolutions/"
+        self.posts_path = "posts evolutions/"
         self.behaviours_path = "behaviour patterns/"
         self.colors_line_plots = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
+        self.common_data_obj = commondata.CommonData()
+        self.posts_types = ['favs', 'non-favs', 'both']
+        self.posts_medias = ['likes', 'comments', 'both']
 
     def pie_plot(self, values, labels, plot_title, file_title, colors=None):
         """Method which draws a bar plot providing the positions of the elements,
@@ -52,7 +60,7 @@ class DataAnalyzer:
             raise InvalidPlotData("ERROR. Values and labels should have the same lenght.")
         # Check strings like y_label, plot_title and file_title
         if (type(plot_title) != str or type(file_title) != str or file_title == ""):
-            raise InvalidPlotData("ERROR. The plot and file title should be non empty strings.")
+            raise InvalidPlotData("ERROR. The plot and file title should be non-empty strings.")
         # Check the colors
         if (type(colors) != str and type(colors) != list):
             colors = np.random.rand(len(values),3)
@@ -88,7 +96,7 @@ class DataAnalyzer:
         # Check strings like y_label, plot_title and file_title
         if (type(y_label) != str or type(plot_title) != str or type(file_title) != str or
             file_title == ""):
-            raise InvalidPlotData("ERROR. The y_label, plot and file title should be non empty strings.")
+            raise InvalidPlotData("ERROR. The y_label, plot and file title should be non-empty strings.")
         
         plt.figure(figsize=(8, 8))
         positions = np.arange(len(values))
@@ -124,23 +132,18 @@ class DataAnalyzer:
             user from a social media but from different dates.
             
             Three plots will drawed in order to represent the evolutions of the 
-                number of followings, followers and posts.
+            number of followings, followers and posts.
         """
         # Check the list of profiles
         if (type(profiles) != list or len(profiles) < 2):
-            raise ProfilesListNotFound("ERROR. A non empty list of profiles should be provided.")
-            
-        # Check the profiles from the same user
+            raise ProfilesListNotFound("ERROR. A non-empty list of profiles should be provided.")
+        # Preprocess the different from the same user
+        preprocessed_profiles = []
         for prof in profiles:
-            if (type(prof) != dict or len(prof) == 0):
-                raise ProfileDictNotFound("ERROR. A user profile should be a non empty dict.")
-            if ('username' not in prof or 'date' not in prof or 'n_followers'not in prof 
-                or 'n_followings' not in prof or 'n_medias' not in prof):
-                raise ProfileDictNotFound("ERROR. The profile should have a username, date, number of "+
-                      "followers, followings and posts.")
+            preprocessed_profiles.append(self.common_data_obj.preprocess_profile(prof))
         
         """Sort the profiles by the date."""
-        sorted_profiles = sorted(profiles, key = lambda i: i['date'])
+        sorted_profiles = sorted(preprocessed_profiles, key = lambda i: i['date'])
         """Get each field separately to plot them. (MAX 10 USERS)."""
         dates = [prof['date'] for prof in sorted_profiles][0:self.max_n_users]
         n_followers = [prof['n_followers'] for prof in sorted_profiles][0:self.max_n_users]
@@ -152,23 +155,55 @@ class DataAnalyzer:
             raise UsernameNotFound("ERROR. All profiles should be from the same user.")
             
         """Plot three graphs for followers, followings and posts evolution."""
-        plot_followers = self.bar_and_line_plot("L", n_followers, dates, "Number of followers", "Followers Evolution of user "+profiles[0]['username'],
-              self.profev_path+"followers_ev_"+profiles[0]['username'])
-        plot_followings = self.bar_and_line_plot("L", n_followings, dates, "Number of followings", "Followings Evolution of user "+profiles[0]['username'],
-              self.profev_path+"followings_ev_"+profiles[0]['username'])
-        plot_medias = self.bar_and_line_plot("L", n_medias, dates, "Number of posts", "Posts Evolution of user "+profiles[0]['username'],
-              self.profev_path+"posts_ev_"+profiles[0]['username'])
+        plot_followers = self.bar_and_line_plot("L", n_followers, dates, 
+            "Number of followers", "Followers Evolution of user "+preprocessed_profiles[0]['username'],
+              self.profev_path+"followers_ev_"+preprocessed_profiles[0]['username'])
+        plot_followings = self.bar_and_line_plot("L", n_followings, dates, 
+             "Number of followings", "Followings Evolution of user "+preprocessed_profiles[0]['username'],
+              self.profev_path+"followings_ev_"+preprocessed_profiles[0]['username'])
+        plot_medias = self.bar_and_line_plot("L", n_medias, dates, "Number of posts", 
+             "Posts Evolution of user "+preprocessed_profiles[0]['username'],
+              self.profev_path+"posts_ev_"+preprocessed_profiles[0]['username'])
         
         return plot_followers and plot_followings and plot_medias
-    
-    # def get_fav_posts(self, posts):
-    #     """Method which gets the favourites/non favourites posts according to the
-    #         number of likes or comments. The (non) fav posts will be drawn in a bar
-    #         plot in order to represent the results in a image.
+        
+    def sort_and_plot_posts(self, username, sort_by, favs, posts):
+        """Method which gets the favs/non-favs posts related to the number of 
+            likes/comments of a specific user. The results will be plotted in a bar plot.
             
-    #         The provided data should be a list of dictionaries in which each one 
-    #         is post data with fields such as the number of likes and comments. 
-    #     """
+            In order to tell the type of analysis there are two parameters:
+                - sort_b could be 'likes' or 'comments', in order to sort the posts
+                    related to one of these fields.
+                - favs could be True if you want to plot the favourite posts or False
+                    if you want to get the non-favourite plots.
+        """
+        # Check the provided username who owns the posts
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        # Check the provided preferences to sort the posts
+        if (type(sort_by) != str or (sort_by != 'likes' and sort_by != 'comments')):
+            raise InvalidPreferences("ERROR. The field sort_by only could be the string 'likes' or 'comments'.")
+        if (type(favs) != bool or (favs != True and favs != False)):
+            raise InvalidPreferences("ERROR. The field favs only could True or False.")     
+        # Preprocess the provided posts
+        preprocessed_posts = self.common_data_obj.preprocess_posts(posts)
+        """Sort posts by likes or comments in ascending order for non-favs or descending order for favs."""
+        sorted_posts = sorted(preprocessed_posts, key = lambda i: i[sort_by], reverse=favs)
+        
+        """Get data to draw the line plot. MAX 10 POSTS"""
+        id_posts = [post['id_post'] for post in sorted_posts][0:self.max_n_users]
+        count = [post[sort_by] for post in sorted_posts][0:self.max_n_users]
+        # Plot title and file name
+        title = "Favourite posts by "+sort_by+" of user "+username
+        post_type = "favs"
+        if (not favs): 
+            title = "Non-favourite posts by "+sort_by+" of user "+username
+            post_type="non_favs"
+        
+        plot_posts = self.bar_and_line_plot("B", count, id_posts, "Number of "+sort_by, 
+                title, self.posts_path+post_type+"_posts_by_"+sort_by+"_"+username)
+        
+        return plot_posts
             
     def comments_sentiment_analyzer(self, data):
         """Method that analyzes the feelings of the post comments of a specific user
@@ -176,7 +211,7 @@ class DataAnalyzer:
             be added to the original data so each comment has its sentiment and confidence degree."""
         # Check the list of comments
         if (type(data) != list or len(data) == 0):
-            raise CommentsListNotFound("ERROR. The comments to analyze should be a non empty list.")
+            raise CommentsListNotFound("ERROR. The comments to analyze should be a non-empty list.")
         # Check each comment (user, preproc_comment)
         sent_analyzer = SentimentIntensityAnalyzer()
         for record in data:
@@ -203,7 +238,7 @@ class DataAnalyzer:
         """
         # Check the list of comments
         if (type(sentiment_analysis) != list or len(sentiment_analysis) == 0):
-            raise SentimentAnalysisNotFound("ERROR. The sentiment analysis should be a non empty list.")
+            raise SentimentAnalysisNotFound("ERROR. The sentiment analysis should be a non-empty list.")
         # Check each analyzed comment (user, preproc_comment, sentiment, confidence)
         list_users = []
         shown_users = []
@@ -246,7 +281,7 @@ class DataAnalyzer:
             be a sentiment analysis."""
         # Check the list of comments
         if (type(sentiment_analysis) != list or len(sentiment_analysis) == 0):
-            raise SentimentAnalysisNotFound("ERROR. The sentiment analysis should be a non empty list.")
+            raise SentimentAnalysisNotFound("ERROR. The sentiment analysis should be a non-empty list.")
         
         general_analysis = {'pos':(0,0), 'neu':(0,0), 'neg':(0,0)}
         # Check each analyzed comment (user, preproc_comment, sentiment, confidence)
@@ -287,14 +322,14 @@ class DataAnalyzer:
         """
         # Check the choosen sentiment
         if (type(sentiment) != str or sentiment == ""):
-            raise InvalidSentiment("ERROR. The sentiment to plot should be a non empty string.")
+            raise InvalidSentiment("ERROR. The sentiment to plot should be a non-empty string.")
         
         if (sentiment.lower() not in self.sentiments):
             raise InvalidSentiment("ERROR. The sentiment should be: positive or negative.")
             
         # Check the provided data
         if (type(behaviour_data) != list or len(behaviour_data) == 0):
-            raise BehaviourAnalysisNotFound("ERROR. The behaviour patterns should be a non empty list.")
+            raise BehaviourAnalysisNotFound("ERROR. The behaviour patterns should be a non-empty list.")
         
         user_analysis = []
         for record in behaviour_data:

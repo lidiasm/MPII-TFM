@@ -13,7 +13,7 @@ sys.path.append("src/data")
 import data_analyzer 
 from exceptions import InvalidPlotData, CommentsListNotFound, CommentsDictNotFound \
     , SentimentAnalysisNotFound, BehaviourAnalysisNotFound, InvalidSentiment \
-    , ProfilesListNotFound, ProfileDictNotFound, UsernameNotFound, InvalidPlotType
+    , ProfilesListNotFound, UsernameNotFound, InvalidPlotType, InvalidPreferences
     
 """DataAnalyzer object to run the data analyzer methods"""
 da = data_analyzer.DataAnalyzer()
@@ -109,32 +109,6 @@ def test1_profile_evolution():
         assert da.profile_evolution([])
 
 def test2_profile_evolution():
-    """Test to check the method which gets the evolution of some fields from
-        a user profile such us the number of followers, followings and medias.
-        In this case the provided data is not valid so it will raise an exception."""
-    with pytest.raises(ProfileDictNotFound):
-        assert da.profile_evolution([1, 2])      
-        
-def test3_profile_evolution():
-    """Test to check the method which gets the evolution of some fields from
-        a user profile such us the number of followers, followings and medias.
-        In this case the provided data is not valid so it will raise an exception."""
-    with pytest.raises(ProfileDictNotFound):
-        assert da.profile_evolution([{'user':'u1'}, {'user':'u2'}])
-        
-def test4_profile_evolution():
-    """Test to check the method which gets the evolution of some fields from
-        a user profile such us the number of followers, followings and medias.
-        In this case the provided data are two profiles from different users
-        so it will raise an exception."""
-    profile1 = {"username" : "lidia.96.sm", "n_followings":124, "n_followers" : 61,
-                "n_medias":24, "date" : "27-06-2020"}
-    profile2 = {"username" : "leila.59", "n_followings":124, "n_followers" : 61,
-                "n_medias":125, "date" : "26-06-2020"}
-    with pytest.raises(UsernameNotFound):
-        assert da.profile_evolution([profile1, profile2])
-
-def test5_profile_evolution():
     """Test to get the evolution of some fields from a user profile drawing them
         in bar plots."""
     profile1 = {"username" : "lidia.96.sm", "n_followings":120, "n_followers" : 122,
@@ -150,6 +124,61 @@ def test5_profile_evolution():
     profile6 = {"username" : "lidia.96.sm", "n_followings":85, "n_followers" : 10,
                 "n_medias":15, "date" : "10-06-2020"}
     assert da.profile_evolution([profile1, profile2, profile3, profile4, profile5, profile6]) == True
+    
+def test3_profile_evolution():
+    """Test to get the evolution of some fields from a user profile drawing them
+        in bar plots."""
+    profile1 = {"username" : "lidia.96.sm", "n_followings":120, "n_followers" : 122,
+                "n_medias":30, "date" : "27-06-2020"}
+    profile2 = {"username" : "isa", "n_followings":115, "n_followers" : 89,
+                "n_medias":28, "date" : "26-06-2020"}
+    with pytest.raises(UsernameNotFound):
+        da.profile_evolution([profile1, profile2])
+        
+def test1_sort_and_plot_posts():
+    """Test to check the method which plots the favs/non-favs posts sorted by
+        comments or likes without providing the username of the user who owns the
+        posts. An exception will be raised."""
+    with pytest.raises(UsernameNotFound):
+         assert da.sort_and_plot_posts("", None, None, None)
+         
+def test2_sort_and_plot_posts():
+    """Test to check the method which plots the favs/non-favs posts sorted by
+        comments or likes without providing a valid field to sort the posts (likes/comments).
+        An exception will be raised."""
+    with pytest.raises(InvalidPreferences):
+         assert da.sort_and_plot_posts("lidia.96.sm", None, None, None)
+    
+def test3_sort_and_plot_posts():
+    """Test to check the method which plots the favs/non-favs posts sorted by
+        comments or likes without providing a valid way to sort the posts 
+        (favs=descending order/non-favs=ascending order). An exception will be raised."""
+    with pytest.raises(InvalidPreferences):
+        assert da.sort_and_plot_posts("lidia.96.sm", 'likes', 1234, None)
+
+def test4_sort_and_plot_posts():
+    """Test to get the favs posts sorted by likes of a specific user."""
+    posts = [ { "id_post" : "1", "likes" : 29, "comments" : 14 }, 
+             { "id_post" : "2", "likes" : 45, "comments" : 50 },
+             { "id_post" : "3", "likes" : 120, "comments" : 250 },
+             { "id_post" : "4", "likes" : 135, "comments" : 360 },
+             { "id_post" : "5", "likes" : 115, "comments" : 69 },
+             { "id_post" : "6", "likes" : 78, "comments" : 95 },
+             { "id_post" : "7", "likes" : 112, "comments" : 34 },]
+    result = da.sort_and_plot_posts("lidia.96.sm", 'likes', True, posts)
+    assert result == True
+    
+def test5_sort_and_plot_posts():
+    """Test to get the non-favs posts sorted by comments of a specific user."""
+    posts = [ { "id_post" : "1", "likes" : 29, "comments" : 14 }, 
+             { "id_post" : "2", "likes" : 45, "comments" : 50 },
+             { "id_post" : "3", "likes" : 120, "comments" : 250 },
+             { "id_post" : "4", "likes" : 135, "comments" : 360 },
+             { "id_post" : "5", "likes" : 115, "comments" : 69 },
+             { "id_post" : "6", "likes" : 78, "comments" : 95 },
+             { "id_post" : "7", "likes" : 112, "comments" : 34 },]
+    result = da.sort_and_plot_posts("lidia.96.sm", 'comments', False, posts)
+    assert result == True
     
 def test1_comments_sentiment_analyzer():
     """Test to check the sentiment analyzer without providing the right type of
