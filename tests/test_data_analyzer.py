@@ -13,7 +13,7 @@ sys.path.append("src/data")
 import data_analyzer 
 from exceptions import InvalidPlotData, CommentsListNotFound, CommentsDictNotFound \
     , SentimentAnalysisNotFound, BehaviourAnalysisNotFound, InvalidSentiment \
-    , ProfilesListNotFound, UsernameNotFound, InvalidPlotType, InvalidPreferences
+    , ProfilesListNotFound, UsernameNotFound, InvalidPreferences
     
 """DataAnalyzer object to run the data analyzer methods"""
 da = data_analyzer.DataAnalyzer()
@@ -46,7 +46,7 @@ def test4_pie_plot():
     labels = ['positive', 'neutral', 'negative']
     colors = ['yellowgreen', 'gold', 'lightcoral']
     title = "Test pie plot"
-    file_name = "test_pie_plot"
+    file_name = da.test_plots+"test_pie_plot"
     assert da.pie_plot(values, labels, title, file_name, colors) == True
 
 def test5_pie_plot():
@@ -54,53 +54,48 @@ def test5_pie_plot():
     values = [10, 5, 2]
     labels = ['positive', 'neutral', 'negative']
     title = "Test pie plot"
-    file_name = "test_pie_plot_2"
+    file_name = da.test_plots+"test_pie_plot_2"
     assert da.pie_plot(values, labels, title, file_name) == True
 
-def test1_bar_and_line_plot():
-    """Test to check the method which draws bar/line plots without a valid plot type.
-        It will raise an exception."""
-    with pytest.raises(InvalidPlotType):
-        assert da.bar_and_line_plot("", {}, {}, {}, {}, {})
+def test1_bar_plot():
+    with pytest.raises(InvalidPlotData):
+        assert da.bar_plot(None, None, None, None, None)
 
-def test2_bar_and_line_plot():
-    """Test to check the method which draws bar/line plots without a valid plot type.
-        It will raise an exception."""
-    with pytest.raises(InvalidPlotData):
-        assert da.bar_and_line_plot("B", {}, {}, {}, {}, {})
-
-def test3_bar_and_line_plot():
-    """Test to check the method which draws bar plots without providing valid data.
-        It will raise an exception. It will raise an exception."""
-    values = [10, 5, 2, 15, 8, 9]
+def test2_bar_plot():
+    values = [5, 2, 15, 8, 9]
     x_labels = ['user1', 'user3', 'user5', 'user2', 'user10']
     with pytest.raises(InvalidPlotData):
-        assert da.bar_and_line_plot("B",values, x_labels, {}, {}, {})
+        assert da.bar_plot(values, x_labels, None, None, None)
         
-def test4_bar_and_line_plot():
-    """Test to check the method which draws bar plots without providing valid data.
-        It will raise an exception. It will raise an exception."""
-    values = [10, 5, 2, 15, 8]
+def test3_bar_plot():
+    values = [5, 2, 15, 8, 9]
     x_labels = ['user1', 'user3', 'user5', 'user2', 'user10']
-    with pytest.raises(InvalidPlotData):
-        assert da.bar_and_line_plot("B",values, x_labels, {}, {}, {})
-        
-def test5_bar_and_line_plot():
-    """Test to draw a bar plot about user data storing it into a file choosing the
-        color of each bar randomly."""
-    values = [10, 5, 2, 15, 8]
-    x_labels = ['user1', 'user3', 'user5', 'user2', 'user10']
-    result = da.bar_and_line_plot("B", values, x_labels, "Users", "Test bar plot", "test_bar_plot",)
+    result = da.bar_plot(values, x_labels, "Test values", "Test bar plot", da.test_plots+"test_bar_plot")
     assert result == True
 
-def test6_bar_and_line_plot():
-    """Test to draw a line plot about user data storing it into a file choosing the
-        color of the line and the marker randomly."""
-    values = [10, 5, 2, 15, 8]
-    x_labels = ['user1', 'user3', 'user5', 'user2', 'user10']
-    result = da.bar_and_line_plot("L", values, x_labels, "Users", "Test line plot", "test_line_plot",)
-    assert result == True
+def test1_lines_plot():
+    with pytest.raises(InvalidPlotData):
+        assert da.lines_plot([1,2,3,4], None, None, None, None, None)
 
+def test2_lines_plot():
+    values = [[1,5,4], [3,6,9], [7,2,0]]
+    with pytest.raises(InvalidPlotData):
+        assert da.lines_plot(values, None, None, None, None, None)
+        
+def test3_lines_plot():
+    values = [[1,5,4], [3,6,9], [7,2,0]]
+    legend_labels = ["line 1", "line 2", "line 3"]
+    x_labels = ["26/07", "27/07", "29/07"]
+    with pytest.raises(InvalidPlotData):
+        assert da.lines_plot(values, legend_labels, x_labels, None, 123, None)
+    
+def test4_lines_plot():
+    values = [[1,5,4], [3,6,9], [7,2,0]]
+    legend_labels = ["line 1", "line 2", "line 3"]
+    x_labels = ["26/07", "27/07", "29/07"]
+    result = da.lines_plot(values, legend_labels, x_labels, "Test values", "Test lines plot", da.test_plots+"test_lines_plot")
+    assert result == True
+        
 def test1_profile_evolution():
     """Test to check the method which gets the evolution of some fields from
         a user profile such us the number of followers, followings and medias.
@@ -140,14 +135,14 @@ def test1_sort_and_plot_posts():
         comments or likes without providing the username of the user who owns the
         posts. An exception will be raised."""
     with pytest.raises(UsernameNotFound):
-         assert da.sort_and_plot_posts("", None, None, None)
+          assert da.sort_and_plot_posts("", None, None, None)
          
 def test2_sort_and_plot_posts():
     """Test to check the method which plots the favs/non-favs posts sorted by
         comments or likes without providing a valid field to sort the posts (likes/comments).
         An exception will be raised."""
     with pytest.raises(InvalidPreferences):
-         assert da.sort_and_plot_posts("lidia.96.sm", None, None, None)
+          assert da.sort_and_plot_posts("lidia.96.sm", None, None, None)
     
 def test3_sort_and_plot_posts():
     """Test to check the method which plots the favs/non-favs posts sorted by
@@ -159,24 +154,24 @@ def test3_sort_and_plot_posts():
 def test4_sort_and_plot_posts():
     """Test to get the favs posts sorted by likes of a specific user."""
     posts = [ { "id_post" : "1", "likes" : 29, "comments" : 14 }, 
-             { "id_post" : "2", "likes" : 45, "comments" : 50 },
-             { "id_post" : "3", "likes" : 120, "comments" : 250 },
-             { "id_post" : "4", "likes" : 135, "comments" : 360 },
-             { "id_post" : "5", "likes" : 115, "comments" : 69 },
-             { "id_post" : "6", "likes" : 78, "comments" : 95 },
-             { "id_post" : "7", "likes" : 112, "comments" : 34 },]
+              { "id_post" : "2", "likes" : 45, "comments" : 50 },
+              { "id_post" : "3", "likes" : 120, "comments" : 250 },
+              { "id_post" : "4", "likes" : 135, "comments" : 360 },
+              { "id_post" : "5", "likes" : 115, "comments" : 69 },
+              { "id_post" : "6", "likes" : 78, "comments" : 95 },
+              { "id_post" : "7", "likes" : 112, "comments" : 34 },]
     result = da.sort_and_plot_posts("lidia.96.sm", 'likes', True, posts)
     assert result == True
     
 def test5_sort_and_plot_posts():
     """Test to get the non-favs posts sorted by comments of a specific user."""
     posts = [ { "id_post" : "1", "likes" : 29, "comments" : 14 }, 
-             { "id_post" : "2", "likes" : 45, "comments" : 50 },
-             { "id_post" : "3", "likes" : 120, "comments" : 250 },
-             { "id_post" : "4", "likes" : 135, "comments" : 360 },
-             { "id_post" : "5", "likes" : 115, "comments" : 69 },
-             { "id_post" : "6", "likes" : 78, "comments" : 95 },
-             { "id_post" : "7", "likes" : 112, "comments" : 34 },]
+              { "id_post" : "2", "likes" : 45, "comments" : 50 },
+              { "id_post" : "3", "likes" : 120, "comments" : 250 },
+              { "id_post" : "4", "likes" : 135, "comments" : 360 },
+              { "id_post" : "5", "likes" : 115, "comments" : 69 },
+              { "id_post" : "6", "likes" : 78, "comments" : 95 },
+              { "id_post" : "7", "likes" : 112, "comments" : 34 },]
     result = da.sort_and_plot_posts("lidia.96.sm", 'comments', False, posts)
     assert result == True
     

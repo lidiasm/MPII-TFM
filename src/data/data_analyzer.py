@@ -41,6 +41,7 @@ class DataAnalyzer:
         self.max_n_users = 10
         self.sentiments = ["pos", "neg"]
         self.common_plots_path = "./images/"
+        self.test_plots = "tests/"
         self.profev_path = "profiles evolutions/"
         self.posts_path = "posts evolutions/"
         self.behaviours_path = "behaviour patterns/"
@@ -76,48 +77,63 @@ class DataAnalyzer:
         plt.savefig(file_title)
         
         return os.path.isfile(file_title)
-        
-    def bar_and_line_plot(self, plot_type, values, x_labels, y_label, plot_title, file_title):
-        """Method which draws a bar plot or a line plot by providing the values to
-            represent and the labels for each one of them. A Y title label, the plot
-            title and the file title should also be provided.
-            The color of each bar will be chosen randomly as well as the colors of the line
-            and the marker for the line plots.
-        """
-        # Check the chosen type of plot
-        if (type(plot_type) != str or plot_type == "" or (plot_type != "B" and plot_type != "L")):
-            raise InvalidPlotType("ERROR. The plot type should be 'B' for bar plot or 'L' for line plot.")
+    
+    def bar_plot(self, values, x_labels, y_label, plot_title, file_title):
+        """Method which draws a bar plot by providing the values to represents
+            and the labels for each one of them. A Y label, plot title and file title
+            should be also provided. The colours will be chosen randomly."""
         # Check the provided data
-        if (type(values) != list or type(x_labels) != list or len(values) == 0 or len(x_labels) == 0):
-            raise InvalidPlotData("ERROR. Values and x_labels should be non emtpy list.")
-        # Values and x_labels should have the same lenght to be plotted
-        if (len(values) != len(x_labels)):
-            raise InvalidPlotData("ERROR. Values and x_labels should have the same lenght.")
+        if (type(values) != list or type(x_labels) != list):
+            raise InvalidPlotData("ERROR. Values and x_labels should be non-emtpy lists.")
         # Check strings like y_label, plot_title and file_title
-        if (type(y_label) != str or type(plot_title) != str or type(file_title) != str or
-            file_title == ""):
+        if (type(y_label) != str or type(plot_title) != str or type(file_title) != str or file_title == ""):            
             raise InvalidPlotData("ERROR. The y_label, plot and file title should be non-empty strings.")
         
         plt.figure(figsize=(8, 8))
         positions = np.arange(len(values))
-        """New bar plot (B) or new line plot (L)"""
-        if (plot_type == "B"):
-            """Generate the colors for the bar plot."""
-            colors = np.random.rand(len(values),3)
-            plt.bar(positions, values, align='center', alpha=0.5, color=colors)
-        elif (plot_type == "L"):
-            """Choose two colors randomly for the line and the marker."""
-            line_color = random.randint(0, len(values)-1)
-            marker_color = random.randint(0, len(values)-1)
-            while (line_color == marker_color):
-                marker_color = random.randint(0, len(values)-1)
-            # Different colors for the line and the marker
-            plt.plot(positions, values, color=self.colors_line_plots[line_color], 
-                     mec=self.colors_line_plots[marker_color] ,linestyle="--", marker="o", lw=3, mew=5)
-            
+        colors = np.random.rand(len(values),3)
+        plt.bar(positions, values, align='center', alpha=0.5, color=colors)
         plt.xticks(positions, x_labels, rotation='45')
         plt.ylabel(y_label)
         plt.title(plot_title, weight="bold")
+        now = datetime.now()
+        current_time = now.strftime("%d_%m_%Y_%H_%M_%S")
+        file_title = self.common_plots_path+file_title+"_"+current_time+".png"
+        plt.savefig(file_title)
+        
+        return os.path.isfile(file_title)
+    
+    def lines_plot(self, list_values, legend_labels, x_labels, y_label, plot_title, file_title):
+        """Method which draws many lines in one plot by providing a list of values
+            and the labels to name each item. A Y label, plot title and file title
+            should be also provided. The colours will be chosen randomly."""
+        # Check the provided values
+        if (type(list_values) != list or len(list_values) == 0 or 
+            not all(isinstance(record, list) for record in list_values)):
+            raise InvalidPlotData("ERROR. Values should be a non-empty list of lists.")
+        # Check the provided legend labels
+        if (type(legend_labels) != list or len(legend_labels) == 0 or
+            type(x_labels) != list or len(x_labels) == 0):
+            raise InvalidPlotData("ERROR. The labels of the legend and the X axis labels should be a non-empty lists.")
+        # Check the rest of the provided data
+        if (type(y_label) != str or type(plot_title) != str or type(file_title) != str or file_title == ""):
+            raise InvalidPlotData("ERROR. The y_label, plot and file title should be non-empty strings.")
+        
+        """Draws each list of values in the same plot."""
+        plt.figure(figsize=(8, 8))
+        for i in range(0, len(list_values)):
+            positions = np.arange(len(list_values[i]))
+            # Different colors for the line and the marker
+            color = i%len(self.colors_line_plots)
+            plt.plot(positions, list_values[i], color=self.colors_line_plots[color], 
+                      mec=self.colors_line_plots[color] ,linestyle="--", 
+                      marker="o", lw=3, mew=5, label=legend_labels[i])
+        
+        """General plot data"""
+        plt.xticks(positions, x_labels, rotation='45')
+        plt.ylabel(y_label)
+        plt.title(plot_title, weight="bold")
+        plt.legend()
         now = datetime.now()
         current_time = now.strftime("%d_%m_%Y_%H_%M_%S")
         file_title = self.common_plots_path+file_title+"_"+current_time+".png"
@@ -155,17 +171,11 @@ class DataAnalyzer:
             raise UsernameNotFound("ERROR. All profiles should be from the same user.")
             
         """Plot three graphs for followers, followings and posts evolution."""
-        plot_followers = self.bar_and_line_plot("L", n_followers, dates, 
-            "Number of followers", "Followers Evolution of user "+preprocessed_profiles[0]['username'],
-              self.profev_path+"followers_ev_"+preprocessed_profiles[0]['username'])
-        plot_followings = self.bar_and_line_plot("L", n_followings, dates, 
-             "Number of followings", "Followings Evolution of user "+preprocessed_profiles[0]['username'],
-              self.profev_path+"followings_ev_"+preprocessed_profiles[0]['username'])
-        plot_medias = self.bar_and_line_plot("L", n_medias, dates, "Number of posts", 
-             "Posts Evolution of user "+preprocessed_profiles[0]['username'],
-              self.profev_path+"posts_ev_"+preprocessed_profiles[0]['username'])
+        plot_evolution = self.lines_plot([n_followers, n_followings, n_medias],
+                 ['Followers', 'Followings', 'Posts'], dates, "Values", "Profile evolution of user "+
+                 preprocessed_profiles[0]['username'], self.profev_path+"posts_ev_"+preprocessed_profiles[0]['username'])
         
-        return plot_followers and plot_followings and plot_medias
+        return plot_evolution
         
     def sort_and_plot_posts(self, username, sort_by, favs, posts):
         """Method which gets the favs/non-favs posts related to the number of 
@@ -200,7 +210,7 @@ class DataAnalyzer:
             title = "Non-favourite posts by "+sort_by+" of user "+username
             post_type="non_favs"
         
-        plot_posts = self.bar_and_line_plot("B", count, id_posts, "Number of "+sort_by, 
+        plot_posts = self.bar_plot(count, id_posts, "Number of "+sort_by, 
                 title, self.posts_path+post_type+"_posts_by_"+sort_by+"_"+username)
         
         return plot_posts
@@ -361,5 +371,5 @@ class DataAnalyzer:
             
         values = [record['n_comments'] for record in sorted_user_analysis]
         
-        return (self.bar_and_line_plot("B", values[0:self.max_n_users], x_labels[0:self.max_n_users], "Number of comments", "Plot "+sentiment+" comments",
+        return (self.bar_plot(values[0:self.max_n_users], x_labels[0:self.max_n_users], "Number of comments", "Plot "+sentiment+" comments",
                       self.behaviours_path+sentiment+"_comments"))
