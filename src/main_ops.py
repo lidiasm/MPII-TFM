@@ -31,11 +31,11 @@ class MainOperations:
         try:
             """Download Instagram user data"""
             user_instagram_data = inst_api.get_levpasha_instagram_data(search_user)
+            return user_instagram_data
             """Preprocess and store user data"""
             user_data = self.preprocess_and_store_common_data(user_instagram_data, 'Instagram')
             return user_data
-
-        except MaxRequestsExceed:
+        except MaxRequestsExceed:   # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
 
     def preprocess_and_store_common_data(self, user_data, social_media):
@@ -46,8 +46,8 @@ class MainOperations:
             raise InvalidSocialMediaSource("ERROR. Social media type should be a non empty string.")
 
         # Preprocess data
-        cd = commondata.CommonData(self.mongodb, user_data)
-        prep_user_data = cd.preprocess_user_data()
+        cd = commondata.CommonData(self.mongodb)
+        prep_user_data = cd.preprocess_user_data(user_data)
         """Store preprocessed user profile to MongoDB collection 'profiles'"""
         profile = cd.add_user_data(prep_user_data['profile']['username'],
             prep_user_data['profile'], 'profiles', social_media)
