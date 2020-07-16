@@ -39,18 +39,18 @@ class MongoDB:
             raise CollectionNotFound("There's no connection to the database.")
         if (new_item == None or len(new_item) == 0):
             raise NewItemNotFound("The new item doesn't exist.")
-        
-        """Insert the new element if it's not already in the collection. If it
-            is, new data from the user can't be inserted in the same day."""
+            
+        """Search for user data in the same date in order to not insert the new data."""
         items = self.get_item_records('id', new_item['id'])
         item_exists = False
+        today_date = (date.today()).strftime("%d-%m-%Y")
         for item in items:
-            if (items[item]['date'] == str(date.today())):
+            if (items[item]['id'] == new_item['id'] and items[item]['date'] == today_date):
                 item_exists = True
                 break
-            
+        
         if (items == None or not item_exists):
-            id_new_item = self.collection.insert_one(new_item.copy()).inserted_id
+            id_new_item = self.collection.insert_one(new_item.copy(), bypass_document_validation=True).inserted_id
             return str(id_new_item)
     
     def get_item_records(self, key, value):

@@ -25,24 +25,33 @@ def test1_insert():
         test_connection.empty_collection()
     except EmptyCollection:
         print("Empty collection")
-    data = {'id':'1', 'date':str(date.today()), 
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
             'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
             'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
     id_new_item = test_connection.insert(data)
     assert id_new_item != None
 
 def test2_insert():
+    """Test to check the insert method with a valid user data which already exists.
+        So the insert method won't insert the item."""
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
+            'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
+            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
+    id_new_item = test_connection.insert(data)
+    assert id_new_item == None
+
+def test3_insert():
     """Test to check the insert method without a valid new item."""
     data = {}
     with pytest.raises(NewItemNotFound):
         test_connection.insert(data)
       
-def test3_insert():
+def test4_insert():
     """Test to check the insert method without a valid collection. In order to
         do that we create another connection and modify to make it invalid."""
     invalid_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
     invalid_connection.collection = None
-    data = {'id':'1', 'date':str(date.today()), 
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
             'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
             'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
     with pytest.raises(CollectionNotFound):
