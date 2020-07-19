@@ -3,6 +3,7 @@ pytest-cov>=2.10.0
 codecov
 pymongo
 InstagramApi
+pandas>=1.0.5 
 pg8000>=1.15.3
 googletrans>=3.0.0
 emoji>=0.5.4
