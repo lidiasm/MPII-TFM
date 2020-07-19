@@ -8,7 +8,7 @@ These methods are:
 
 @author: Lidia Sánchez Mérida
 """
-import random
+import pandas as pd
 import os
 import numpy as np
 from datetime import datetime
@@ -24,7 +24,9 @@ import commondata
 
 from exceptions import CommentsListNotFound, CommentsDictNotFound \
     , SentimentAnalysisNotFound, BehaviourAnalysisNotFound, InvalidSentiment \
-    , ProfilesListNotFound, UsernameNotFound, InvalidPlotData, InvalidPlotType, InvalidPreferences
+    , ProfilesListNotFound, UsernameNotFound, InvalidPlotData \
+    , InvalidPreferences, PostsListNotFound, InvalidUsername, InvalidRangeOfDates \
+    , LikersListNotFound, ContactsListsNotFound
 
 class DataAnalyzer:
     
@@ -45,6 +47,7 @@ class DataAnalyzer:
         self.profev_path = "profiles evolutions/"
         self.posts_path = "posts evolutions/"
         self.behaviours_path = "behaviour patterns/"
+        self.contacts_path = "contacts/"
         self.colors_line_plots = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
         self.common_data_obj = commondata.CommonData()
         self.posts_types = ['favs', 'non-favs', 'both']
@@ -141,14 +144,53 @@ class DataAnalyzer:
         
         return os.path.isfile(file_title)
     
+    def table_plot(self, values, columns, colours, file_title):
+        """Method which plots a table with the provided data and store the
+            image in a folder. In order to do that the 'value' params should be
+            a list of lists in which each one is a column values."""
+        # Check the provided list of values
+        if (type(values) != list or not all(isinstance(record, list) for record in values)):
+            raise InvalidPlotData("ERROR. Values should be a list of lists.")
+        # Check the provided columns
+        if (type(columns) != list or len(columns) == 0 or not all(isinstance(c, str) for c in columns)):
+            raise InvalidPlotData("ERROR. Columns should be a non-empty list of strings.")
+        # Check that the number of values are the same that the number of columns
+        if (len(values) != len(columns)):
+            raise InvalidPlotData("ERROR. The number of lists of values should be the same as the number of columns.")
+        # Check the provided colours
+        if (type(colours) != list or len(colours) == 0 or not all(isinstance(c, str) for c in colours)):
+            raise InvalidPlotData("ERROR. Colours should be a non-empty list of strings.")
+        # Check the provided file_title
+        if (type(file_title) != str or file_title == ""):
+            raise InvalidPlotData("ERROR. The file title should be a non-empty string.")
+        
+        """Make every list of the same size in order to plot each category."""
+        sizes = [len(record) for record in values]
+        preproc_values = []
+        for val_list in values:
+            val_list += [""] * (max(sizes) - len(val_list))
+            preproc_values.append(val_list[0:self.max_n_users])
+        
+        fig = plt.figure(dpi=80)
+        ax = fig.add_subplot(1,1,1)
+        df = pd.DataFrame(list(zip(*preproc_values)), columns=columns)
+        table = ax.table(cellText=df.values, colLabels=df.columns, colColours=colours, cellLoc='center', loc='center')
+        table.set_fontsize(11)
+        table.scale(1, 2.5)
+        ax.axis('off')
+        # Save the image
+        now = datetime.now()
+        current_time = now.strftime("%d_%m_%Y_%H_%M_%S")
+        file_title = self.common_plots_path+file_title+"_"+current_time+".png"
+        plt.savefig(file_title)
+        
+        return os.path.isfile(file_title)
+    
     def profile_evolution(self, profiles):
         """Method that analyzes the number of posts, followings and followers of
             the profile of a specific user during a certain period. 
             In order to do that, the provided data should be a list of many profiles of the same
             user from a social media but from different dates.
-            
-            Three plots will drawed in order to represent the evolutions of the 
-            number of followings, followers and posts.
         """
         # Check the list of profiles
         if (type(profiles) != list or len(profiles) < 2):
@@ -157,7 +199,7 @@ class DataAnalyzer:
         preprocessed_profiles = []
         for prof in profiles:
             preprocessed_profiles.append(self.common_data_obj.preprocess_profile(prof))
-        
+            
         """Sort the profiles by the date."""
         sorted_profiles = sorted(preprocessed_profiles, key = lambda i: i['date'])
         """Get each field separately to plot them. (MAX 10 USERS)."""
@@ -167,8 +209,9 @@ class DataAnalyzer:
         n_medias = [prof['n_medias'] for prof in sorted_profiles][0:self.max_n_users]
         users = [prof['username'] for prof in sorted_profiles][0:self.max_n_users]
         
+        # Check if all profiles belong to the same username
         if ( len(set(users)) > 1 ):
-            raise UsernameNotFound("ERROR. All profiles should be from the same user.")
+            raise InvalidUsername("ERROR. All profiles should be from the same user.")
             
         """Plot three graphs for followers, followings and posts evolution."""
         plot_evolution = self.lines_plot([n_followers, n_followings, n_medias],
@@ -214,7 +257,168 @@ class DataAnalyzer:
                 title, self.posts_path+post_type+"_posts_by_"+sort_by+"_"+username)
         
         return plot_posts
+    
+    def posts_evolution(self, username, dates, posts_list):
+        """Method which computes the sum of the number of likes and comments of 
+            all posts of a specific user in a range of dates. In order to do that
+            you should provide:
+                - The username of the user who owns the posts.
+                - The range of dates.
+                - A list of posts.
+        """
+        # Check the provided username who owns the posts
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        # Check the provided range of dates
+        if (type(dates) != list or len(dates) == 0):
+            raise InvalidRangeOfDates("ERROR. The range of dates should be a non-empty list of strings.")
+        if (not all(isinstance(date, str) for date in dates)):
+            raise InvalidRangeOfDates("ERROR. The range of dates should be a non-empty list of strings.")
+        # Check the provided list of posts
+        if (type(posts_list) != list or len(posts_list) == 0):
+            raise PostsListNotFound("ERROR. The posts should be a non-empty list of lists.")
+
+        prep_posts_list = []
+        total_likes = []
+        total_comments = []
+        """Iterate over each list of posts (dict)"""
+        for posts in posts_list:
+            prep_posts_list.append(self.common_data_obj.preprocess_posts(posts))
+            """Sum the number of likes/comments of all posts for each date"""
+            total_likes.append(sum([p['likes'] for p in posts]))
+            total_comments.append(sum([p['comments'] for p in posts]))
+    
+        """Plot the results"""
+        return self.lines_plot([total_likes, total_comments], ['Likes', 'Comments'], dates, 
+            "Values", "Posts evolution by likes and comments of user " + username, 
+            self.posts_path+"posts_evolution_"+username)
+    
+    def followers_activity(self, username, likers, comments, followers, sort_by, favs, table):
+        """Method which gets the activity records by likes and comments of the
+            followers, detecting the ghosts followers and the users who liked or commented
+            in the user's posts but they are not followers. In order to do that you should provide:
+                - A list of likers.
+                - A list of post comments.
+                - A list of followers.
+            The method can plot max 10 users with more/less activity by likes/comments
+            as well as a table with the ghosts and spy followers.
+        """
+        # Check the provided username who owns the posts
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        # Check the provided list of likers, comments and followings
+        preproc_likers = self.common_data_obj.preprocess_likers(likers)
+        preproc_comments = self.common_data_obj.preprocess_comments(comments)
+        preproc_contacts = self.common_data_obj.preprocess_contacts(followers, [])
+        # Check the provided preferences
+        if (sort_by != 'likes' and sort_by != 'comments'):
+            raise InvalidPreferences("ERROR. The param 'sort_by' only could be 'likes' or 'comments'.")
+        if (type(favs) != bool or type(table) != bool):
+            raise InvalidPreferences("ERROR. Params 'favs' and 'table' should be boolean.")
+        
+        """Sorted list of likers"""
+        sorted_likers = sorted(preproc_likers, key=lambda tup: tup[1], reverse=favs)
+        """List to store all users who liked or commented in the posts. We start for
+            the likers in order to add the people who wrote comments."""
+        all_users = [record[0] for record in sorted_likers]
+        """Sorted list of people who wrote comments"""
+        all_users_comments = []
+        for post in preproc_comments:
+            post_comments = [comment['user'] for comment in post['comments']]
+            all_users_comments.extend(post_comments)
             
+        all_users.extend(all_users_comments)
+        # Count the number of times they appear
+        user_comments = {user:all_users_comments.count(user) for user in all_users_comments}
+        sorted_user_comments = {k: v for k, v in sorted(user_comments.items(), key=lambda item: item[1], reverse=favs)}
+        
+        """Plot likers"""
+        if (sort_by == "likes"):
+            values = [liker[1] for liker in sorted_likers][0:self.max_n_users]
+            users = [liker[0] for liker in sorted_likers][0:self.max_n_users]
+        else:
+            values = list(sorted_user_comments.values())[0:self.max_n_users]
+            users = list(sorted_user_comments.keys())[0:self.max_n_users]
+            
+        type_likers = "more" if favs else "less"
+        title = "Users with "+type_likers+" activity by "+sort_by
+        plot_users = self.bar_plot(values, users, "Number of "+sort_by, 
+            title, self.contacts_path+"users_activity_by_"+sort_by+"_"+username)
+        
+        plot_table = False
+        if (table):
+            """Table of ghost and spy users:
+                - Ghost users: followers who didn't like or comment any post.
+                - Spy users: users who liked or commented in posts but are not followers.
+            """
+            ghosts = list(np.setdiff1d(preproc_contacts["followers"], all_users))
+            spies = list(np.setdiff1d(all_users, preproc_contacts["followers"]))            
+            plot_table = self.table_plot([ghosts, spies],
+                 [str(len(ghosts))+" Ghosts followers", str(len(spies))+" Spy users"], ["salmon", "#56b5fd"], self.contacts_path+"table_followers_"+username)
+        
+        return [plot_users, plot_table]
+    
+    def contacts_activity(self, followers_list, followings_list, username):
+        """Method which gets the new followers and followings from contacts data of a period
+            of time. It also can get the users who have followed or have been followed
+            by the username several times. An example of these type of people are the
+            users who follow other users in order to get more followers following people
+            several times.
+            The four categories will be ploted in a table.
+        """
+        # Check the provided list of followers
+        if (type(followers_list) != list or len(followers_list) == 0 or 
+            not all(isinstance(record, list) for record in followers_list)):
+            raise ContactsListsNotFound("ERROR. The followers list should be a non-empty list of lists.")
+        # Check the provided list of followings
+        if (type(followings_list) != list or len(followings_list) == 0 or 
+            not all(isinstance(record, list) for record in followings_list)):
+            raise ContactsListsNotFound("ERROR. The followings list should be a non-empty list of lists.")
+        # Check the provided username
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        
+        """Compare each par of consecutive lists from the first in order to find
+            the new followers/followings in a specific period of time."""
+        new_followers = set()
+        for i in range(0, len(followers_list)-1):
+            news = list(np.setdiff1d(followers_list[i+1], followers_list[i]))
+            new_followers.update(news)
+        new_followings = set()
+        for i in range(0, len(followings_list)-1):
+            news = list(np.setdiff1d(followings_list[i+1], followings_list[i]))
+            new_followings.update(news)
+            
+        """Count the number of times which each new user appear in each list in order
+            to know if they have been old followers or followings."""
+        old_followers = {}
+        for follower in new_followers:
+            list_times = []
+            for i in range(0, len(followers_list)):
+                if (follower in followers_list[i]): list_times.append(i)
+            """Check if the list have consecutive numbers and count the times the
+                follower hasn't been a follower."""
+            if (list_times != list(range(min(list_times), max(list_times)+1))):
+                old_followers[follower] = len(list(range(min(list_times), max(list_times)+1))) - len(list_times)
+        
+        old_followings = {}
+        for following in new_followings:
+            list_times = []
+            for i in range(0, len(followings_list)):
+                if (following in followings_list[i]): list_times.append(i)
+            """Check if the list have consecutive numbers and count the times the
+                following has been unfollowed."""
+            if (list_times != list(range(min(list_times), max(list_times)+1))):
+                old_followings[following] = len(list(range(min(list_times), max(list_times)+1))) - len(list_times)
+        
+        sorted_old_followings = {k: v for k, v in sorted(old_followings.items(), key=lambda item: item[1], reverse=True)}
+        sorted_old_followers = {k: v for k, v in sorted(old_followers.items(), key=lambda item: item[1], reverse=True)}
+        
+        return self.table_plot([list(new_followers), list(new_followings), list(sorted_old_followers.keys()), list(sorted_old_followings.keys())],
+                 [str(len(new_followers))+" New\nFollowers", str(len(new_followings))+" New\nFollowings", 
+                  str(len(sorted_old_followers))+" Old-new\nFollowers", str(len(sorted_old_followings))+" Old-new\nfollowings"], 
+                 ["#ffa533", "#33ff99", "#e033ff", "#33d4ff"], self.contacts_path+"table_contacts_"+username)
+                
     def comments_sentiment_analyzer(self, data):
         """Method that analyzes the feelings of the post comments of a specific user
             in order to get the sentiment and its confidence degree. Both fields will
