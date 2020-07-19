@@ -179,8 +179,13 @@ class InvalidPlotData(Exception):
     """Class exception to point out that the provided data to draw some kind of plot are not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-class InvalidPlotType(Exception):
-    """Class exception to point out that the provided plot type is not right."""
+        
+class InvalidUsername(Exception):
+    """Class exception to point out that the provided username is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidRangeOfDates(Exception):
+    """Class exception to point out that the provided range of dates is not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
