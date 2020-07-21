@@ -26,12 +26,12 @@ class MainOperations:
             API and stores the main fields in a MongoDB database."""
         if (search_user == None or type(search_user) != str or search_user == ""):
             raise UsernameNotFound("ERROR. Invalid username.")
-
-        inst_api = Api()
         try:
+            """Connect to the Levpasha Instagram API"""
+            inst_api = Api()
+            inst_api.connect_levpasha_instagram_api(use_session_file=False)
             """Download Instagram user data"""
             user_instagram_data = inst_api.get_levpasha_instagram_data(search_user)
-            return user_instagram_data
             """Preprocess and store user data"""
             user_data = self.preprocess_and_store_common_data(user_instagram_data, 'Instagram')
             return user_data

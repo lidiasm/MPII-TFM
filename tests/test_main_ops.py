@@ -18,8 +18,7 @@ def test1_get_user_instagram_common_data():
         mo = main_ops.MainOperations()
         username = "lidia.96.sm"
         result = mo.get_user_instagram_common_data(username)
-        assert result['profile'] != None and result['followers'] != None \
-           and result['followings'] != None and result['posts'] != None
+        assert result['profile'] != None and result['contacts'] != None and result['posts'] != None
     except MaxRequestsExceed:
         print("Max requests exceed. Wait to send more.")
 
