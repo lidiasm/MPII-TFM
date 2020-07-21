@@ -127,6 +127,14 @@ def test2_table_plot():
         assert da.table_plot(values, None, None, None)
         
 def test3_table_plot():
+    """Test to check the method which plots a table without providing the same number
+        of values and columns.
+        It will raise an exception."""
+    values = [[1,2,3], [4,5,6]]
+    with pytest.raises(InvalidPlotData):
+        assert da.table_plot(values, ['Col1', 'Col2', 'Col3'], None, None)
+        
+def test4_table_plot():
     """Test to check the method which plots a table without providing valid colours.
         It will raise an exception."""
     values = [[1,2,3], [4,5,6]]
@@ -134,7 +142,7 @@ def test3_table_plot():
     with pytest.raises(InvalidPlotData):
         assert da.table_plot(values, columns, None, None)
 
-def test4_table_plot():
+def test5_table_plot():
     """Test to check the method which plots a table without providing the same number
         of values, columns and colours. An exception will be raised."""
     values = [[1,2,3], [4,5,6]]
@@ -143,7 +151,7 @@ def test4_table_plot():
     with pytest.raises(InvalidPlotData):
         assert da.table_plot(values, columns, colours, None)
         
-def test5_table_plot():
+def test6_table_plot():
     """Test to check the method which plots a table without providing a valid file name.
         It will raise an exception."""
     values = [[1,2,3], [4,5,6]]
@@ -152,7 +160,7 @@ def test5_table_plot():
     with pytest.raises(InvalidPlotData):
         assert da.table_plot(values, columns, colours, None)
         
-def test6_table_plot():
+def test7_table_plot():
     """Test to plot a table using the provided data such as the values, the column
         names and the colours for each one of them as well as the file name and the
         path in which the image will be stored."""
