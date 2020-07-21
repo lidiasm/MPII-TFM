@@ -236,9 +236,7 @@ class Api:
             user_data['posts'] = self.get_levpasha_instagram_posts(user_data['profile']['userid'])
             time.sleep(30)
             # Likers
-            likers = self.get_levpasha_instagram_posts_likers(user_data['profile']['username'],
-                user_data['posts'])
-            user_data['likers'] = dict(likers)
+            user_data['likers'] = self.get_levpasha_instagram_posts_likers(user_data['profile']['username'], user_data['posts'])
             time.sleep(30)
             # Comments of the posts
             user_data['comments'] = self.get_levpasha_instagram_posts_comments(
