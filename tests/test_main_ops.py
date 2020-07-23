@@ -11,7 +11,7 @@ import pytest
 sys.path.append('src')
 import main_ops 
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
-    , InvalidSocialMediaSource, InvalidDatabaseCredentials
+    , InvalidSocialMediaSource, InvalidDatabaseCredentials, InvalidMongoDbObject
         
 def test1_constructor():
     """Test to check the constructor when PostgreSQL credentials are not provided to
@@ -60,8 +60,18 @@ def test2_preprocess_and_store_common_data():
     mo = main_ops.MainOperations()
     with pytest.raises(InvalidSocialMediaSource):
         assert mo.preprocess_and_store_common_data({'username':'lidia'}, None)
-
+        
 def test3_preprocess_and_store_common_data():
+    """Test to check the method which preprocesses and stores user data without
+        providing a valid MongoDB. In order to do that, the MongoDB object is set
+        to a invalid value so an exception will be raised."""
+    mo = main_ops.MainOperations()
+    mo.mongodb = ""
+    with pytest.raises(InvalidMongoDbObject):
+        assert mo.preprocess_and_store_common_data({'username':'lidia'}, "Instagram")
+
+def test4_preprocess_and_store_common_data():
+    """Test to preprocess and store user data from Instagram into the Mongo database."""
     profile = {"userid" : 123456789, "name" : "Lidia Sánchez", "username" : "lidia.96.sm", 
                 "biography" : "\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
                 "gender" : "None", "profile_pic" : "https://instagram_example", 
