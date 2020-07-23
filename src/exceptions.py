@@ -53,6 +53,12 @@ class InvalidSocialMediaSource(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
+class InvalidDatabaseCredentials(Exception):
+    """Class exception to point out that the provided credentials to connect to
+        some database are wrong."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
 class NewItemNotFound(Exception):
     """Class exception to point out that the new item to insert doesn't exist."""
     def __init__(self, mensaje):
@@ -187,5 +193,10 @@ class InvalidUsername(Exception):
         
 class InvalidRangeOfDates(Exception):
     """Class exception to point out that the provided range of dates is not right."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidAnalysis(Exception):
+    """Class exception to point out that the specified analysis to perform is not avalaible."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
