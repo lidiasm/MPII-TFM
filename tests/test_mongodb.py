@@ -6,17 +6,34 @@ of Truth which has the operations with the MongoDB database.
 
 @author: Lidia Sánchez Mérida.
 """
-
+import os 
 import sys
 sys.path.append("src")
-import os
 import pytest
-from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound
+from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound, InvalidDatabaseCredentials
 from mongodb import MongoDB
 from datetime import date
 
 """Connection to a test database with a test collection."""
-test_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+test_connection = MongoDB('test')
+
+def test1_constructor():
+    """Test to check the constructor of the Mongo database class without providing 
+        the valid MongoDB uri. An exception will be raised."""
+    global uri
+    uri = os.environ["MONGODB_URI"]
+    os.environ["MONGODB_URI"] = ""
+    with pytest.raises(InvalidDatabaseCredentials):
+        MongoDB("test")
+        
+def test2_constructor():
+    """Test to check the constructor of the Mongo database class without providing 
+        a valid collection name to connect to. An exception will be raised. Also, the
+        MongoDB uri is set again."""
+    global uri
+    os.environ["MONGODB_URI"] = uri
+    with pytest.raises(InvalidDatabaseCredentials):
+        MongoDB(1234)
 
 def test1_insert():
     """Test to check the insert method with a valid new item. In the first place,
@@ -49,7 +66,7 @@ def test3_insert():
 def test4_insert():
     """Test to check the insert method without a valid collection. In order to
         do that we create another connection and modify to make it invalid."""
-    invalid_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    invalid_connection = MongoDB('test')
     invalid_connection.collection = None
     data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
             'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
@@ -74,7 +91,7 @@ def test1_get_item_records():
 def test2_get_item_records():
     """Test to check the get item rows method without a right connection to the 
         database."""
-    new_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    new_connection = MongoDB('test')
     new_connection.collection = None
     with pytest.raises(CollectionNotFound):
         new_connection.get_item_records('id', 'pacogp')
@@ -92,14 +109,14 @@ def test1_get_collection():
 def test2_get_collection():
     """Test to check the get collection method with an empty collection. In order
         to do that we create another connection."""
-    new_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'DB')
+    new_connection = MongoDB('DB')
     with pytest.raises(EmptyCollection):
         new_connection.get_collection()
 
 def test3_get_collection():
     """Test to check the get collection method with an invalid connection. In order
         to do that we create another connection and we set the collection None."""
-    new_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    new_connection = MongoDB('test')
     new_connection.collection = None
     with pytest.raises(CollectionNotFound):
         new_connection.get_collection()
@@ -122,7 +139,7 @@ def test3_delete_item():
 def test4_delete_item():
     """Test to check the delete method when the collection doesn't exist.
         In order to do that we create another connection and set it to None."""
-    new_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    new_connection = MongoDB('test')
     new_connection.collection = None
     with pytest.raises(CollectionNotFound):
         new_connection.delete_item_records('whatever', '1')
@@ -130,7 +147,7 @@ def test4_delete_item():
 def test1_empty_collection():
     """Test to check the delete method when the collection doesn't exist. In order
         to do that we create another connection and set it to None."""
-    invalid_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    invalid_connection = MongoDB('test')
     invalid_connection.collection = None
     with pytest.raises(CollectionNotFound):
         invalid_connection.empty_collection()

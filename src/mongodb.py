@@ -9,20 +9,29 @@ MongoDB database.
 
 @author: Lidia Sánchez Mérida.
 """
-
+import os
 import pymongo
 import sys
 sys.path.append('src/exceptions')
-from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound
+from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound, InvalidDatabaseCredentials
 from datetime import date
 
 class MongoDB:
     
-    def __init__(self, uri, db, collection):
-        """Creates a new MongoDB client to access a specific collection."""
+    def __init__(self, collection):
+        """MongoDB constructor. It creates an object whose attributes are:
+            - The name of the database.
+            - The Mongo database credentials.
+            - The collection to connect to.
+        """
+        if (type(collection) != str or collection == ""):
+            raise InvalidDatabaseCredentials("ERROR. The collection name to connect to should be a non-empty string.")
+        uri = os.environ.get("MONGODB_URI")
+        if (type(uri) != str or uri == ""):
+            raise InvalidDatabaseCredentials("ERROR. The MongoDB uri should be a non-empty string stored as a env variable.")
         self.client = pymongo.MongoClient(uri)
-        self.db = db
-        self.collection = self.client[db][collection]
+        self.db = "SocialNetworksDB"
+        self.collection = self.client[self.db][collection]
         
     def set_collection(self, new_collection):
         """Sets a new collection."""
