@@ -9,26 +9,34 @@ This class will be used by all classes which operate with the PostgreSQL databas
 
 @author: Lidia Sánchez Mérida.
 """
-
+import os
 import pg8000
 import sys
 sys.path.append('src/exceptions')
 from exceptions import TableNotFound, NewItemNotFound, DatabaseFieldsNotFound \
-    , InvalidConditions, InvalidFieldsToGet
+    , InvalidConditions, InvalidFieldsToGet, InvalidDatabaseCredentials
 
 class PostgreSQL:
-
-    def __init__(self, db, user, pswd):
+    
+    def __init__(self):
         """PostgreSQL constructor. It creates an object with two attributes:
+            - The name of the database.
             - A connection to the PostgreSQL database which contains Instagram data.
             - A cursor which can be used to make queries to the database.
-            - The fields which are contained in each table of the database.
+            - The structure of each table in the database.
             - The allowed commands to use in select query conditions."""
-        self.connection = pg8000.connect(user=user, password=pswd, database=db)
+        # Class variable in which the name of the PostgreSQL database is stored.
+        DATABASE = "socialnetworksdb"
+        user = os.environ.get("POSTGRES_USER") 
+        pswd = os.environ.get("POSTGRES_PSWD")
+        if (type(user) != str or user == "" or type(pswd) != str or pswd == ""):
+            raise InvalidDatabaseCredentials("ERROR. The PostgreSQL credentials should be non-empty strings.")
+        
+        self.connection = pg8000.connect(user=user, password=pswd, database=DATABASE)
         self.cursor = self.connection.cursor()
-        self.fields = {'profiles':['username', 'date', 'name', 'userid', 'biography',
+        self.tables_structure = {'test1':['username', 'date', 'name', 'userid', 'biography',
                           'gender', 'profile_pic', 'location', 'birthday', 'date_joined',
-                          'n_followers', 'n_followings', 'n_medias', 'social_media']}
+                          'n_followers', 'n_followings', 'n_posts', 'social_media']}
         self.condition_commands = ['WHERE', 'ORDER BY']
 
     def insert_item(self, new_item, table):
@@ -42,18 +50,18 @@ class PostgreSQL:
         if (type(table) != str or table == ""):
             raise TableNotFound("The table should be a non empty string.")
         # Check if the specified table name is in the database
-        if (table not in self.fields):
+        if (table not in self.tables_structure):
             raise TableNotFound("The specified table does not exist in the database.")
         # Check the dict fields
-        for f in self.fields[table]:
+        for f in self.tables_structure[table]:
             if (f not in new_item):
                 raise DatabaseFieldsNotFound("Some required fields are not in the new item, like: "+f)
 
-        table_fields_str = '(' + ','.join(self.fields[table]) + ')'
+        table_fields_str = '(' + ','.join(self.tables_structure[table]) + ')'
         insert_query = "INSERT INTO "+ table + " " + table_fields_str \
             + " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
         list_values = []
-        for f in self.fields[table]:
+        for f in self.tables_structure[table]:
             list_values.append(new_item[f])
 
         values = tuple(list_values)
@@ -74,13 +82,13 @@ class PostgreSQL:
         if (type(table) != str or table == ""):
             raise TableNotFound("The table should be a non empty string.")
         # Check if the specified table name is in the database
-        if (table not in self.fields):
+        if (table not in self.tables_structure):
             raise TableNotFound("The specified table does not exist in the database.")
         # Check the fields to return.
         if (type(fields) != list):
             raise InvalidFieldsToGet("The fields to return should be stored in a list.")
         for field in fields:
-            if (type(field) != str or field not in self.fields[table]):
+            if (type(field) != str or field not in self.tables_structure[table]):
                 raise InvalidFieldsToGet("The fields to return should be non empty.")
         # Check the conditions
         if (type(conditions) != dict):
@@ -121,16 +129,18 @@ class PostgreSQL:
         return rows
 
     def empty_table(self, table):
-        """Method to delete all rows of a specific table without deleting it."""
+        """Method which deletes all rows of a specific table. If it has some
+            foreign keys, with the argument CASCADE it deletes all the rows related
+            to the ones which are going to be deleted."""
         # Check the specified table name
         if (type(table) != str or table == ""):
             raise TableNotFound("The table should be a non empty string.")
         # Check if the specified table name is in the database
-        if (table not in self.fields):
+        if (table not in self.tables_structure):
             raise TableNotFound("The specified table does not exist in the database.")
 
         prev_rowcount = self.cursor.rowcount
-        delete_query = "TRUNCATE " + table
+        delete_query = "TRUNCATE " + table + " CASCADE"
         self.cursor.execute(delete_query)
         self.connection.commit()
 

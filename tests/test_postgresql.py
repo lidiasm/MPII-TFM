@@ -6,24 +6,39 @@ of Truth which has the operations with the PostgreSQL database.
 
 @author: Lidia Sánchez Mérida.
 """
+import os
 import sys
 sys.path.append("src")
-import os
 import pytest
 from exceptions import NewItemNotFound, TableNotFound, DatabaseFieldsNotFound \
-    , InvalidFieldsToGet, InvalidConditions
+    , InvalidFieldsToGet, InvalidConditions, InvalidDatabaseCredentials
 from postgresql import PostgreSQL
 
 """Connection to test the PostgresSQL database operations."""
-test_connection = PostgreSQL('socialnetworksdb',
-          os.environ.get("POSTGRES_USER"), os.environ.get("POSTGRES_PSWD"))
+test_connection = PostgreSQL()
 
 """Table which will be used to test the PostgresSQL class"""
-TABLE = "profiles"
+TABLE = "test1"
 
+def test1_constructor():
+    """Test to check the constructor of the PostgreSQL database class without providing 
+        valid credentials. An exception will be raised."""
+    global user
+    user = os.environ.get("POSTGRES_USER") 
+    global pswd
+    pswd = os.environ.get("POSTGRES_PSWD")
+    os.environ["POSTGRES_USER"] = ""
+    os.environ["POSTGRES_PSWD"] = ""
+    with pytest.raises(InvalidDatabaseCredentials):
+        PostgreSQL()
+    
 def test1_empty_table():
     """Test to check the delete table method when the table is not provided. It will
-        raise an exception."""
+        raise an exception. Also, the PostgreSQL credentials will be set again."""
+    global user
+    os.environ["POSTGRES_USER"] = user
+    global pswd
+    os.environ["POSTGRES_PSWD"] = pswd
     with pytest.raises(TableNotFound):
         test_connection.empty_table(1234)
 
@@ -73,7 +88,7 @@ def test5_insert_item():
             "biography":"\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
             "gender":"None", "profile_pic":"https://instagram.fsvq2-1.fna.fbcdn.net/v/t51.2885-19/s150x150/41339801_165526391018445_41443638382690304_n.jpg?_nc_ht=instagram.fsvq2-1.fna.fbcdn.net&_nc_ohc=hW7KS56GF7gAX_uMtm4&oh=1e8b084cced54e7208f8d459cff3ed95&oe=5F1A6F0A",
             "location":"None", "birthday":"None", "n_followers":60, "n_followings":80,
-            "date_joined":"None", "n_medias":6, "social_media":"Instagram", "id":"lidia.96.sm", "date":"2020-06-21" }
+            "date_joined":"None", "n_posts":6, "social_media":"Instagram", "id":"lidia.96.sm", "date":"2020-06-21" }
     result = test_connection.insert_item(data, TABLE)
     assert result == True
 
