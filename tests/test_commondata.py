@@ -19,7 +19,7 @@ from exceptions import InvalidMongoDbObject, UsernameNotFound, ProfileDictNotFou
     , UserDataNotFound, CollectionNotFound, InvalidSocialMediaSource, IdNotFound, DuplicatedPost
 
 """Creates a object to connect to the database."""
-test_collection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+test_collection = MongoDB('test')
 
 def test1_set_mongodb_connection():
     """Test to check the method which sets the connection to the MongoDB database
@@ -320,15 +320,32 @@ def test4_add_user_data():
     data = commondata.CommonData(test_collection)
     with pytest.raises(InvalidSocialMediaSource):
         assert data.add_user_data('lidia.96.sm', user_data, 'test', '')
-
+        
 def test5_add_user_data():
+    """Test to check the method which inserts user data into the collection 'test' of the
+        MongoDB database without providing a valid MongoDB object. An exception will be raised."""
+    profile = {'username':'Lidia'}
+    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, {'id_post': '2', 'likes': 18, 'comments': 0}]
+    comments = [{'id_post': '1', 'comments': [
+                      {'user': 'user1', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
+                      {'user': 'user2', 'comment': '🤤🤤🤤'}]},
+                  {'id_post': '2', 'comments': [
+                      {'user': 'user3', 'comment': 'quien volviera'}, 
+                      {'user': 'user2', 'comment': 'Guapo 😍'}]}]
+    
+    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+    data = commondata.CommonData()
+    with pytest.raises(InvalidMongoDbObject):
+        assert data.add_user_data('lidia.96.sm', user_data, 'test', 'Instagram')
+
+def test6_add_user_data():
     """Test to check the method which inserts user data into the collection 'test' of the
         MongoDB database. In order to do that, first, a MongoDB object will be created to
         connect to the Mongo database and the 'test' collection in the local system.
         Then, the documents of the 'test' collection will be removed in order to prevent
         exceptions if the user data is already inserted in the same day."""
     # Connection to the 'test' collection in MongoDB
-    test_connection = MongoDB(os.environ.get("MONGODB_URI"), 'SocialNetworksDB', 'test')
+    test_connection = MongoDB('test')
     try:
         test_connection.empty_collection()
     except EmptyCollection:
@@ -368,6 +385,13 @@ def test2_get_user_data():
         assert data.get_user_data('heyyy')
         
 def test3_get_user_data():
+    """Test to check the behaviour of the get method without providing a valid MongoDB
+        object. It should raise an exception."""
+    data = commondata.CommonData()
+    with pytest.raises(InvalidMongoDbObject):
+        assert data.get_user_data('lidia.96.sm')
+        
+def test4_get_user_data():
     """Test to check the behaviour of the get method when the username exists."""
     data = commondata.CommonData(test_collection)
     result = data.get_user_data('lidia.96.sm')

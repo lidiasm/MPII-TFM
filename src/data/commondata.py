@@ -241,6 +241,10 @@ class CommonData:
         if (type(social_media) != str or social_media == "" or social_media.lower() not in self.social_media_sources):
             raise InvalidSocialMediaSource("ERROR. The social media should be a non-empty string "+
                                            "a valid source: [Instagram].")
+        # Check the current MongoDB object
+        if (type(self.mongodb) != mongodb.MongoDB):
+                raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
+                                       "should be a MongoDB object.")
 
         """Stores user data in the specified collection of a Mongo database."""
         # Primary keys: (user id, date)
@@ -258,7 +262,10 @@ class CommonData:
             all of records from a specific username."""
         if (type(username) != str or username == ""):
             raise UsernameNotFound("You should specify a valid username.")
-
+        # Check the MongoDB object
+        if (type(self.mongodb) != mongodb.MongoDB):
+                raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
+                                       "should be a MongoDB object.")
         userData = self.mongodb.get_item_records('id', username)
         if (userData == None or len(userData) == 0):
             raise IdNotFound("The specified username doesn't exist in the database.")
