@@ -56,7 +56,10 @@ class Api:
             API and returns a dict with the interesting data of the user profile."""
         if (type(search_user) != str or search_user == ""):
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
-        
+        # Check the connection to the API Instagram
+        if (self.connection == None):
+            self.connection = self.connect_levpasha_instagram_api()
+            
         # Gets the profile of the user
         self.connection.searchUsername(search_user)
         # Exception when the max number of requests has been exceeded
@@ -89,7 +92,10 @@ class Api:
         # Check the limit
         if (type(limit) != int or limit <= 0):
             raise InvalidLimit("ERROR. The post limit should be a number greater than 0.")
-        
+        # Check the connection to the API Instagram
+        if (self.connection == None):
+            self.connection = self.connect_levpasha_instagram_api()
+            
         posts = []
         more_posts = True
         max_id = ""
@@ -120,7 +126,10 @@ class Api:
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
         if (type(posts) != list or len(posts) == 0):
             raise PostsListNotFound("ERROR. There aren't any posts to get their likers.")
-        
+        # Check the connection to the API Instagram
+        if (self.connection == None):
+            self.connection = self.connect_levpasha_instagram_api()
+            
         """Iterate over each post and each user who liked it."""
         all_likers = []
         for post in posts:
@@ -156,7 +165,10 @@ class Api:
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
         if (type(posts) != list or len(posts) == 0):
             raise PostsListNotFound("ERROR. There aren't any posts to get their likers.")
-        
+        # Check the connection to the API Instagram
+        if (self.connection == None):
+            self.connection = self.connect_levpasha_instagram_api()
+            
         comments = []
         for post in posts:
             # Check each post
@@ -191,6 +203,9 @@ class Api:
         # Check the user id
         if (type(user_id) != int or user_id < 0):
             raise InvalidUserId("ERROR. The user id should be a positive number.")
+        # Check the connection to the API Instagram
+        if (self.connection == None):
+            self.connection = self.connect_levpasha_instagram_api()
             
         # Max 100 followings
         self.connection.getUserFollowings(user_id)
@@ -225,7 +240,7 @@ class Api:
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
             
         # Connect to LevPasha Instagram API
-        self.connect_levpasha_instagram_api(use_session_file, session_file)
+        self.connection = self.connect_levpasha_instagram_api(use_session_file, session_file)
         user_data = {}
         try:
             # Profile

@@ -66,7 +66,8 @@ def test2_get_levpasha_instagram_profile():
         the LevPasha Instagram API."""
     try:
         global profile
-        profile = api.get_levpasha_instagram_profile(search_user)
+        api_prof = Api()
+        profile = api_prof.get_levpasha_instagram_profile(search_user)
         assert type(profile) == dict
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
@@ -90,7 +91,8 @@ def test3_get_levpasha_instagram_posts():
         global profile     
         if (type(profile) == dict and len(profile) > 0):
             global posts
-            posts = api.get_levpasha_instagram_posts(user_id=profile['userid'])
+            api_posts = Api()
+            posts = api_posts.get_levpasha_instagram_posts(user_id=profile['userid'])
             assert type(posts) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
@@ -131,7 +133,8 @@ def test5_get_levpasha_instagram_posts_likers():
     try:
         global posts
         if (type(posts) == list and len(posts) > 0):
-            likers = api.get_levpasha_instagram_posts_likers(search_user, posts)
+            api_likers = Api()
+            likers = api_likers.get_levpasha_instagram_posts_likers(search_user, posts)
             assert type(likers) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
@@ -172,7 +175,8 @@ def test5_get_levpasha_instagram_posts_comments():
     try:
         global posts
         if (type(posts) == list and len(posts) > 0):
-            comments = api.get_levpasha_instagram_posts_comments(search_user, posts)
+            api_comments = Api()
+            comments = api_comments.get_levpasha_instagram_posts_comments(search_user, posts)
             assert type(comments) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
@@ -190,7 +194,8 @@ def test2_get_levpasha_instagram_contacts():
     try:
         global profile
         if (type(profile) == dict):
-            contacts = api.get_levpasha_instagram_contacts(user_id=profile['userid'])
+            api_contacts = Api()
+            contacts = api_contacts.get_levpasha_instagram_contacts(user_id=profile['userid'])
             assert type(contacts[0]) == list and type(contacts[1]) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
