@@ -5,394 +5,570 @@ Tests to check the right behaviour of the methods included in the class CommonDa
 
 @author: Lidia Sánchez Mérida
 """
-
-import os
 import sys
 import pytest
 sys.path.append("src")
 from mongodb import MongoDB
 sys.path.append("src/data")
 import commondata 
-from exceptions import InvalidMongoDbObject, UsernameNotFound, ProfileDictNotFound \
-    , ContactsListsNotFound, PostsListNotFound, PostDictNotFound, LikersListNotFound \
-    , CommentsListNotFound, PostCommentNotFound, CommentDictNotFound, EmptyCollection \
-    , UserDataNotFound, CollectionNotFound, InvalidSocialMediaSource, IdNotFound, DuplicatedPost
-
-"""Creates a object to connect to the database."""
+from exceptions import InvalidMongoDbObject, ProfileDictNotFound, UsernameNotFound \
+    , ContactDictNotFound, MediaListNotFound, MediaDictNotFound, LikerListNotFound \
+    , TextListNotFound, TextDictNotFound, UserDataNotFound, CollectionNotFound \
+    , InvalidQuery, InvalidSocialMediaSource, InvalidUserId
+    
+# Creates a object to connect to the database.
 test_collection = MongoDB('test')
 
 def test1_set_mongodb_connection():
-    """Test to check the method which sets the connection to the MongoDB database
-        without providing a MongoDB object. It will raise an exception"""
+    """
+    Test to check the method which sets the connection to the Mongo database
+    without providing a MongoDB object. It will raise an exception.
+    """
     data = commondata.CommonData()
     with pytest.raises(InvalidMongoDbObject):
         data.set_mongodb_connection("Mongodb object")
     
 def test2_set_mongodb_connection():
-    """Test to set a connection to the 'test' collection in the Mongo database."""
+    """
+    Test to set a connection to the 'test' collection in the Mongo database.
+    """
     data = commondata.CommonData()
     result = data.set_mongodb_connection(test_collection)
     assert type(result) == MongoDB
     
 def test1_preprocess_profile():
-    """Test to preprocess the user profile without providing it. It'll raise
-        an exception."""
+    """
+    Test to check the method which preprocesses the user profile without 
+    providing it. It'll raise an exception.
+    """
     data = commondata.CommonData()
     with pytest.raises(ProfileDictNotFound):
-        assert data.preprocess_profile([])
+        assert data.preprocess_profile([], None)
 
 def test2_preprocess_profile():
-    """Test to preprocess an user profile in which there is not username field
-        so an exception will be raised."""
+    """
+    Test to check the method which preprocesses the user profile without 
+    providing the username. It'll raise an exception.
+    """
     profile = {'name':'Lidia'}
     data = commondata.CommonData()
     with pytest.raises(UsernameNotFound):
-        assert data.preprocess_profile(profile)
+        assert data.preprocess_profile(profile, None)
 
 def test3_preprocess_profile():
-    """Test to preprocess an user profile in which there is not a valid username.
-        So an exception will be raised."""
+    """
+    Test to check the method which preprocesses the user profile without 
+    providing a valid username. It'll raise an exception.
+    """
     profile = {'username':1234, 'name':'Lidia'}
     data = commondata.CommonData()
     with pytest.raises(UsernameNotFound):
-        assert data.preprocess_profile(profile)
+        assert data.preprocess_profile(profile, None)
         
 def test4_preprocess_profile():
-    """Test to preprocess an user profile with None values in some of their fields.
-        They should be turn into the string 'None'."""
+    """
+    Test to check the method which preprocesses the user profile without 
+    providing a valid social media source. It'll raise an exception.
+    """
     profile = {'username':'Lidia', 'name':'Lidia', 'gender':None}
     data = commondata.CommonData()
-    result = data.preprocess_profile(profile)
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_profile(profile, None)
+
+def test5_preprocess_profile():
+    """
+    Test to check the method which preprocesses the user profile without 
+    providing a valid social media source. It'll raise an exception.
+    """
+    profile = {'username':'Lidia', 'name':'Lidia', 'gender':None}
+    data = commondata.CommonData()
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_profile(profile, "Random Social Media")
+        
+def test6_preprocess_profile():
+    """
+    Test to check the method which preprocesses the user profile in which there
+    are some 'None' values. These will be transform to strings.
+    """
+    profile = {'username':'Lidia', 'name':'Lidia', 'gender':None}
+    data = commondata.CommonData()
+    result = data.preprocess_profile(profile, 'Instagram')
     assert type(result) == dict
         
-def test5_preprocess_profile():
-    """Test to preprocess the profile with non-required fields.
-        They will be removed of the preprocessed profile."""
+def test7_preprocess_profile():
+    """
+    Test to check the method which preprocesses the user profile in which there
+    are some non-required fields. They will be removed of the preprocessed profile.
+    """
     profile = {'username':'Lidia', 'name':'Lidia', 'pets':'No'}
     data = commondata.CommonData()
-    result = data.preprocess_profile(profile)
+    result = data.preprocess_profile(profile, 'Instagram')
     assert type(result) == dict
 
 def test1_preprocess_contacts():
-    """Test to preprocess the followers and followings of an specific user without
-         providing them. It will raise an exception."""
+    """
+    Test to check the method which preprocesses the followers and followings 
+    of an user account without providing them. It will raise an exception.
+    """
     data = commondata.CommonData()
-    with pytest.raises(ContactsListsNotFound):
-        assert data.preprocess_contacts({}, 1234)
+    with pytest.raises(ContactDictNotFound):
+        assert data.preprocess_contacts({}, None, None)
 
 def test2_preprocess_contacts():
-    """Test to preprocess the followers and followings of an specific user. It will
-        return the list of valid followers and followings. In this case, each item
-        is a non-empty string (username)."""
-    followers = ['user1', 'user2']
-    followings = ['user1', 'user3']
+    """
+    Test to check the method which preprocesses the followers and followings of
+    an user account without providing a valid dict of contacts. It will raise an exception.
+    """
     data = commondata.CommonData()
-    contacts = data.preprocess_contacts(followers, followings)
-    assert type(contacts) == dict and type(contacts['followers']) == list and type(contacts['followings']) == list \
-        and len(contacts['followers']) > 0 and len(contacts['followings']) > 0
+    with pytest.raises(ContactDictNotFound):
+        assert data.preprocess_contacts({'id':'1'}, None, None)
         
 def test3_preprocess_contacts():
-    """Test to preprocess the followers and followings of an specific user. It will
-        return the list of valid followers and followings. In this case, some of them
-        aren't strings so they will be removed from the lists."""
-    followers = ['user1', 2, 5, None, 'user2']
-    followings = ['user1', 1, 2, 20.0, 'user3']
+    """
+    Test to check the method which preprocesses the followers and followings of
+    an user account without providing a valid dict of contacts. It will raise an exception.
+    """
     data = commondata.CommonData()
-    contacts = data.preprocess_contacts(followers, followings)
-    assert all(isinstance(item, str) for item in contacts['followings']) == True and \
-        all(isinstance(item, str) for item in contacts['followers']) == True
-        
-def test1_preprocess_posts():
-    """Test to check if the provided posts of the user are in a list. In this case,
-        they're not so an exception will be raised."""
-    data = commondata.CommonData()
-    with pytest.raises(PostsListNotFound):
-        assert data.preprocess_posts({})
-   
-def test2_preprocess_posts():
-    """Test to check if each post in the list is a dictionary. In this case,
-        they're not so an exception will be raised."""
-    data = commondata.CommonData()
-    with pytest.raises(PostDictNotFound):
-        assert data.preprocess_posts([1,2,3,4])
-   
-def test3_preprocess_posts():
-    """Test to check if each post has an id and the number of likes and comments.
-        In this case, they haven't these fields so an exception will be raised."""
-    posts = [{'likes': 29, 'comments': 14}]
-    data = commondata.CommonData()
-    with pytest.raises(PostDictNotFound):
-        assert data.preprocess_posts(posts)
+    contacts = {'followers':(), 'followings':['user1']}
+    with pytest.raises(ContactDictNotFound):
+        assert data.preprocess_contacts(contacts, None, None)
 
-def test4_preprocess_posts():
-    """Test to check if each post has an id and the number of likes and comments.
-        In this test, neither the number of likes nor the number of comments are
-        number, so an exception will be raised."""
-    posts = [{'id_post': '1', 'likes': None, 'comments': ""}]
+def test4_preprocess_contacts():
+    """
+    Test to check the method which preprocesses the followers and followings of
+    an user account without providing a valid social media source. It will raise an exception.
+    """
+    contacts = {'followers':['user2'], 'followings':['user1']}
     data = commondata.CommonData()
-    with pytest.raises(ValueError):
-        assert data.preprocess_posts(posts)
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_contacts(contacts, None, None)
+
+def test5_preprocess_contacts():
+    """
+    Test to check the method which preprocesses the followers and followings of
+    an user account without providing a valid social media source. It will raise an exception.
+    """
+    contacts = {'followers':['user2'], 'followings':['user1']}
+    data = commondata.CommonData()
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_contacts(contacts, "Random", None)
+
+def test6_preprocess_contacts():
+    """
+    Test to check the method which preprocesses the followers and followings of
+    an user account without providing a valid user id. It will raise an exception.
+    """
+    contacts = {'followers':['user2'], 'followings':['user1']}
+    data = commondata.CommonData()
+    with pytest.raises(InvalidUserId):
+        assert data.preprocess_contacts(contacts, "Instagram", None)
         
-def test5_preprocess_posts():
-    """Test to check if each post only appears once in a list of posts. In this
-        case the id of the same post is in the list twice so an exception will be raised."""
-    posts = [{'id_post': '1', 'likes': 123, 'comments': 456},
-             {'id_post': '2', 'likes': 45, 'comments': 56},
-             {'id_post': '3', 'likes': 32, 'comments': 12},
-             {'id_post': '1', 'likes': 48, 'comments': 72}]
+def test7_preprocess_contacts():
+    """
+    Test to check the method which preprocesses the followers and followings of 
+    a specific user.
+    """
     data = commondata.CommonData()
-    with pytest.raises(DuplicatedPost):
-        assert data.preprocess_posts(posts)
-       
-def test6_preprocess_posts():
-    """Test to check the method which preprocesses the posts of a specific user."""
-    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, 
-              {'id_post': '2', 'likes': 18, 'comments': 0}]
+    contacts = {'followers':[1, 'user1', 'user2', 'user3'], 
+                'followings':['user1',' user2', 4, 5]}
+    preprocessed_contacts = data.preprocess_contacts(contacts, "Instagram", 123456)
+    assert len(preprocessed_contacts['followers']) == 3 and len(preprocessed_contacts['followings']) == 2
+
+def test1_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing them. An exception will be raised.
+    """
     data = commondata.CommonData()
-    result = data.preprocess_posts(posts)
-    assert type(result) == list
+    with pytest.raises(MediaListNotFound):
+        assert data.preprocess_medias({}, None, None)
+
+def test2_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing a valid social media source. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_medias([1,2,3,4], None, None)
+        
+def test3_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing a valid social media source. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_medias([1,2,3,4], 'Random', None)
+
+def test4_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing a valid user id. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(InvalidUserId):
+        assert data.preprocess_medias([1,2,3,4], 'Instagram', None)
+        
+def test5_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing a valid list of medias. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(MediaDictNotFound):
+        assert data.preprocess_medias([1,2,3,4], 'Instagram', 123456)
+        
+def test6_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing the required keys for the dict of medias. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(MediaDictNotFound):
+        assert data.preprocess_medias([{'id_media':'1', 'title':''}], 'Instagram', 123456)
+        
+def test7_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user
+    without providing valid values for some keys. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    medias = [{'id_media':'1', 'title':'Title 1', 'like_count':-8, 'comment_count':0, 'social_media':'Instagram'}]
+    with pytest.raises(MediaDictNotFound):
+        assert data.preprocess_medias(medias, 'Instagram', 123456)
+
+def test8_preprocess_medias():
+    """
+    Test to check the method which preprocesses the medias of a specific user.
+    """
+    data = commondata.CommonData()
+    medias = [{'id_media':'1', 'title':'Title 1', 'like_count':5, 'comment_count':0, 'social_media':'Instagram'},
+              {'id_media':'2', 'title':'Title 2', 'like_count':18, 'comment_count':12, 'social_media':'Instagram'},
+              {'id_media':'3', 'title':'Title 3', 'like_count':7, 'comment_count':58, 'social_media':'Instagram'},]
+    preprocessed_medias = data.preprocess_medias(medias, 'Instagram', 123456)
+    assert type(preprocessed_medias) == dict and len(preprocessed_medias) > 0
     
-def test1_preprocess_likers():
-    """Test to check the method which preprocesses the list of people who liked
-        some posts of a specific user without providing these data. It will raise an exception."""
+def test1_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing them. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(LikersListNotFound):
-        assert data.preprocess_likers([])
+    with pytest.raises(LikerListNotFound):
+        assert data.preprocess_media_likers(None, None, None)
         
-def test2_preprocess_likers():
-    """Test to check the method which preprocesses the list of people who liked
-        some posts of a specific user without providing valid data. It will raise an exception."""
+def test2_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing a valid list of usernames. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(LikersListNotFound):
-        assert data.preprocess_likers([1,2,3,4])
-        
-def test3_preprocess_likers():
-    """Test to check the method which preprocesses the list of people who liked
-        some posts of a specific user without providing valid data. It will raise an exception."""
-    data = commondata.CommonData()
-    with pytest.raises(LikersListNotFound):
-        assert data.preprocess_likers([("user1", 2), ("user2", "3")])
-        
-def test4_preprocess_likers():
-    """Test to preprocess the poeple who liked some posts of a specific user."""
-    data = commondata.CommonData()
-    result = data.preprocess_likers([("user1", 2), ("user2", 3)])
-    assert type(result) == list
+    with pytest.raises(LikerListNotFound):
+        assert data.preprocess_media_likers([1,2,3,4], None, None)
 
-def test1_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing any comments. It will raise an exception."""
+def test3_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing the social media source. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(CommentsListNotFound):
-        assert data.preprocess_comments({})
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_media_likers([{'id_media':134, 'user':'user1'}], None, None)
+        
+def test4_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing a valid social media source. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_media_likers([{'id_media':134, 'user':'user1'}], 'Random', None)
 
-def test2_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
+def test5_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing a valid user id. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(PostCommentNotFound):
-        assert data.preprocess_comments([{}])
+    with pytest.raises(InvalidUserId):
+        assert data.preprocess_media_likers([{'id_media':134, 'user':'user1'}], 'Instagram', None)
+        
+def test6_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing a valid list of usernames. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    invalid_likers = [{'id_media':134, 'user':'user1'}]
+    with pytest.raises(LikerListNotFound):
+        assert data.preprocess_media_likers(invalid_likers, 'Instagram', 123456)
+        
+def test7_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing a valid list of usernames. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    invalid_likers = [{'id_media':134, 'users':'user1', 'social_media':'Instagram'}]
+    with pytest.raises(LikerListNotFound):
+        assert data.preprocess_media_likers(invalid_likers, 'Instagram', 123456)
+        
+def test8_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user without providing a valid list of usernames. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    invalid_likers = [{'id_media':'1', 'users':['user1', 'user2', 3], 'social_media':'Instagram'}]
+    with pytest.raises(LikerListNotFound):
+        assert data.preprocess_media_likers(invalid_likers, 'Instagram', 123456)
+        
+def test9_preprocess_media_likers():
+    """
+    Test to check the method which preprocesses the people who liked the medias
+    of an user.
+    """
+    data = commondata.CommonData()
+    likers = [{'id_media':'2', 'users':['user1', 'user2'], 'social_media':'Instagram'}]
+    preprocessed_likers = data.preprocess_media_likers(likers, 'Instagram', 123456)
+    assert type(preprocessed_likers) == dict and len(preprocessed_likers) > 0
+    
+def test1_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing them. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    with pytest.raises(TextListNotFound):
+        assert data.preprocess_media_texts(None, None, None)
 
-def test3_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
-    comments = [{'id_post': '1'}, {'comments': 0}]
+def test2_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing the social media source. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(PostCommentNotFound):
-        assert data.preprocess_comments(comments)
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_media_texts([1], None, None)
         
-def test4_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
-    comments = [{'id_post': 1234, 'comments':None}, {'comments': 0}]
+def test3_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing a valid social media source. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(PostCommentNotFound):
-        assert data.preprocess_comments(comments)
+    with pytest.raises(InvalidSocialMediaSource):
+        assert data.preprocess_media_texts([1], 'Random', None)
         
-def test5_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
-    comments = [{'id_post': '1234', 'comments':[{}]}, {'id_post':'1234', 'comments': [{}]}]
+def test4_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing a valid user id. An exception will be raised.
+    """
     data = commondata.CommonData()
-    with pytest.raises(CommentDictNotFound):
-        assert data.preprocess_comments(comments)
-        
-def test6_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
-    comments = [{'id_post': '1234', 'comments':[{'user':'user1'}]}, {'id_post':'1234', 'comments': [{}]}]
-    data = commondata.CommonData()
-    with pytest.raises(CommentDictNotFound):
-        assert data.preprocess_comments(comments)
-        
-def test7_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
-    comments = [{'id_post': '1234', 'comments':[{'user':'user1', 'comment':1234}]}]
-    data = commondata.CommonData()
-    with pytest.raises(CommentDictNotFound):
-        assert data.preprocess_comments(comments)
+    with pytest.raises(InvalidUserId):
+        assert data.preprocess_media_texts([1], 'Instagram', None)
 
-def test8_preprocess_comments():
-    """Test to check the method which preprocesses the comments of the posts of a specific user
-        without providing valid comments. It will raise an exception."""
-    comments = [{'id_post': '1234', 'comments':[{'user':'user1', 'comment':'comment 1'},
-                                                {'user':'user2', 'comment':'comment 2'}]}]
+def test5_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing a valid list of texts. An exception will be raised.
+    """
     data = commondata.CommonData()
-    preprocessed_comments = data.preprocess_comments(comments)
-    assert type(preprocessed_comments) == list
+    invalid_texts = [{'id_media':134, 'user':'user1', 'social_media':'Instagram'}]
+    with pytest.raises(TextDictNotFound):
+        assert data.preprocess_media_texts(invalid_texts, 'Instagram', 123456)
+        
+def test6_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing a valid list of texts. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    invalid_texts = [{'id_media':134, 'texts':[], 'social_media':'Instagram'}]
+    with pytest.raises(TextDictNotFound):
+        assert data.preprocess_media_texts(invalid_texts, 'Instagram', 123456)
+        
+def test7_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing a valid list of texts. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    invalid_texts = [{'id_media':'1', 'texts':[{'user':'user1'}], 'social_media':'Instagram'}]
+    with pytest.raises(TextDictNotFound):
+        assert data.preprocess_media_texts(invalid_texts, 'Instagram', 123456)
+        
+def test8_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user without providing a valid list of texts. An exception will be raised.
+    """
+    data = commondata.CommonData()
+    invalid_texts = [{'id_media':'1', 'texts':[{'user':'user1', 'text':2}], 'social_media':'Instagram'}]
+    with pytest.raises(TextDictNotFound):
+        assert data.preprocess_media_texts(invalid_texts, 'Instagram', 123456)
+
+def test9_preprocess_media_texts():
+    """
+    Test to check the method which preprocesses the comments written on the medias
+    of an user.
+    """
+    data = commondata.CommonData()
+    text_list = [{'id_media':'1', 'texts':[{'user':'user1', 'text':'hey'}], 'social_media':'Instagram'}]
+    preprocessed_texts = data.preprocess_media_texts(text_list, 'Instagram', 123456)
+    assert type(preprocessed_texts) == dict 
     
 def test1_preprocess_user_data():
-    """Test to check the method which preprocesses all user data with the previous
-        tested methods."""
-    profile = {'username':'Lidia'}
-    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, 
-              {'id_post': '2', 'likes': 18, 'comments': 0}]
-    likers = [('user1',3), ('user2',2), ('user3',0)]
-    comments = [{'id_post': '1', 
-                  'comments': [{'user': 'user1', 'comment': 'aa'}, {'user': 'user2', 'comment': 'ee'}]},
-                  {'id_post': '2', 'comments': [{'user': 'user3', 'comment': 'ii'}, {'user': 'user2', 'comment': 'oo'}]}]
-    user_data = {'profile':profile, 'posts':posts, 'likers':likers, 
-                  'comments':comments, 'followers':['user1', 'user2'], 'followings':['user1', 'user3']}
-    
+    """
+    Test to check the method which preprocesses all user data with the previous
+    tested methods.
+    """
+    profile = {'userid':123456, 'username':'Lidia', 'social_media':'Instagram'}
+    medias = [{'id_media': '1', 'title':None, 'like_count': 29, 'comment_count': 14, 'social_media':'Instagram'}, 
+              {'id_media': '2', 'title':'Title 2', 'like_count': 18, 'comment_count': 0, 'social_media':'Instagram'}]
+    likers = [{'id_media':'2', 'users':['user1', 'user2'], 'social_media':'Instagram'}]
+    texts = [{'id_media': '1', 
+              'texts': [{'user': 'user1', 'text': 'aa'}, {'user': 'user2', 'text': 'ee'}], 
+              'social_media':'Instagram'},
+              {'id_media': '2', 
+              'texts': [{'user': 'user3', 'text': 'ii'}, {'user': 'user2', 'text': 'oo'}], 
+              'social_media':'Instagram'}]
+    contacts = {'followers':['user1', 'user2'], 'followings':['user1', 'user3'], 'social_media':'Instagram'}
+    user_data = {'profile':profile, 'medias':medias, 'likers':likers, 
+                  'texts':texts, 'contacts':contacts}
     data = commondata.CommonData()
-    result = data.preprocess_user_data(user_data)
+    result = data.preprocess_user_data(user_data, 'Instagram')
     assert type(result) == dict
         
-def test1_preprocess_text_comments():
-    """Test the behaviour of the method which preprocesses the text of the post
-        comments. A list of preprocessed comments will be returned."""
-    comments = [{'id_post': '1', 'comments': [
-                      {'user': 'user1', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
-                      {'user': 'user2', 'comment': '🤤🤤🤤'}]},
-                  {'id_post': '2', 'comments': [
-                      {'user': 'user3', 'comment': 'quien volviera'}, 
-                      {'user': 'user2', 'comment': 'Guapo 😍'}]}]
+def test1_transform_text():
+    """
+    Test to check the method which transforms and cleans the texts from medias
+    of a specific user. A list of preprocessed texts will be returned.
+    """
+    texts = [{'id_media': '1', 'texts': [
+                      {'user': 'user1', 'text': 'Alcohollll alcohol te quiero amigo♥️'}, 
+                      {'user': 'user2', 'text': '🤤🤤🤤'}], 'social_media':'Instagram'},
+            {'id_media': '2', 'texts': [
+                      {'user': 'user3', 'text': 'quien volviera'}, 
+                      {'user': 'user2', 'text': 'Guapo 😍'}], 'social_media':'Instagram'}]
     
     data = commondata.CommonData()
-    preprocessed_comments = data.preprocess_text_comments(comments)
-    assert type(preprocessed_comments) == list
-
-def test1_add_user_data():
-    """Test to check the method which inserts user data into the collection 'test' of the
-        MongoDB database without providing a valid username. An exception will be raised."""
-    data = commondata.CommonData(test_collection)
-    with pytest.raises(UsernameNotFound):
-        assert data.add_user_data('', {}, '', '')
-        
-def test2_add_user_data():
-    """Test to check the method which inserts user data into the collection 'test' of the
-        MongoDB database without providing a user data. An exception will be raised."""
+    preprocessed_texts = data.transform_text(texts, 'Instagram', 123456)
+    assert type(preprocessed_texts) == list
+    
+def test1_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database without providing the data. An exception will be raised.
+    """
     data = commondata.CommonData(test_collection)
     with pytest.raises(UserDataNotFound):
-        assert data.add_user_data('lidia.96.sm', {}, '', '')
+        assert data.insert_user_data(None, None)
         
-def test3_add_user_data():
-    """Test to check the method which inserts user data into the collection 'test' of the
-        MongoDB database without providing a user data. An exception will be raised."""
-    profile = {'username':'Lidia'}
-    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, {'id_post': '2', 'likes': 18, 'comments': 0}]
-    comments = [{'id_post': '1', 'comments': [
-                      {'user': 'user1', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
-                      {'user': 'user2', 'comment': '🤤🤤🤤'}]},
-                  {'id_post': '2', 'comments': [
-                      {'user': 'user3', 'comment': 'quien volviera'}, 
-                      {'user': 'user2', 'comment': 'Guapo 😍'}]}]
-    
-    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+def test2_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database without providing the collection name. An exception will be raised.
+    """
+    data = commondata.CommonData(test_collection)
+    with pytest.raises(UserDataNotFound):
+        assert data.insert_user_data({123}, None)
+        
+def test3_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database without providing the collection name. An exception will be raised.
+    """
     data = commondata.CommonData(test_collection)
     with pytest.raises(CollectionNotFound):
-        assert data.add_user_data('lidia.96.sm', user_data, '', '')
-
-def test4_add_user_data():
-    """Test to check the method which inserts user data into the collection 'test' of the
-        MongoDB database without providing a valid social media source. An exception will be raised."""
-    profile = {'username':'Lidia'}
-    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, {'id_post': '2', 'likes': 18, 'comments': 0}]
-    comments = [{'id_post': '1', 'comments': [
-                      {'user': 'user1', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
-                      {'user': 'user2', 'comment': '🤤🤤🤤'}]},
-                  {'id_post': '2', 'comments': [
-                      {'user': 'user3', 'comment': 'quien volviera'}, 
-                      {'user': 'user2', 'comment': 'Guapo 😍'}]}]
-    
-    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
-    data = commondata.CommonData(test_collection)
-    with pytest.raises(InvalidSocialMediaSource):
-        assert data.add_user_data('lidia.96.sm', user_data, 'test', '')
+        assert data.insert_user_data({'userid':'2'}, None)
         
-def test5_add_user_data():
-    """Test to check the method which inserts user data into the collection 'test' of the
-        MongoDB database without providing a valid MongoDB object. An exception will be raised."""
-    profile = {'username':'Lidia'}
-    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, {'id_post': '2', 'likes': 18, 'comments': 0}]
-    comments = [{'id_post': '1', 'comments': [
-                      {'user': 'user1', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
-                      {'user': 'user2', 'comment': '🤤🤤🤤'}]},
-                  {'id_post': '2', 'comments': [
-                      {'user': 'user3', 'comment': 'quien volviera'}, 
-                      {'user': 'user2', 'comment': 'Guapo 😍'}]}]
-    
-    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
-    data = commondata.CommonData()
+def test4_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database without initializing the database object. An exception will be raised.
+    In order to do that, the database object will be set to None.
+    """
+    invalid_data = commondata.CommonData()
     with pytest.raises(InvalidMongoDbObject):
-        assert data.add_user_data('lidia.96.sm', user_data, 'test', 'Instagram')
-
-def test6_add_user_data():
-    """Test to check the method which inserts user data into the collection 'test' of the
-        MongoDB database. In order to do that, first, a MongoDB object will be created to
-        connect to the Mongo database and the 'test' collection in the local system.
-        Then, the documents of the 'test' collection will be removed in order to prevent
-        exceptions if the user data is already inserted in the same day."""
-    # Connection to the 'test' collection in MongoDB
-    test_connection = MongoDB('test')
-    try:
-        test_connection.empty_collection()
-    except EmptyCollection:
-        print("Empty collection")
+        assert invalid_data.insert_user_data({'userid':'2'}, 'test')
         
-    profile = {"userid" : 123456789, "name" : "Lidia Sánchez", "username" : "lidia.96.sm", 
-                   "biography" : "\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.", 
-                   "gender" : "None", "profile_pic" : "https://instagram_example", 
-                   "location" : "None", "birthday" : "None", "date_joined" : "None", 
-                   "n_followers" : 61, "n_medias" : 6, "id" : "lidia.96.sm", "date" : "14-07-2020", "social_media" : "Instagram" }
+def test5_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database without providing a valid query. An exception will be raised.
+    """
+    data = commondata.CommonData(test_collection)
+    with pytest.raises(InvalidQuery):
+        assert data.insert_user_data({'userid':'1'}, 'test', "")
 
-    posts = [{'id_post': '1', 'likes': 29, 'comments': 14}, {'id_post': '2', 'likes': 18, 'comments': 0}]
-    comments = [{'id_post': '1', 'comments': [
-                      {'user': 'user1', 'comment': 'Alcohollll alcohol te quiero amigo♥️'}, 
-                      {'user': 'user2', 'comment': '🤤🤤🤤'}]},
-                  {'id_post': '2', 'comments': [
-                      {'user': 'user3', 'comment': 'quien volviera'}, 
-                      {'user': 'user2', 'comment': 'Guapo 😍'}]}]
+def test6_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database. In this case, there's no query to make so the new item will be inserted directly.
+    """
+    data = commondata.CommonData(test_collection)
+    result = data.insert_user_data({'userid':'1', 'social_media':'SM'}, 'test')
+    assert type(result) == str
     
-    user_data = {'profile':profile, 'posts':posts, 'comments':comments}
+def test7_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database. In this case, there's a specific query to make and as a result, the
+    new item won't be inserted because there are other items like it.
+    """
     data = commondata.CommonData(test_collection)
-    result = data.add_user_data('lidia.96.sm', user_data, 'test', 'Instagram')
-    assert type(result[0]) == str and type(result[1] == dict)
-        
+    result = data.insert_user_data({'userid':'1', 'social_media':'SM'}, 'test', {'userid':'1'})
+    assert result == None
+    
+def test8_insert_user_data():
+    """
+    Test to check the method which inserts user data in a collection of a Mongo
+    database. In this case, there's a specific query but there are not matches
+    so the new item will be inserted.
+    """
+    data = commondata.CommonData(test_collection)
+    result = data.insert_user_data({'userid':'2', 'social_media':'SM'}, 'test', {'userid':'3'})
+    assert type(result) == str
+
 def test1_get_user_data():
-    """Test to check the behaviour of the get method when there's not username provided.
-        It should raise an exception."""
+    """
+    Test to check the method which gets user data from a collection of a Mongo
+    database specifying a query. In this case, the query is not provided so an
+    exception will be raised.
+    """
     data = commondata.CommonData(test_collection)
-    with pytest.raises(UsernameNotFound):
-        assert data.get_user_data("")
+    with pytest.raises(InvalidQuery):
+        assert data.get_user_data(None, None)
 
 def test2_get_user_data():
-    """Test to check the behaviour of the get method when the username provided doesn't exist.
-        It should raise an exception."""
+    """
+    Test to check the method which gets user data from a collection of a Mongo
+    database specifying a query. In this case, the collection name is not provided so an
+    exception will be raised.
+    """
     data = commondata.CommonData(test_collection)
-    with pytest.raises(IdNotFound):
-        assert data.get_user_data('heyyy')
+    with pytest.raises(CollectionNotFound):
+        assert data.get_user_data({'userid':'2'}, None)
         
 def test3_get_user_data():
-    """Test to check the behaviour of the get method without providing a valid MongoDB
-        object. It should raise an exception."""
-    data = commondata.CommonData()
+    """
+    Test to check the method which gets user data from a collection of a Mongo
+    database specifying a query. In this case, the database object is set to None
+    so an exception will be raised.
+    """
+    invalid_data = commondata.CommonData()
     with pytest.raises(InvalidMongoDbObject):
-        assert data.get_user_data('lidia.96.sm')
+        assert invalid_data.get_user_data({'userid':'2'}, 'test')
         
 def test4_get_user_data():
-    """Test to check the behaviour of the get method when the username exists."""
+    """
+    Test to check the method which gets user data from a collection of a Mongo
+    database specifying a query.
+    """
     data = commondata.CommonData(test_collection)
-    result = data.get_user_data('lidia.96.sm')
-    assert type(result) == dict
+    result = data.get_user_data({'userid':'2'}, 'test')
+    assert type(result) == dict and len(result) > 0
+    
