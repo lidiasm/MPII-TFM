@@ -5,7 +5,7 @@ Class which contains the specific exceptions for the project.
 
 @author: Lidia Sánchez Mérida
 """
-
+################################## CLASS API ##################################
 class InvalidCredentials(Exception):
     """Class exception to point out that the provided credentials are wrong."""
     def __init__(self, mensaje):
@@ -32,14 +32,71 @@ class InvalidLimit(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
+class PostDictNotFound(Exception):
+    """Class exception to point out a post should be a dict."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class PostListNotFound(Exception):
+    """Class exception to point out that the list of profiles is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
 class ProfileDictNotFound(Exception):
     """Class exception to point out that there's not profile."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class ContactsListsNotFound(Exception):
-    """Class exception to point out that the lists of followers and followings 
-        don't exist."""
+############################## CLASS COMMONDATA ###############################
+class InvalidSocialMediaSource(Exception):
+    """Class exception to point out that the provided social media source is wrong."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidMongoDbObject(Exception):
+    """Class exception to point out that the provided MongoDB object is not found."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class ContactDictNotFound(Exception):
+    """Class exception to point out that the dict of contacts don't exist."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje        
+
+class MediaListNotFound(Exception):
+    """Class exception to point out that the list of media from an user account
+    doesn't exist."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje   
+
+class MediaDictNotFound(Exception):
+    """Class exception to point out that the provided media is not a dict."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje   
+
+class LikerListNotFound(Exception):
+    """Class exception to point out that likers should be a list."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class TextListNotFound(Exception):
+    """Class exception to point out that the list of texts from medias is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class TextDictNotFound(Exception):
+    """Class exception to point out that the texts from a media are not dicts."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class UserDataNotFound(Exception):
+    """Class exception to point out that there aren't any user data."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+############################### CLASS MONGODB #################################
+class ConnectionNotFound(Exception):
+    """Class exception to point out that the connection to the database doesn't exist."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
@@ -48,8 +105,8 @@ class CollectionNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class InvalidSocialMediaSource(Exception):
-    """Class exception to point out that the social media source is not right."""
+class NewItemNotFound(Exception):
+    """Class exception to point out that the new item to insert doesn't exist."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
@@ -58,145 +115,28 @@ class InvalidDatabaseCredentials(Exception):
         some database are wrong."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-class NewItemNotFound(Exception):
-    """Class exception to point out that the new item to insert doesn't exist."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
         
-class EmptyCollection(Exception):
-    """Class exception to point out that the current collection is empty."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-    
-class ItemNotFound(Exception):
-    """Class exception to point out that the specific item doesn't exist."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class LikersListNotFound(Exception):
-    """Class exception to point out that likers should be a list."""
+class InvalidQuery(Exception):
+    """Class exception to point out that the provided query is wrong"""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
-class CommentsDictNotFound(Exception):
-    """Class exception to point out that post comments should be a list."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-                
-class IdNotFound(Exception):
-    """Class exception to point out that a record doesn't have an id."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidPreferences(Exception):
-    """Class exception to point out that the provided preferences for a post evolution
-        are not valid."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
+############################ CLASS MAINOPERATIONS #############################
 
-class PostDictNotFound(Exception):
-    """Class exception to point out a post should be a dict."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class DuplicatedPost(Exception):
-    """Class exception to point out that one post has been inserted more than once
-        in the same list of posts."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class InvalidMongoDbObject(Exception):
-    """Class exception to point out that the provided MongoDB object is not found."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class UserDataNotFound(Exception):
-    """Class exception to point out that there aren't any user data."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
+############################ CLASS POSTGRESQL #############################
 class TableNotFound(Exception):
     """Class exception to point out that the specified table is not right."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
-class DatabaseFieldsNotFound(Exception):
-    """Class exception to point out that the item does not contain all the database
-        fields which are required."""
+class InvalidDatabaseFields(Exception):
+    """Class exception to point out that the provided fields to return in a SQL database
+    query are wrong."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class InvalidFieldsToGet(Exception):
-    """Class exception to point out that the fields to return in select procedures
-        are not right."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidConditions(Exception):
-    """Class exception to point out that the conditions for selecting some rows
-        from the PostgresSQL database are not right."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class PostCommentNotFound(Exception):
-    """Class exception to point out that the provided post data is not valid."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class CommentsListNotFound(Exception):
-    """Class exception to point out that post comments should be a list."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class CommentDictNotFound(Exception):
-    """Class exception to point out that a comment should be a dict."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class SentimentAnalysisNotFound(Exception):
-    """Class exception to point out that the sentiment analysis is not found."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class BehaviourAnalysisNotFound(Exception):
-    """Class exception to point out that the behaviour patterns found by the
-        sentiment analysis is not found."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class InvalidSentiment(Exception):
-    """Class exception to point out that the specified sentiment for the behaviour
-        patterns is not right."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class ProfilesListNotFound(Exception):
-    """Class exception to point out that the list of profiles is not found."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class PostsListNotFound(Exception):
-    """Class exception to point out that the list of profiles is not found."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidPlotData(Exception):
-    """Class exception to point out that the provided data to draw some kind of plot are not right."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidUsername(Exception):
-    """Class exception to point out that the provided username is not valid."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidRangeOfDates(Exception):
-    """Class exception to point out that the provided range of dates is not right."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidAnalysis(Exception):
-    """Class exception to point out that the specified analysis to perform is not avalaible."""
+class InvalidDatabaseConditions(Exception):
+    """Class exception to point out that the provided conditions to make the query
+    in the SQL database are wrong."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
