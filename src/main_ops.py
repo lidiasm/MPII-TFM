@@ -7,26 +7,38 @@ Class which contains the main operations which can be done on the web platform.
 """
 import os
 import sys
+from datetime import date
+
 sys.path.append('src/data')
 sys.path.append('data')
 from api import Api
 import commondata
-import data_analyzer
+#import data_analyzer
 from mongodb import MongoDB
 from postgresql import PostgreSQL
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
-    , InvalidSocialMediaSource, InvalidDatabaseCredentials, InvalidMongoDbObject \
-    , InvalidAnalysis, InvalidPreferences
+   , InvalidDatabaseCredentials, InvalidMongoDbObject, InvalidSocialMediaSource
 
 class MainOperations:
 
     def __init__(self):
-        """Constructor. It creates a MainOperations objects whose attributes are:
-            - CommonData object to preprocess the common data.
-            - MongoDB object to work with the first database.
-            - DataAnalyzer object to perform the different avalaible analysis.
+        """
+        Creates a MainOperations object whose attributes are:
+            - A CommonData object to preprocess the user data.
+            - A MongoDB object to operate with the Mongo database.
+            - A DataAnalyzer object to perform the different avalaible analysis.
             - A list with the different avalaible analysis to perform.
-            - PostgreSQL object to insert and get data from the SQL tables.
+            - A PostgreSQL object to insert and get data from the SQL tables.
+
+        Raises
+        ------
+        InvalidDatabaseCredentials
+            If the credentials are not non-empty strings, are not saved in env
+            variables or are wrong.
+
+        Returns
+        -------
+        A MainOperations object.
         """
         psql_user = os.environ.get("POSTGRES_USER")
         psql_pswd = os.environ.get("POSTGRES_PSWD")
@@ -35,77 +47,114 @@ class MainOperations:
             
         self.mongodb = MongoDB('profiles')
         self.common_data = commondata.CommonData(self.mongodb)
-        self.data_analysis = data_analyzer.DataAnalyzer()
+        #self.data_analysis = data_analyzer.DataAnalyzer()
         self.avalaible_analysis = ["ProfileEvolution", "SortPosts", "PostsEvolution",
                          "FollowersActivity", "ContactsActivity", "GeneralBehaviour", "Haters/Friends"]
         self.postgresql = PostgreSQL()
 
     def get_user_instagram_common_data(self, search_user):
-        """Downloads Instagram data of a specific user using the LevPasha Instagram
-            API and stores the main fields in a MongoDB database."""
+        """
+        Gets common Instagram data of a specific user using the LevPasha Instagram
+        API. The downloaded user data is stored in the Mongo database.
+
+        Parameters
+        ----------
+        search_user : str
+            It's the username of the user to get their data.
+
+        Raises
+        ------
+        UsernameNotFound
+            If the provided username is not a non-empty string.
+        MaxRequestsExceed
+            If the maximum number of requests of the LevPasha Instagram API
+            has been exceeded.
+
+        Returns
+        -------
+        A dict with the downloaded user data.
+        """
         if (search_user == None or type(search_user) != str or search_user == ""):
             raise UsernameNotFound("ERROR. Invalid username.")
         try:
-            """Connect to the Levpasha Instagram API"""
+            # Connect to the Levpasha Instagram API
             inst_api = Api()
             inst_api.connect_levpasha_instagram_api()
-            """Download Instagram user data"""
+            # Download Instagram user data
             user_instagram_data = inst_api.get_levpasha_instagram_data(search_user)
-            """Preprocess and store user data"""
-            user_data = self.preprocess_and_store_common_data(user_instagram_data, 'Instagram')
+            # Preprocess and store user data
+            user_data = self.preprocess_and_store_common_data(user_instagram_data, "Instagram")
             return user_data
         except MaxRequestsExceed:   # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
 
     def preprocess_and_store_common_data(self, user_data, social_media):
-        """Preprocesses and stores user data from any API source into the MongoDB database."""
+        """
+        Preprocesses the common data of a specific user from any API source and
+        stores them in the Mongo database, if there aren't any items with the same
+        id and date. In this case, the provided user data won't be inserted.
+
+        Parameters
+        ----------
+        user_data : dict
+            It's the user data to preprocess and store.
+        social_media : str
+            It's the social media which the user data came from.
+
+        Raises
+        ------
+        UserDataNotFound
+            If the provided user data is not a dict.
+        InvalidSocialMediaSource
+            If the provided social media source is not a non-empty string or it's
+            not one of the avalaible social media sources.
+        InvalidMongoDbObject
+            If the MongoDB object has not been initialized and does not have the
+            connection to the Mongo database.
+
+        Returns
+        -------
+        A dict whose keys are the different user data and whose values indicate
+        if each type of user data has been inserted in the Mongo database. Options are:
+            - None, the item has not been inserted.
+            - str, the id of the new inserted item.
+        """
         if (type(user_data) != dict or len(user_data) == 0):
             raise UserDataNotFound("ERROR. User data should be a non empty dict.")
+        # Check the provided social media source
         if (type(social_media) != str or social_media == ""):
-            raise InvalidSocialMediaSource("ERROR. Social media type should be a non empty string.")
+            raise InvalidSocialMediaSource("ERROR. The social media source should be a non-empty string.")
+        if (social_media.lower() not in self.common_data.social_media_sources):
+            raise InvalidSocialMediaSource("ERROR. Avalaible social media sources: "
+               +str(self.common_data.social_media_sources))
+        
         if (type(self.mongodb) != MongoDB):
             raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
                                        "should be a MongoDB object.")
-            
-        # Preprocess data
-        cd = commondata.CommonData(self.mongodb)
-        prep_user_data = cd.preprocess_user_data(user_data)
-        """Store preprocessed user profile to MongoDB collection 'profiles'"""
-        profile = cd.add_user_data(prep_user_data['profile']['username'],
-            prep_user_data['profile'], 'profiles', social_media)
-
-        """Store user posts, their likers and comments into the same MongoDB collection 'posts'"""
-        all_posts = {}
-        all_posts['posts'] = prep_user_data['posts']
-        all_posts['likers'] = prep_user_data['likers']
-        all_posts['comments'] = prep_user_data['comments']
-        posts = cd.add_user_data(prep_user_data['profile']['username'],
-              all_posts, 'posts', social_media)
-        """Store the user followings and followers into the same MongoDB collection 'contacts'."""
-        all_contacts = {}
-        all_contacts['followings'] = prep_user_data['followings']
-        all_contacts['followers'] = prep_user_data['followers']
-        contacts = cd.add_user_data(prep_user_data['profile']['username'],
-            all_contacts, 'contacts', social_media)
-
-        """Return the final user data"""
-        result = {'profile':None, 'posts':None, 'contacts': None}
-        result['profile'] = profile[1]
-        result['contacts'] = contacts[1]
-        result['posts'] = posts[1]
-
-        return result
+        
+        # Preprocess the user data
+        preprocessed_data = self.common_data.preprocess_user_data(user_data, social_media)
+        # Common query to each type of user data. The new item won't be inserted
+        # if there are some matches (id, date)
+        query = {'id':str(preprocessed_data['profile']['userid'])+"_"+preprocessed_data['profile']['social_media'],
+                 'date':(date.today()).strftime("%d-%m-%Y")}
+        
+        # Preprocess and store the profile
+        profile = self.common_data.insert_user_data(preprocessed_data['profile'],
+                        'profiles', query)
+        # Preprocess and store the medias
+        medias = self.common_data.insert_user_data(preprocessed_data['media_list'],
+                        'medias', query)
+        # Preprocess and store the likers from the medias
+        likers = self.common_data.insert_user_data(preprocessed_data['media_likers'],
+                        'likers', query)
+        # Preprocess and store the texts from the medias
+        texts = self.common_data.insert_user_data(preprocessed_data['media_texts'],
+                        'texts', query)
+        # Preprocess and store the followers and followings
+        contacts = self.common_data.insert_user_data(preprocessed_data['contacts'],
+                        'contacts', query)
+        
+        return {'profile':profile, 'media':medias, 'likers':likers, 
+                'texts':texts, 'contacts':contacts}
     
-    # def perform_analysis(self, data_analysis):
-    #     """Method which searchs for the required data to the Mongo database in 
-    #         order to preprocess and store them in the PostgreSQL database. Then,
-    #         depending on the type of analysis and specified preferences, it gets
-    #         the required data from PostgreSQL in order to perform the specified analysis.
-    #     """
-    ######## VER SI ES UN DICT
-    ######## CAMPOS OBLIGATORIOS Y NO VACÍOS: user, analysis
-    ##### OBTENER LOS DATOS DE MONGODB EN FUNCIÓN DEL ANÁLISIS ELEGIDO
-    ##### FILTRARLOS POR LAS FECHAS QUE SEAN PROPORCIONANDOLAS PARA QUE EL USUARIO ESCOJA SOBRE SEGURO
-    ##### VER LAS PREFERENCIAS EN FUNCIÓN DEL ANÁLISIS QUE SEA Y PONER LAS EXCEPCIONES
-    ###### PARÁMETROS DEL DICT: {'user':<username>, 'init_date':<str or None>, 'fin_date':<str or None>,
-    ######                          'analysis':<str>, 'preferences':{}}
