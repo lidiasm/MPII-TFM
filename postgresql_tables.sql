@@ -25,10 +25,10 @@ ALTER TABLE public.test1 OWNER TO lidia;
 --
 CREATE TABLE public.test2(
     id VARCHAR(50) PRIMARY KEY,
-    id_test1 VARCHAR(50)  NOT NULL,
+    id_test1 VARCHAR(50) NOT NULL,
     like_count integer NOT NULL,
     text_count integer NOT NULL,
-    FOREIGN KEY (id_test) REFERENCES test1(id) ON DELETE CASCADE
+    FOREIGN KEY (id_test1) REFERENCES test1(id) ON DELETE CASCADE
 );
 
 -- 
