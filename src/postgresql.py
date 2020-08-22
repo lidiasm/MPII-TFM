@@ -13,135 +13,273 @@ import os
 import pg8000
 import sys
 sys.path.append('src/exceptions')
-from exceptions import TableNotFound, NewItemNotFound, DatabaseFieldsNotFound \
-    , InvalidConditions, InvalidFieldsToGet, InvalidDatabaseCredentials
+from exceptions import TableNotFound, NewItemNotFound, InvalidDatabaseConditions \
+    , InvalidDatabaseFields, InvalidDatabaseCredentials
 
 class PostgreSQL:
     
     def __init__(self):
-        """PostgreSQL constructor. It creates an object with two attributes:
-            - The name of the database.
-            - A connection to the PostgreSQL database which contains Instagram data.
+        """
+        Creates a PostgreSQL object whose attributes are:
+            - The PostgreSQL database credentials.
+            - The name of the PostgreSQL database.
+            - The connection to the PostgreSQL database.
             - A cursor which can be used to make queries to the database.
-            - The structure of each table in the database.
-            - The allowed commands to use in select query conditions."""
-        # Class variable in which the name of the PostgreSQL database is stored.
-        DATABASE = "socialnetworksdb"
+            - The fiels of each table in the database.
+
+        Raises
+        ------
+        InvalidDatabaseCredentials
+            If the PostgreSQL database credentials are not non-empty strings, 
+            are not stored in env variables or are wrong.
+
+        Returns
+        -------
+        A PostgreSQL object with the connection to the PostgreSQL database.
+        """
         user = os.environ.get("POSTGRES_USER") 
         pswd = os.environ.get("POSTGRES_PSWD")
         if (type(user) != str or user == "" or type(pswd) != str or pswd == ""):
             raise InvalidDatabaseCredentials("ERROR. The PostgreSQL credentials should be non-empty strings.")
         
-        self.connection = pg8000.connect(user=user, password=pswd, database=DATABASE)
+        self.database_name = "socialnetworksdb"
+        self.table_fields = {"test1":["id", "userid", "username", "date", "social_media"],
+                             "test2":["id", "id_test1", "like_count", "text_count"]}
+        # Connection to the database
+        self.connection = pg8000.connect(user=user, password=pswd, database=self.database_name)
         self.cursor = self.connection.cursor()
-        self.tables_structure = {'test1':['username', 'date', 'name', 'userid', 'biography',
-                          'gender', 'profile_pic', 'location', 'birthday', 'date_joined',
-                          'n_followers', 'n_followings', 'n_posts', 'social_media']}
-        self.condition_commands = ['WHERE', 'ORDER BY']
+    
+    def get_records(self, table, fields=[], conditions=""):
+        """
+        Makes a query and returns the values of the fields from the matched records
+        related to the specified query in a specific table.
 
-    def insert_item(self, new_item, table):
-        """Method which inserts a new item into a existing table of the database.
-            The new item should have the same required fields that the table has
-            in order to get a value for each field."""
+        Parameters
+        ----------
+        table : str
+            It's the table name in which the query is going to be made.
+        fields : list, optional
+            It's the list of fields to return.
+            If it's empty, all values will be returned.
+        conditions : str
+            It's a string which specifies the conditions to make the query.
+        
+        Raises
+        ------
+        TableNotFound
+            If the table name is not a non-empty string or does not exist.
+        InvalidDatabaseFields
+            If the provided fields are not non-empty strings or do not exist in the
+            provided table.
+        InvalidDatabaseConditions
+            If the provided conditions are not in a non-empty string.
+
+        Returns
+        -------
+        A tuple in which there are the matched records related to the made query.
+        """
+        # Check the provided table
+        if (type(table) != str or table == ""):
+            raise TableNotFound("ERROR. The table name should be a non-empty string.")
+        # Check if the provided table exists
+        if (table not in self.table_fields):
+            raise TableNotFound("ERROR. The provided table name does not exist in the PostgreSQL database.")
+        # Check the provided fields
+        if (len(fields) > 0):
+            # Check if they are in a list
+            if (type(fields) != list):
+                raise InvalidDatabaseFields("ERROR. The database fields should be in a list.")
+            # Check that each element is a non-empty string and exist in the provided table
+            result = [True for field in fields if (type(field) == str and field != ""
+                           and field in self.table_fields[table])]
+            if (len(result) != len(fields)):
+                raise InvalidDatabaseFields("ERROR. All database fields should"
+                        +" be non-empty strings and must exist in the provided table.")
+        # Check the provided conditions
+        if (len(conditions) > 0):
+            if (type(conditions) != str):
+                raise InvalidDatabaseConditions("ERROR. The query conditions should be in a non-empty strings.")
+            
+        # Build the query
+        query = "SELECT "
+        query += " * " if (len(fields) == 0) else ','.join(fields)
+        query += " FROM " + table
+        if (conditions != ""):
+            query += " WHERE " + conditions
+        
+        # Make the query
+        self.cursor.execute(query)
+        matches = self.cursor.fetchall()
+        return matches
+    
+    def insert_item(self, new_item, table, fields=[], conditions=""):
+        """
+        Inserts a new item in an existing table of the PostgreSQL database. A
+        query can be provided in order to check if there are any items which are
+        similar to the new item in order to insert it.
+
+        Parameters
+        ----------
+        new_item : dict
+            It's the dict with the new item to insert.
+        table : str
+            It's the table name in which the new item could be inserted.
+        fields : list, optional
+            It's the list of fields to make the query. The default is [].
+        conditions : str, optional
+            It's the string which contains the conditions to make the query. 
+            The default is "".
+        
+        Raises
+        ------
+        NewItemNotFound
+            If the provided item is not a non-empty dict.
+        TableNotFound
+            If the table name is not a non-empty string or does not exist.
+        InvalidDatabaseFields
+            If the provided fields are not non-empty strings or do not exist in the
+            provided table.
+        InvalidDatabaseConditions
+            If the provided conditions are not in a non-empty string.
+
+        Returns
+        -------
+        The number of the new inserted items.
+        """
         # Check the new item
         if (type(new_item) != dict or len(new_item) == 0):
-            raise NewItemNotFound("The new item should be a dict.")
+            raise NewItemNotFound("ERROR. The new item should be a non-empty dict.")
         # Check the specified table name
         if (type(table) != str or table == ""):
-            raise TableNotFound("The table should be a non empty string.")
-        # Check if the specified table name is in the database
-        if (table not in self.tables_structure):
-            raise TableNotFound("The specified table does not exist in the database.")
-        # Check the dict fields
-        for f in self.tables_structure[table]:
-            if (f not in new_item):
-                raise DatabaseFieldsNotFound("Some required fields are not in the new item, like: "+f)
-
-        table_fields_str = '(' + ','.join(self.tables_structure[table]) + ')'
-        insert_query = "INSERT INTO "+ table + " " + table_fields_str \
-            + " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-        list_values = []
-        for f in self.tables_structure[table]:
-            list_values.append(new_item[f])
-
-        values = tuple(list_values)
-        prev_rowcount = self.cursor.rowcount
-        self.cursor.execute(insert_query, values)
-        self.connection.commit()
-
-        return prev_rowcount < self.cursor.rowcount
-
-    def get_item_records(self, table, fields=[], conditions={}):
-        """Method to get the rows of a select query choosing:
-            - All fields or some of them. They should be non empty strings, stored
-                in a list and they should match to the fields of the specified table.
-            - Some conditions to make the select query (WHERE / ORDER BY). The command
-                will be the key and its value will be another dict with the conditions and
-                the boolean operators to apply. The key of the last condition won't be taken into account."""
-        # Check the specified table name
-        if (type(table) != str or table == ""):
-            raise TableNotFound("The table should be a non empty string.")
-        # Check if the specified table name is in the database
-        if (table not in self.tables_structure):
-            raise TableNotFound("The specified table does not exist in the database.")
-        # Check the fields to return.
-        if (type(fields) != list):
-            raise InvalidFieldsToGet("The fields to return should be stored in a list.")
-        for field in fields:
-            if (type(field) != str or field not in self.tables_structure[table]):
-                raise InvalidFieldsToGet("The fields to return should be non empty.")
-        # Check the conditions
-        if (type(conditions) != dict):
-            raise InvalidConditions("The conditions for getting items from the database should be a dict.")
-        for command in conditions:
-            if (command not in self.condition_commands):
-                raise InvalidConditions("The allowed commands are: "+ ','.join(self.condition_commands))
-
-        """Make and send the select query"""
-        select_query = "SELECT "
-        # Select every field
-        if (len(fields) == 0):
-            select_query += " * "
-        # Select some fields
-        else:
-            select_query += ','.join(fields)
-        # Specify the table
-        select_query += " FROM " + table
-        # Conditions
+            raise TableNotFound("ERROR. The table name should be a non-empty string.")
+        # Check if the provided table exists
+        if (table not in self.table_fields):
+            raise TableNotFound("ERROR. The provided table name does not exist in the PostgreSQL database.")
+        # Check the provided fields
+        if (len(fields) > 0):
+            # Check if they are in a list
+            if (type(fields) != list):
+                raise InvalidDatabaseFields("ERROR. The database fields should be in a list.")
+            # Check that each element is a non-empty string and exist in the provided table
+            result = [True for field in fields if (type(field) == str and field != "" 
+                       and field in self.table_fields[table])]
+            if (len(result) != len(fields)):
+                raise InvalidDatabaseFields("ERROR. All database fields should"
+                        +" be non-empty strings and must exist in the provided table.")
+        # Check the provided conditions
         if (len(conditions) > 0):
-            if ('WHERE' in conditions):
-                if (type(conditions['WHERE']) != dict):
-                    raise InvalidConditions("Each WHERE condition should be a dict like this: {'bool operator':'condition}")
-                select_query += " WHERE "
-                n_wheres = 0
-                for key in conditions['WHERE']:
-                    select_query += conditions['WHERE'][key]
-                    n_wheres += 1
-                    if (n_wheres < len(conditions['WHERE'])):
-                        select_query += " " + key + " "
-            if ('ORDER BY' in conditions):
-                select_query += " ORDER BY " + conditions['ORDER BY']
+            if (type(conditions) != str):
+                raise InvalidDatabaseConditions("ERROR. The query conditions should be in a non-empty strings.")
+            
+        # Make the query if the fields or/and the conditions have been provided
+        matches = ()
+        if (len(fields) > 0 or len(conditions) > 0):
+            matches = self.get_records(table, fields, conditions)
+            
+        # Check if there are any matches
+        if (len(matches) == 0):
+            # Make the query
+            table_fields_str = '(' + ','.join(self.table_fields[table]) + ')'
+            value_count = " VALUES("
+            # Add the list of values
+            list_values = []
+            for f in self.table_fields[table]:
+                list_values.append(new_item[f])
+                value_count += "%s,"
+            # Delete the last comma
+            value_count = value_count[:-1]
+            # Close the value section
+            value_count += ")"
+            # Query 
+            insert_query = "INSERT INTO "+ table + " " + table_fields_str + value_count
+            values = tuple(list_values)
+            # Number of rows before the insertion
+            before_size = self.get_table_size(table)
+            self.cursor.execute(insert_query, values)
+            self.connection.commit()
+            # Number of rows after the insertion
+            after_size = self.get_table_size(table)
+            
+            return before_size < after_size
+        
+    def get_table_size(self, table):
+        """
+        Gets the number of records of the provided table. In order to do that, 
+        'count()' operation will be used to make a query which returns the number
+        of rows of the table.
 
-        # Send the select query
-        self.cursor.execute(select_query)
-        rows = self.cursor.fetchall()
+        Parameters
+        ----------
+        table : str
+            It's the table name whose size is going to be get.
 
-        return rows
+        Raises
+        ------
+        TableNotFound
+            If the table name is not a non-empty string or does not exist in the
+            PostgreSQL database.
 
-    def empty_table(self, table):
-        """Method which deletes all rows of a specific table. If it has some
-            foreign keys, with the argument CASCADE it deletes all the rows related
-            to the ones which are going to be deleted."""
+        Returns
+        -------
+        An integer which is the number of records of the provided table.
+        """
+        # Check the specified table name
+        if (type(table) != str or table == ""):
+            raise TableNotFound("ERROR. The table name should be a non-empty string.")
+        # Check if the provided table exists
+        if (table not in self.table_fields):
+            raise TableNotFound("ERROR. The provided table name does not exist in the PostgreSQL database.")
+
+        query = "SELECT count(*) FROM "+table
+        self.cursor.execute(query)
+        return self.cursor.fetchone()[0]
+    
+    def delete_records(self, table, conditions=""):
+        """
+        Deletes the records which matched with the provided conditions.
+        If there aren't any conditions, all records will be deleted of the
+        specific table.
+
+        Parameters
+        ----------
+        table : str
+            It's the table whose records are going to be deleted.
+        conditions : str, optional
+            They are the conditions to match the records to delete.ç
+            If there aren't any conditions, all records will be deleted.
+
+        Raises
+        ------
+        TableNotFound
+            If the table name is not a non-empty string or does not exist.
+
+        Returns
+        -------
+        True if the records have been deleted, False if they have not.
+        """
         # Check the specified table name
         if (type(table) != str or table == ""):
             raise TableNotFound("The table should be a non empty string.")
         # Check if the specified table name is in the database
-        if (table not in self.tables_structure):
+        if (table not in self.table_fields):
             raise TableNotFound("The specified table does not exist in the database.")
-
-        prev_rowcount = self.cursor.rowcount
-        delete_query = "TRUNCATE " + table + " CASCADE"
-        self.cursor.execute(delete_query)
+        # Make the query
+        query = "DELETE FROM " + table
+        # Check the provided conditions
+        if (len(conditions) > 0):
+            if (type(conditions) != str):
+                raise InvalidDatabaseConditions("ERROR. The query conditions should be in a non-empty strings.")
+            # Add the conditions
+            query += " WHERE " + conditions
+            
+        # Get the matches
+        matches = self.get_records(table, conditions=conditions)
+        # Get the size of the table before the deleting
+        before_size = self.get_table_size(table)
+        # Send the query
+        self.cursor.execute(query)
         self.connection.commit()
+        # Get the size of the table after the deleting
+        after_size = self.get_table_size(table)
 
-        return prev_rowcount-self.cursor.rowcount == 0
+        return len(matches) == (before_size-after_size)
