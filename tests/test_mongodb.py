@@ -10,16 +10,19 @@ import os
 import sys
 sys.path.append("src")
 import pytest
-from exceptions import CollectionNotFound, NewItemNotFound, EmptyCollection, ItemNotFound, InvalidDatabaseCredentials
+from exceptions import ConnectionNotFound, CollectionNotFound, NewItemNotFound \
+    , InvalidDatabaseCredentials, InvalidQuery
 from mongodb import MongoDB
 from datetime import date
 
-"""Connection to a test database with a test collection."""
+# Connection to a test database with a test collection.
 test_connection = MongoDB('test')
 
 def test1_constructor():
-    """Test to check the constructor of the Mongo database class without providing 
-        the valid MongoDB uri. An exception will be raised."""
+    """
+    Test to check the constructor of the Mongo database class without providing 
+    a valid MongoDB uri. An exception will be raised.
+    """
     global uri
     uri = os.environ["MONGODB_URI"]
     os.environ["MONGODB_URI"] = ""
@@ -27,149 +30,209 @@ def test1_constructor():
         MongoDB("test")
         
 def test2_constructor():
-    """Test to check the constructor of the Mongo database class without providing 
-        a valid collection name to connect to. An exception will be raised. Also, the
-        MongoDB uri is set again."""
+    """
+    Test to check the constructor of the Mongo database class without providing 
+    a valid collection name to connect to. An exception will be raised. Also, the
+    MongoDB uri is set again.
+    """
     global uri
     os.environ["MONGODB_URI"] = uri
     with pytest.raises(InvalidDatabaseCredentials):
         MongoDB(1234)
 
-def test1_insert():
-    """Test to check the insert method with a valid new item. In the first place,
-        we try to empty the collection."""
-    try:
-        test_connection.empty_collection()
-    except EmptyCollection:
-        print("Empty collection")
-    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
-            'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
-            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
-    id_new_item = test_connection.insert(data)
-    assert id_new_item != None
-
-def test2_insert():
-    """Test to check the insert method with a valid user data which already exists.
-        So the insert method won't insert the item."""
-    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
-            'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
-            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
-    id_new_item = test_connection.insert(data)
-    assert id_new_item == None
-
-def test3_insert():
-    """Test to check the insert method without a valid new item."""
-    data = {}
-    with pytest.raises(NewItemNotFound):
-        test_connection.insert(data)
-      
-def test4_insert():
-    """Test to check the insert method without a valid collection. In order to
-        do that we create another connection and modify to make it invalid."""
-    invalid_connection = MongoDB('test')
-    invalid_connection.collection = None
-    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
-            'data':{'profile':{'username':'lidia', 'name':'lidia', 'email':'lidia@lidia.es'},
-            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
-    with pytest.raises(CollectionNotFound):
-        invalid_connection.insert(data)
-
-def test1_get_item_records():
-    """Test to check the get item rows method which returns a set of the records
-        related to an user. In order to do that first we insert two records of the same user."""
-    data_user1 = {'id':'pacogp', 'date':str(date.today()), 
-            'data':{'profile':{'username':'pacogp', 'name':'Paco', 'email':None},
-            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
-    data_user2 = {'id':'pacogp', 'date':'2020-02-20', 
-            'data':{'profile':{'username':'pacogp', 'name':'Paquillo', 'email':None},
-            'followers':['lidiasm', 'luciav'], 'following':['lidiasm', 'lucia']}}
-    test_connection.insert(data_user1)
-    test_connection.insert(data_user2)
-    result = test_connection.get_item_records('id', 'pacogp')
-    assert type(result) == dict
-    
-def test2_get_item_records():
-    """Test to check the get item rows method without a right connection to the 
-        database."""
-    new_connection = MongoDB('test')
-    new_connection.collection = None
-    with pytest.raises(CollectionNotFound):
-        new_connection.get_item_records('id', 'pacogp')
-
-def test1_collection_size():
-    """Test to check the method which returns the number of documents which are
-        contained in the current collection."""
-    assert type(test_connection.collection_size()) == int
-
-def test1_get_collection():
-    """Test to check the get collection method with the current collection."""
-    collection = test_connection.get_collection()
-    assert type(collection) == dict
-
-def test2_get_collection():
-    """Test to check the get collection method with an empty collection. In order
-        to do that we create another connection."""
-    new_connection = MongoDB('DB')
-    with pytest.raises(EmptyCollection):
-        new_connection.get_collection()
-
-def test3_get_collection():
-    """Test to check the get collection method with an invalid connection. In order
-        to do that we create another connection and we set the collection None."""
-    new_connection = MongoDB('test')
-    new_connection.collection = None
-    with pytest.raises(CollectionNotFound):
-        new_connection.get_collection()
-    
-def test1_delete_item():
-    """Test to check if all the records of a user are deleted."""
-    result = test_connection.delete_item_records('id', 'pacogp')
-    assert result.acknowledged == True 
-
-def test2_delete_item():
-    """Test to check the delete method when the item to delete doesn't exist."""
-    with pytest.raises(ItemNotFound):
-        test_connection.delete_item_records('id', '-1')
-
-def test3_delete_item():
-    """Test to check the delete method when the item to delete doesn't exist."""
-    with pytest.raises(ItemNotFound):
-        test_connection.delete_item_records('whatever', '1')
-
-def test4_delete_item():
-    """Test to check the delete method when the collection doesn't exist.
-        In order to do that we create another connection and set it to None."""
-    new_connection = MongoDB('test')
-    new_connection.collection = None
-    with pytest.raises(CollectionNotFound):
-        new_connection.delete_item_records('whatever', '1')
-
-def test1_empty_collection():
-    """Test to check the delete method when the collection doesn't exist. In order
-        to do that we create another connection and set it to None."""
-    invalid_connection = MongoDB('test')
-    invalid_connection.collection = None
-    with pytest.raises(CollectionNotFound):
-        invalid_connection.empty_collection()
-        
-def test2_empty_collection():
-    """Test to check the delete method which remove the documents of the
-        current collection."""
-    result = test_connection.empty_collection()
-    assert result.acknowledged == True
-    
-def test3_empty_collection():
-    """Test to check the delete method when the collection is already empty."""
-    with pytest.raises(EmptyCollection):
-        test_connection.empty_collection()
-        
 def test1_set_collection():
-    """Test to check the set collection method when the collection name is not valid."""
+    """
+    Test to check the set_collection method without providing a valid collection name.
+    So an exception will be raised.
+    """
     with pytest.raises(CollectionNotFound):
         test_connection.set_collection('')
 
 def test2_set_collection():
-    """Test to check the set collection method to change the current collection."""
-    new_collection = "test2"
+    """
+    Test to check the set_collection method providing a valid collection name to
+    connect with. In this test, the new collection to connect with is 'test'.
+    """
+    new_collection = "test"
     result = test_connection.set_collection(new_collection)
     assert result.name == new_collection
+        
+def test1_insert_item():
+    """
+    Test to check the insert method without connecting to the Mongo database 
+    previously. An exception will be raised. In order to do that, the connection
+    attribute will be set to None.
+    """
+    invalid_mongodb = MongoDB('test')
+    invalid_mongodb.connection = None
+    with pytest.raises(ConnectionNotFound):
+       invalid_mongodb.insert_item(None)
+       
+def test2_insert_item():
+    """
+    Test to check the insert method without providing a valid new item to insert
+    to the current collection in the Mongo database. An exception will be raised.
+    """
+    with pytest.raises(NewItemNotFound):
+       test_connection.insert_item(None)
+       
+def test3_insert_item():
+    """
+    Test to check the insert method without providing a valid query dict to check if the
+    new element is already in the database. An exception will be raised.
+    """
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
+            'data':{'profile':{'username':'lidia06', 'name':'lidia'},
+            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
+    with pytest.raises(InvalidQuery):
+       test_connection.insert_item(data, "")
+       
+def test4_insert_item():
+    """
+    Test to check the insert method without providing a valid query dict because
+    its keys are not string to check if the new element is already in the database.
+    An exception will be raised.
+    """
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
+            'data':{'profile':{'username':'lidia06', 'name':'lidia'},
+            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
+    with pytest.raises(InvalidQuery):
+       test_connection.insert_item(data, {1:5})
+       
+def test5_insert_item():
+    """
+    Test to check the insert method without providing a valid query because there
+    are None values to check if the new element is already in the database. 
+    An exception will be raised.
+    """
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 
+            'data':{'profile':{'username':'lidia06', 'name':'lidia'},
+            'followers':{'1':'lucia'}, 'following':{'1':'lucia'}}}
+    with pytest.raises(InvalidQuery):
+       test_connection.insert_item(data, {'id':None})
+
+def test6_insert_item():
+    """
+    Test to check the insert method adding a new element to the 'test' collection.
+    A string will be returned with the item id.
+    """
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 'name':'Lidia'}
+    id_new_item = test_connection.insert_item(data)
+    assert type(id_new_item) == str
+
+def test7_insert_item():
+    """
+    Test to check the insert method trying to add a new item which already exists
+    by the specified query. So the insert method won't add the new item and None
+    will be returned.
+    """
+    data = {'id':'1', 'date':(date.today()).strftime("%d-%m-%Y"), 'name':'Lidia'}
+    query = {'id':'1'}
+    id_new_item = test_connection.insert_item(data, query)
+    assert id_new_item == None
+    
+def test8_insert_item():
+    """
+    Test to check the insert method adding a new item and making a query in order
+    to check if there are any items which matches with the specified conditions.
+    In this case there aren't, so an string with the id of the added item will be returned.
+    """
+    data = {'id':'2', 'date':(date.today()).strftime("%d-%m-%Y"), 'name':'Anna'}
+    query = {'id':'1', 'date':'01-05-2020'}
+    id_new_item = test_connection.insert_item(data, query)
+    assert type(id_new_item) == str
+
+def test1_get_records():
+    """
+    Test to check the get method without connecting to the Mongo database 
+    previously. An exception will be raised. In order to do that, the connection
+    attribute will be set to None.
+    """
+    invalid_mongodb = MongoDB('test')
+    invalid_mongodb.connection = None
+    with pytest.raises(ConnectionNotFound):
+       invalid_mongodb.get_records(None)
+       
+def test2_get_records():
+    """
+    Test to check the get method without providing a valid query, so an exception
+    will be raised.
+    """
+    with pytest.raises(InvalidQuery):
+       test_connection.get_records(None)
+       
+def test3_get_records():
+    """
+    Test to check the get method without providing a valid query whose keys are strings
+    and there are not None values. An exception will be raised.
+    """
+    with pytest.raises(InvalidQuery):
+       test_connection.get_records({'id':None})
+       
+def test4_get_records():
+    """
+    Test to check the get method getting the records related to the specified query.
+    A dict will be returned with the matched items. In this test, we will search
+    for the id of a previously added item in previous tests.
+    """
+    matched_items = test_connection.get_records({'id':'1'})
+    assert type(matched_items) == dict and len(matched_items) > 0
+    
+def test5_get_records():
+    """
+    Test to check the get method getting all the documents of the current collection
+    named 'test'. In order to do that, the query is not specified.
+    """
+    matched_items = test_connection.get_records()
+    assert type(matched_items) == dict and len(matched_items) > 0
+
+def test1_collection_size():
+    """
+    Test to check the method which returns the number of documents which are
+    contained in the current collection.
+    """
+    assert type(test_connection.collection_size()) == int
+    
+def test1_delete_records():
+    """
+    Test to check the dekete method without connecting to the Mongo database 
+    previously. An exception will be raised. In order to do that, the connection
+    attribute will be set to None.
+    """
+    invalid_mongodb = MongoDB('test')
+    invalid_mongodb.connection = None
+    with pytest.raises(ConnectionNotFound):
+       invalid_mongodb.delete_records(None)
+       
+def test2_delete_records():
+    """
+    Test to check the delete method without providing a valid query, so an exception
+    will be raised.
+    """
+    with pytest.raises(InvalidQuery):
+       test_connection.delete_records(None)
+       
+def test3_delete_records():
+    """
+    Test to check the delete method without providing a valid query whose keys are strings
+    and there are not None values. An exception will be raised.
+    """
+    with pytest.raises(InvalidQuery):
+       test_connection.delete_records({'id':None})
+       
+def test4_delete_records():
+    """
+    Test to check the delete method removing the records related to the specified query.
+    In this test, we will search for the id of a previously added item in previous tests.
+    """
+    deleted_items = test_connection.delete_records({'id':'1'})
+    assert type(deleted_items) == int and deleted_items > 0
+    
+def test5_delete_records():
+    """
+    Test to check the delete method getting all the documents of the current collection
+    named 'test'. In order to do that, the query is not specified.
+    """
+    test_connection.delete_records()
+    current_size = test_connection.collection_size()
+    assert current_size == 0
