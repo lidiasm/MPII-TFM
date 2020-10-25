@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Class in which there are many APIs to connect to in order to download and get
-interesting data related to an user social media account. Then, this information
+Class in which there are some APIs to connect to in order to download and get
+data related to an user social media account. Then, this information
 will be stored in the database.
 
 @author: Lidia Sánchez Mérida
@@ -12,8 +12,9 @@ import os
 from os import path
 import sys
 sys.path.append("../")
-from exceptions import InvalidCredentials, UsernameNotFound, MaxRequestsExceed \
-    , InvalidUserId, InvalidLimit, PostListNotFound, PostDictNotFound
+from exceptions import InvalidCredentials \
+    , UsernameNotFound, MaxRequestsExceed, InvalidUserId, InvalidLimit \
+    , PostListNotFound, PostDictNotFound
 from InstagramAPI import InstagramAPI
 import time 
 import pickle
@@ -117,8 +118,8 @@ class Api:
         # Profile with the interesting fields
         profile = {}
         profile['userid'] = self.connection.LastJson['user']['pk']
-        profile['name'] = self.connection.LastJson['user']['full_name']
         profile['username'] = self.connection.LastJson['user']['username']
+        profile['name'] = self.connection.LastJson['user']['full_name']
         profile['biography'] = self.connection.LastJson['user']['biography']
         profile['gender'] = None
         profile['profile_pic'] = self.connection.LastJson['user']['profile_pic_url']
@@ -126,7 +127,7 @@ class Api:
         profile['birthday'] = None
         profile['date_joined'] = None
         profile['n_followers'] = self.connection.LastJson['user']['follower_count']
-        profile['n_following'] = self.connection.LastJson['user']['following_count']
+        profile['n_followings'] = self.connection.LastJson['user']['following_count']
         profile['n_medias'] = self.connection.LastJson['user']['media_count']
         
         return profile
@@ -185,7 +186,6 @@ class Api:
             items_list = self.connection.LastJson['items']
             for i in items_list:
                 posts.append({'id_media':i['id'], 
-                              'title':None,
                               'like_count':i['like_count'], 
                               'comment_count':i['comment_count']})
             
@@ -425,7 +425,7 @@ class Api:
         user_data : dict
             It's a dict with the Instagram data of a specific user. Keys are:
                 - profile, which contains the dict of the user profile.
-                - medias, which contains a list of the posts of the user with
+                - posts, which contains a list of the posts of the user with
                     their ids, titles and number of likes and comments.
                 - likers, which contains the list of usernames which represent
                     the people who liked each media.
@@ -455,7 +455,7 @@ class Api:
                 (user_data['profile']['username'], user_data['medias'])
             time.sleep(30)
             # Comments of the posts
-            user_data['texts'] = self.get_levpasha_instagram_posts_comments(
+            user_data['comments'] = self.get_levpasha_instagram_posts_comments(
                 user_data['profile']['username'], user_data['medias'])
             time.sleep(30)
             
