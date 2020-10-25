@@ -99,7 +99,7 @@ class PostgreDB:
             raise InvalidDatabaseCredentials("ERROR. The PostgreSQL credentials should be non-empty strings.")
         # Try to connect to the database        
         try:
-            self.connection = psycopg2.connect(user=user, password=pswd, database=self.database_name)
+            self.connection = psycopg2.connect(host="localhost", user=user, password=pswd, database=self.database_name)
             self.cursor = self.connection.cursor()
             return self.cursor
         except Exception: # pragma no cover
