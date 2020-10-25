@@ -48,6 +48,23 @@ class ProfileDictNotFound(Exception):
         self.mensaje = mensaje
         
 ############################## CLASS COMMONDATA ###############################
+class ValuesNotFound(Exception):
+    """Class exception to point out that there is not a list of values to analyze."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class KeysNotFound(Exception):
+    """Class exception to point out that there is not a list of keys to analyze."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class ExpectedSameSize(Exception):
+    """Class exception to point out that the provided data have not the same size."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+
+###############################################################################        
 class InvalidSocialMediaSource(Exception):
     """Class exception to point out that the provided social media source is wrong."""
     def __init__(self, mensaje):
@@ -154,7 +171,7 @@ class InvalidQueryValues(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-############################ CLASS DATAANALYZER #############################
+############################ CLASS DATAANALYZER #############################        
 class InvalidLinePlotData(Exception):
     """Class exception to point out that the data provided to draw a line plot
     is wrong."""
@@ -174,6 +191,16 @@ class ProfilesNotFound(Exception):
         
 class UserActivityNotFound(Exception):
     """Class exception to point out that the user activity to analyze is not found"""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class PostsNotFound(Exception):
+    """Class exception to point out that there is not list of posts to analyze."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class PostInteractionsNotFound(Exception):
+    """Class exception to point out that there is not list of post interactions to analyze."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
