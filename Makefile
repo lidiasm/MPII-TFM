@@ -4,7 +4,7 @@ install:
 
 test:
 	# Execute the tests for the project classes.
-	python3 -B -m pytest --disable-warnings tests/test_data_analyzer.py
+	python3 -B -m pytest --disable-warnings tests/*
 	# Coverage tests
 	# --cov-report=html
 	python3 -B -m pytest --disable-warnings --cov=api --cov=commondata --cov=mongodb \
