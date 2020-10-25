@@ -62,7 +62,12 @@ class ContactDictNotFound(Exception):
     """Class exception to point out that the dict of contacts don't exist."""
     def __init__(self, mensaje):
         self.mensaje = mensaje        
-
+        
+class InvalidMediaId(Exception):
+    """Class exception to point out that the media id is not found or is invalid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje 
+        
 class MediaListNotFound(Exception):
     """Class exception to point out that the list of media from an user account
     doesn't exist."""
@@ -79,6 +84,11 @@ class LikerListNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
+class LikerDictNotFound(Exception):
+    """Class exception to point out that each liker should be in a dict."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
 class TextListNotFound(Exception):
     """Class exception to point out that the list of texts from medias is not valid."""
     def __init__(self, mensaje):
@@ -91,6 +101,11 @@ class TextDictNotFound(Exception):
         
 class UserDataNotFound(Exception):
     """Class exception to point out that there aren't any user data."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+class InvalidTextList(Exception):
+    """Class exception to point out that the provided list of texts is not right"""
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
@@ -120,23 +135,46 @@ class InvalidQuery(Exception):
     """Class exception to point out that the provided query is wrong"""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-############################ CLASS MAINOPERATIONS #############################
-
-############################ CLASS POSTGRESQL #############################
-class TableNotFound(Exception):
-    """Class exception to point out that the specified table is not right."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-
-class InvalidDatabaseFields(Exception):
-    """Class exception to point out that the provided fields to return in a SQL database
-    query are wrong."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
         
+############################ CLASS POSTGRESQL #############################
 class InvalidDatabaseConditions(Exception):
     """Class exception to point out that the provided conditions to make the query
     in the SQL database are wrong."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
+        
+class InvalidTableName(Exception):
+    """Class exception to point out that the provided table name is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidQueryValues(Exception):
+    """Class exception to point out that the provided values to make the query
+    is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+############################ CLASS DATAANALYZER #############################
+class InvalidLinePlotData(Exception):
+    """Class exception to point out that the data provided to draw a line plot
+    is wrong."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidBarPlotData(Exception):
+    """Class exception to point out that the data provided to draw a bar plot
+    is wrong."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class ProfilesNotFound(Exception):
+    """Class exception to point out that the list of profiles to analyze is not found"""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class UserActivityNotFound(Exception):
+    """Class exception to point out that the user activity to analyze is not found"""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+
+############################ CLASS MAINOPERATIONS #############################
