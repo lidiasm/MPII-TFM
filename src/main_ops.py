@@ -15,7 +15,7 @@ from api import Api
 import commondata
 #import data_analyzer
 from mongodb import MongoDB
-from postgresql import PostgreSQL
+from postgredb import PostgreDB
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
    , InvalidDatabaseCredentials, InvalidMongoDbObject, InvalidSocialMediaSource
 
@@ -28,7 +28,7 @@ class MainOperations:
             - A MongoDB object to operate with the Mongo database.
             - A DataAnalyzer object to perform the different avalaible analysis.
             - A list with the different avalaible analysis to perform.
-            - A PostgreSQL object to insert and get data from the SQL tables.
+            - A PostgreDB object to insert and get data from the SQL tables.
 
         Raises
         ------
@@ -43,14 +43,14 @@ class MainOperations:
         psql_user = os.environ.get("POSTGRES_USER")
         psql_pswd = os.environ.get("POSTGRES_PSWD")
         if (type(psql_user) != str or type(psql_pswd) != str or psql_user == "" or psql_pswd == ""):
-            raise InvalidDatabaseCredentials("ERROR. PostgreSQL should be non-empty strings.")
+            raise InvalidDatabaseCredentials("ERROR. PostgreDB should be non-empty strings.")
             
         self.mongodb = MongoDB('profiles')
         self.common_data = commondata.CommonData(self.mongodb)
         #self.data_analysis = data_analyzer.DataAnalyzer()
         self.avalaible_analysis = ["ProfileEvolution", "SortPosts", "PostsEvolution",
                          "FollowersActivity", "ContactsActivity", "GeneralBehaviour", "Haters/Friends"]
-        self.postgresql = PostgreSQL()
+        self.postgredb = PostgreDB()
 
     def get_user_instagram_common_data(self, search_user):
         """
@@ -139,22 +139,22 @@ class MainOperations:
         query = {'id':str(preprocessed_data['profile']['userid'])+"_"+preprocessed_data['profile']['social_media'],
                  'date':(date.today()).strftime("%d-%m-%Y")}
         
-        # Preprocess and store the profile
+        # Store the preprocessed profile
         profile = self.common_data.insert_user_data(preprocessed_data['profile'],
                         'profiles', query)
-        # Preprocess and store the medias
+        # Store the preprocessed medias
         medias = self.common_data.insert_user_data(preprocessed_data['media_list'],
                         'medias', query)
-        # Preprocess and store the likers from the medias
+        # Store the preprocessed likers from the medias
         likers = self.common_data.insert_user_data(preprocessed_data['media_likers'],
                         'likers', query)
-        # Preprocess and store the texts from the medias
-        texts = self.common_data.insert_user_data(preprocessed_data['media_texts'],
-                        'texts', query)
-        # Preprocess and store the followers and followings
+        # Store the preprocessed comments from the medias
+        comments = self.common_data.insert_user_data(preprocessed_data['media_comments'],
+                        'comments', query)
+        # Store the preprocessed followers and followings
         contacts = self.common_data.insert_user_data(preprocessed_data['contacts'],
                         'contacts', query)
         
         return {'profile':profile, 'media':medias, 'likers':likers, 
-                'texts':texts, 'contacts':contacts}
+                'comments':comments, 'contacts':contacts}
     

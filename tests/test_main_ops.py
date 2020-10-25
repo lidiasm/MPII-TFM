@@ -98,23 +98,21 @@ def test5_preprocess_and_store_common_data():
     Test to preprocess and store user data in the Mongo database from any 
     social media source.
     """
-    profile = {"userid" : 123456789, "name" : "Lidia Sánchez", "username" : "lidia.96.sm", 
+    profile = {"userid" : 123456789, "username" : "lidia.96.sm", "name" : "Lidia Sánchez",
                 "biography" : "\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
                 "gender" : "None", "profile_pic" : "https://instagram_example", 
                 "location" : "None", "birthday" : "None", "date_joined" : "None", 
-                "n_followers" : 61, "n_medias" : 6, "social_media" : "Instagram"}
-
-    medias = [{'id_media': '1', 'like_count': 29, 'comment_count': 14, "title":None}, 
-              {'id_media': '2', 'like_count': 18, 'comment_count': 0, "title" : "Title 1"}]
+                "n_followers" : 61, "n_followings":45, "n_medias" : 6}
+    medias = [{'id_media': '1', 'like_count': 29, 'comment_count': 14}, 
+              {'id_media': '2', 'like_count': 18, 'comment_count': 0}]
     likers = [{'id_media':'1', 'users':['user1','user2','user3']}]
     texts = [{'id_media': '1', 
-              'texts': [{'user': 'user1', 'text': 'aa'}, {'user': 'user2', 'text': 'ee'}],
-              'social_media':'Instagram'},
+              'texts': [{'user': 'user1', 'text': 'aa'}, {'user': 'user2', 'text': 'ee'}]},
               {'id_media': '2', 
               'texts': [{'user': 'user3', 'text': 'ii'}, {'user': 'user2', 'text': 'oo'}]}]
     contacts = {'followers':['user1', 'user2', 'user3'], 'followings':['user1', 'user4']}
     user_data = {'profile':profile, 'medias':medias, 'likers':likers, 
-                  'texts':texts, 'contacts':contacts}
+                  'comments':texts, 'contacts':contacts}
     mo = main_ops.MainOperations()
     result = mo.preprocess_and_store_common_data(user_data, 'Instagram')
     assert type(result) == dict
