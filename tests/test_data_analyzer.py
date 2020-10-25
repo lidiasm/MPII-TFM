@@ -12,11 +12,97 @@ import pytest
 sys.path.append("src")
 sys.path.append("src/data")
 import data_analyzer 
-from exceptions import InvalidLinePlotData, UsernameNotFound, ProfilesNotFound \
+from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize, InvalidLinePlotData, UsernameNotFound, ProfilesNotFound \
     , InvalidBarPlotData, UserActivityNotFound
     
 # DataAnalyzer object to run the data analyzer methods
 da = data_analyzer.DataAnalyzer()
+
+def test1_get_values_per_one_week():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys per one week. In this test, the list of values is not 
+    provided so an exception will be raised.
+    """
+    with pytest.raises(ValuesNotFound):
+        assert da.get_values_per_one_week(None, None)
+
+def test2_get_values_per_one_week():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys peer one week. In this test, the list of keys is not provided
+    so an exception will be raised.
+    """
+    values = [('12/10/2020', '14'), ('14/10/2020', '21'), ('16/10/2020', '54')]
+    with pytest.raises(KeysNotFound):
+        assert da.get_values_per_one_week(values, None)
+        
+def test3_get_values_per_one_week():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys peer one week. In this test, the list of values for each 
+    record has not the same size than the number of keys, so an exception will be raised.
+    """
+    values = [('12/10/2020', '14'), ('14/10/2020', '21'), ('16/10/2020', '54')]
+    keys = ['date']
+    with pytest.raises(ExpectedSameSize):
+        assert da.get_values_per_one_week(values, keys)
+        
+def test4_get_values_per_one_week():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys per one week. The returned dict contains the keys and their 
+    related list of values.
+    """
+    values = [('12/10/2020', '14'), ('14/10/2020', '21'), ('16/10/2020', '54')]
+    keys = ['date', 'field_one']
+    result = da.get_values_per_one_week(values, keys)
+    assert len(list(result.keys())) == len(keys)
+    
+def test1_get_values_per_many_weeks():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys per more than a week. In this test, the list of values is 
+    not provided so an exception will be raised.
+    """
+    with pytest.raises(ValuesNotFound):
+        assert da.get_values_per_many_weeks(None, None)
+
+def test2_get_values_per_many_weeks():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys per more than a week. In this test, the list of keys is not 
+    provided so an exception will be raised.
+    """
+    values = [('12/10/2020', '14'), ('14/10/2020', '21'), ('16/10/2020', '54')]
+    with pytest.raises(KeysNotFound):
+        assert da.get_values_per_many_weeks(values, None)
+        
+def test3_get_values_per_many_weeks():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys per more than a week. In this test, the list of values for 
+    each record has not the same size than the number of keys, so an exception
+    will be raised.
+    """
+    values = [('12/10/2020', '14'), ('14/10/2020', '21'), ('16/10/2020', '54')]
+    keys = ['date']
+    with pytest.raises(ExpectedSameSize):
+        assert da.get_values_per_many_weeks(values, keys)
+        
+def test4_get_values_per_many_weeks():
+    """
+    Test to check the method which gets a list of values and links to their
+    related keys per more than a week. The returned dict contains the keys and 
+    their related list of values.
+    """
+    values = [('12/10/2020', '14'), ('14/10/2020', '21'), ('16/10/2020', '54'),
+          ('18/10/2020', '24'), ('19/10/2020', '26'), ('20/10/2020', '29'),
+          ('26/10/2020', '34'), ('14/10/2020', '37'), ('16/10/2020', '42'),
+          ('29/10/2020', '54'), ('14/10/2020', '51'), ('16/10/2020', '63')]
+    keys = ['date', 'field_one']
+    result = da.get_values_per_many_weeks(values, keys)
+    assert len(list(result.keys())) == len(keys)
 
 def test1_plot_lines():
     """
@@ -96,6 +182,27 @@ def test4_profile_evolution():
                     ("22/10/2020", "15", "100", "35"),
                     ("24/10/2020", "25", "104", "68"),
                     ("28/10/2020", "26", "148", "124")]
+    result = da.profile_evolution("lidiasm", profile_list)
+    time(5)
+    assert result == True
+    
+def test5_profile_evolution():
+    """
+    Test to check the method which draws a line plot after analysing the evolution
+    of the profile from a specific user. 
+    """
+    profile_list = [("20/10/2020", "12", "54", "27"),
+                    ("21/10/2020", "15", "100", "35"),
+                    ("22/10/2020", "25", "104", "68"),
+                    ("23/10/2020", "26", "148", "124"),
+                    ("24/10/2020", "28", "135", "124"),
+                    ("25/10/2020", "27", "121", "124"),
+                    ("26/10/2020", "29", "125", "124"),
+                    ("27/10/2020", "29", "126", "124"),
+                    ("28/10/2020", "31", "148", "128"),
+                    ("29/10/2020", "35", "142", "132"),
+                    ("30/10/2020", "34", "139", "132"),
+                    ("31/10/2020", "40", "145", "140")]
     result = da.profile_evolution("lidiasm", profile_list)
     time(5)
     assert result == True
@@ -180,80 +287,51 @@ def test4_user_activity():
     In this test, the provided user activity is not valid so an exception will be raised.
     """
     invalid_user_activity = [("24/10/2020"), ("25/10/2020", "125"),
-                             ("24/10/2020"), ("25/10/2020", "125"),
-                             ("24/10/2020"), ("25/10/2020", "125"),
-                             ("24/10/2020"), ("25/10/2020", "125")]
+                              ("24/10/2020"), ("25/10/2020", "125"),
+                              ("24/10/2020"), ("25/10/2020", "125"),
+                              ("24/10/2020"), ("25/10/2020", "125")]
     with pytest.raises(UserActivityNotFound):
         assert da.user_activity("lidiasm", invalid_user_activity)
-        
+
 def test5_user_activity():
+    """
+    Test to check the method which analyzes the user activity per week or more.
+    In this test, the provided user activity is not valid so an exception will be raised.
+    """
+    user_activity = [("20/10/2020", "12"), 
+                      ("21/10/2020", "15"),
+                      ("22/10/2020", "20"),
+                      ("23/10/2020", "25"),
+                      ("25/10/2020", "31"),
+                      ("27/10/2020", "33"),
+                      ("28/10/2020", "38")
+                      ]
+    result = da.user_activity("lidiasm", user_activity)
+    assert result == True
+        
+def test6_user_activity():
     """
     Test to check the method which analyzes the user activity per week or more.
     In this test, the plot will show the user activity per week.
     """
     user_activity = [("20/10/2020", "12"), 
-                     ("21/10/2020", "15"),
-                     ("22/10/2020", "20"),
-                     ("23/10/2020", "25"),
-                     ("25/10/2020", "31"),
-                     ("27/10/2020", "33"),
-                     ("28/10/2020", "38")]
+                      ("21/10/2020", "15"),
+                      ("22/10/2020", "20"),
+                      ("23/10/2020", "25"),
+                      ("25/10/2020", "31"),
+                      ("27/10/2020", "33"),
+                      ("28/10/2020", "38"),
+                      
+                      ("29/10/2020", "39"),
+                      ("29/10/2020", "37"),
+                      ("30/10/2020", "38"),
+                      ("31/10/2020", "40"),
+                      ]
     result = da.user_activity("lidiasm", user_activity)
     time(5)
     assert result == True
     
-def test6_user_activity():
-    """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the plot will show the user activity per 10 days group by
-    two weeks.
-    """
-    user_activity = [("20/10/2020", "12"), 
-                     ("21/10/2020", "15"),
-                     ("22/10/2020", "20"),
-                     ("23/10/2020", "25"),
-                     ("25/10/2020", "31"),
-                     ("27/10/2020", "33"),
-                     ("30/10/2020", "38"),
-                     ("31/10/2020", "48"),
-                     ("05/11/2020", "50"),
-                     ("08/11/2020", "62")]
-    result = da.user_activity("lidiasm", user_activity)
-    time(5)
-    assert result == True
-    
-def test7_user_activity():
-    """
-    Test to check the method which analyzes the user activity per week or month.
-    In this test, the plot will show the user activity per 14 days = two weeks.
-    """
-    user_activity = [("15/10/2020", "12"), 
-                     ("16/10/2020", "15"),
-                     ("17/10/2020", "20"),
-                     ("18/10/2020", "25"),
-                     ("19/10/2020", "31"),
-                     ("20/10/2020", "33"),
-                     ("21/10/2020", "38"),
-                     
-                     ("23/10/2020", "42"), 
-                     ("24/10/2020", "45"),
-                     ("26/10/2020", "46"),
-                     ("27/10/2020", "50"),
-                     ("28/10/2020", "52"),
-                     ("29/10/2020", "55"),
-                     ("30/10/2020", "58"),
-                     
-                     ("01/11/2020", "57"), 
-                     ("02/11/2020", "54"),
-                     ("06/11/2020", "54"),
-                     ("07/11/2020", "56"),
-                     ("08/11/2020", "58"),
-                     ("09/11/2020", "62"),
-                     ("10/11/2020", "65")]
-    result = da.user_activity("lidiasm", user_activity)
-    time(5)
-    assert result == True
-
+###############################################################################
 # def test1_pie_plot():
 #     """Test to check the method which draws pie plots without providing any data.
 #         It will raise an exception."""

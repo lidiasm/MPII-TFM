@@ -9,8 +9,6 @@ These methods are:
 
 @author: Lidia Sánchez Mérida
 """
-
-import pandas as pd
 import os
 import numpy as np
 from datetime import datetime
@@ -22,8 +20,8 @@ import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-from exceptions import InvalidLinePlotData, ProfilesNotFound, UsernameNotFound \
-    , InvalidBarPlotData, UserActivityNotFound
+from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize, InvalidLinePlotData, ProfilesNotFound, UsernameNotFound \
+    , InvalidBarPlotData, UserActivityNotFound, PostsNotFound, PostInteractionsNotFound
 
 class DataAnalyzer:
     
@@ -41,7 +39,115 @@ class DataAnalyzer:
         self.plot_tests_path = "./imgs/tests/"
         self.profile_evolution_path = "./imgs/profiles-evolution/"
         self.user_activity_path = "./imgs/user-activity/"
+    
+    def get_values_per_one_week(self, values, keys):
+        """
+        Gets the provided values and links them with their related category 
+        depending on the position creating a list of values per one week. 
+        That's why the length of each record must be the same than the number of keys.
+
+        Parameters
+        ----------
+        values : list of tuples
+            It's the list of data to link with their related class.
+        keys : list of strings
+            It's the list of keys which are related to each position in the records.
+
+        Raises
+        ------
+        ValuesNotFound
+            If the provided values are not a non-empty list of tuples.
+        KeysNotFound
+            If the provided keys are not a non-empty list of strings.
+        ExpectedSameSize
+            If the provided records of the list of values have not the same size
+            than the number of keys.
+
+        Returns
+        -------
+        A dict whose keys are the provided categories and whose values are the 
+        list of the related values to each key.
+        """
+        # Check the provided list of values
+        if (type(values) != list or len(values) == 0 or
+            not (all(isinstance(item, tuple) for item in values))):
+            raise ValuesNotFound("ERROR. The values should be a list of tuples.")
+        # Check the provided list of keys
+        if (type(keys) != list or len(keys) == 0 or
+            not (all(isinstance(item, str) for item in keys))):
+            raise KeysNotFound("ERROR. The keys should be a list of strings.")
+
+        # Initialize the dict with the provided keys and an empty list as values
+        result = {key:[] for key in keys}
+        # Get from the records each data into their category
+        for record in values:
+            # Check there is the same number of values and key
+            if (len(record) != len(keys)):
+                raise ExpectedSameSize("ERROR. The number of values and keys should be the same.")
+            for i in range(0, len(keys)):
+                result[keys[i]].append(record[i])
         
+        return result
+    
+    def get_values_per_many_weeks(self, values, keys):
+        """Gets the provided values and links them with their related category 
+        depending on the position creating a mean list per more than a week. 
+        That's why the length of each record must be the same than the number 
+        of keys.
+
+        Parameters
+        ----------
+        values : list of tuples
+            It's the list of data to link with their related class.
+        keys : list of strings
+            It's the list of keys which are related to each position in the records.
+
+        Raises
+        ------
+        ValuesNotFound
+            If the provided values are not a non-empty list of tuples.
+        KeysNotFound
+            If the provided keys are not a non-empty list of strings.
+        ExpectedSameSize
+            If the provided records of the list of values have not the same size
+            than the number of keys.
+
+        Returns
+        -------
+        A dict whose keys are the provided categories and whose values are the 
+        list of the related values to each key.
+        """
+        # Check the provided list of values
+        if (type(values) != list or len(values) == 0 or
+            not (all(isinstance(item, tuple) for item in values))):
+            raise ValuesNotFound("ERROR. The values should be a list of tuples.")
+        # Check the provided list of keys
+        if (type(keys) != list or len(keys) == 0 or
+            not (all(isinstance(item, str) for item in keys))):
+            raise KeysNotFound("ERROR. The keys should be a list of strings.")
+
+        # Get the values per week
+        value_list = self.get_values_per_one_week(values, keys)
+        # Initialize the final dict to store the average per key
+        result = {key:[] for key in keys}
+        for i in range(1, len(list(value_list.keys()))):
+            # Get the values for each key
+            key_values = value_list[keys[i]]
+            # Transform the values from string to int
+            key_values = [int(i) for i in key_values]
+            while (len(key_values) > 0):
+                # Compute the average
+                result[keys[i]].append(round(sum(key_values[:7])/len(key_values[:7])))
+                # Delete the computed numbers
+                key_values = key_values[7:]
+        
+        # Add the weeks depending on the number of averages
+        weeks = [str(i+1) + " week(s)" for i in range(0, len(result[keys[1]]))]
+        result['date'].extend(weeks)
+        
+        return result
+        
+    ########################## PROFILE ANALYSIS ##############################
     def profile_evolution(self, username, profile_list):
         """
         Draws a line plot about the evolution of the number of followers and 
@@ -72,30 +178,35 @@ class DataAnalyzer:
         # Check the provided list of profiles
         if (type(profile_list) != list or len(profile_list) == 0):
             raise ProfilesNotFound("ERROR. The profiles to study should be in a non-empty list.")
-        
-        # Check the content of each profile
-        post_list = []
-        followers_list = []
-        followings_list = []
-        date_list = []
+        # Check that there are four types of values for: date, n_posts, n_followers and n_followings
         for profile in profile_list:
             if (type(profile) != tuple or len(profile) != 4):
-                raise ProfilesNotFound("ERROR. The three fields to analyze the profile evolution should be tuples.")
-            # Get each data separately
-            date_list.append(profile[0])
-            post_list.append(int(profile[1]))
-            followers_list.append(int(profile[2]))
-            followings_list.append(int(profile[3]))
+                raise ProfilesNotFound("ERROR. The four fields to analyze the profile evolution should be tuples.")
         
-        # Draw the line plot
+        # Get the values per one week
+        if (len(profile_list) <= 7):
+            username += "_1week"
+            result = self.get_values_per_one_week(profile_list, 
+                          ['date', 'n_posts', 'n_followers', 'n_followings'])
+        # Get the values per more than a week
+        else:
+            result = self.get_values_per_many_weeks(profile_list, 
+                        ['date', 'n_posts', 'n_followers', 'n_followings'])
+            username += "_"+str(len(result['date']))+"weeks"
+        
+        # Set the path and the title of the file
         file_name = self.profile_evolution_path + username
-        return self.plot_lines([followers_list, followings_list, post_list],
-                 ['Followers', 'Followings', 'Posts'], date_list, file_name)
+        # Draw the line plot
+        return self.plot_lines([result['n_followers'], result['n_followings'], result['n_posts']],
+                 ['Followers', 'Followings', 'Posts'], result['date'], file_name)
     
     def user_activity(self, username, activity_list):
         """
         Draws a bar plot about the user activity based on the numbers of uploaded
-        posts per week or month. The plot will be saved as an image.
+        posts per week or more time. Besides that, above the bars beginning with
+        the first, the difference between days or weeks will be showed in order to
+        know the number of uploaded posts per days or weeks. In the end, the plot
+        will be saved as an image.
 
         Parameters
         ----------
@@ -121,49 +232,46 @@ class DataAnalyzer:
         # Check the provided list of user activity
         if (type(activity_list) != list or len(activity_list) == 0):
             raise UserActivityNotFound("ERROR. The user activity should be a non-empty list.")
-
-        date_list = []
-        post_list = []
-        # PLOTTING EACH DAY IN DIFFERENT BARS (MAX 7 BARS)
+        # Check that there are four types of values for: date, n_posts, n_followers and n_followings
+        for activity in activity_list:
+            if (type(activity) != tuple or len(activity) != 2):
+                raise UserActivityNotFound("ERROR. The two fields to analyze the user activity should be tuples.")
+        
+        # Get the values per one week
         if (len(activity_list) <= 7):
-            username += "_week"
-            for activity in activity_list:
-                print(type(activity) != tuple or len(activity) != 2)
-                if (type(activity) != tuple or len(activity) != 2):
-                    raise UserActivityNotFound("ERROR. The two fields to analyze the user activity should be tuples.")
-                # Get each field separetely
-                date_list.append(activity[0])
-                post_list.append(int(activity[1]))
-        # PLOTTING PER WEAK WITH WEAK MEANS
+            username += "_1week"
+            result = self.get_values_per_one_week(activity_list, 
+                          ['date', 'n_posts'])
+        # Get the values per more than a week
         else:
-            add = []
-            week_number = 1
-            for activity in activity_list:
-                if (type(activity) != tuple or len(activity) != 2):
-                    raise UserActivityNotFound("ERROR. The two fields to analyze the user activity should be tuples.")
-                # Get each field separetely
-                if (len(add) < 7):
-                    add.append(int(activity[1]))
-                else:
-                    date_list.append("Week "+str(week_number))
-                    post_list.append(sum(add)/7)
-                    add = []
-                    week_number += 1
-            
-            # If there are some activies left
-            if (len(add) > 0):
-                date_list.append("Week "+str(week_number))
-                post_list.append(sum(add)/len(add))
-            
-            username += "_"+str(week_number)+"_more"
+            result = self.get_values_per_many_weeks(activity_list, 
+                        ['date', 'n_posts'])
+            username += "_"+str(len(result['date']))+"weeks"
         
         # Compute the differences between the number of posts
         differences = []
+        post_list = result['n_posts']
+        # Transform the values to int in case they were the original strings
+        post_list = [int(value) for value in post_list]
         for i in range(1, len(post_list)):
             differences.append(round(post_list[i] - post_list[i-1]))
+            
         # Draw the bar plot
         file_name = self.user_activity_path + username
-        return self.plot_bars(post_list, date_list, file_name, differences)
+        return self.plot_bars(post_list, result['date'], file_name, differences)
+    
+    ############################ POSTS ANALYSIS ##############################
+    # def post_evolution(self, username, post_list, interaction_list):
+    #     # Check the provided username
+    #     if (type(username) != str or username == ""):
+    #         raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+    #     # Check the provided list of posts
+    #     if (type(post_list) != list or len(post_list) == 0):
+    #         raise PostsNotFound("ERROR. The posts should be in a non-empty list.")
+    #     # Check the provided list of interactions to performance the analysis
+    #     if (type(interaction_list) != list or len(interaction_list) == 0):
+    #         raise PostInteractionsNotFound("ERROR. The posts should be in a non-empty list.")
+
             
     ###########################################################################
     ############################## PLOT METHODS  ##############################
