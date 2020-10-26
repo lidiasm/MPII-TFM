@@ -62,9 +62,7 @@ class ExpectedSameSize(Exception):
     """Class exception to point out that the provided data have not the same size."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-
-###############################################################################        
+        
 class InvalidSocialMediaSource(Exception):
     """Class exception to point out that the provided social media source is wrong."""
     def __init__(self, mensaje):
@@ -205,3 +203,7 @@ class PostInteractionsNotFound(Exception):
         self.mensaje = mensaje
 
 ############################ CLASS MAINOPERATIONS #############################
+class InvalidMode(Exception):
+    """Class exception to point out that the provided mode is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje

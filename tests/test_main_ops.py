@@ -11,49 +11,58 @@ import pytest
 sys.path.append('src')
 import main_ops 
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
-    , InvalidDatabaseCredentials, InvalidMongoDbObject, InvalidSocialMediaSource
+    , InvalidDatabaseCredentials, InvalidMongoDbObject, InvalidSocialMediaSource, InvalidMode
         
-def test1_constructor():
-    """
-    Test to check the constructor when PostgreSQL credentials are not provided to
-    connect to the PostgreSQL database. An exception will be raised.
-    """
-    global psql_user
-    psql_user = os.environ["POSTGRES_USER"]
-    os.environ["POSTGRES_USER"] = ""
-    global psql_pswd
-    psql_pswd = os.environ.get("POSTGRES_PSWD")
-    os.environ["POSTGRES_PSWD"] = ""
-    with pytest.raises(InvalidDatabaseCredentials):
-        assert main_ops.MainOperations()
-    
-def test1_get_user_instagram_common_data():
-    """
-    Test to check the method which gets, preprocesses and stores user data using the
-    LevPasha Instagram API. It returns None, if the user data has not been inserted,
-    or a string id if it has been inserted, for each type of user data: profile,
-    medias, likers, texts and contacts.
-    """
-    global psql_user
-    os.environ["POSTGRES_USER"] = psql_user
-    global psql_pswd
-    os.environ["POSTGRES_PSWD"] = psql_pswd
-    try:
-        mo = main_ops.MainOperations()
-        username = "lidia.96.sm"
-        result = mo.get_user_instagram_common_data(username)
-        assert type(result) == dict
-    except MaxRequestsExceed:
-        print("Max requests exceed. Wait to send more.")
+# def test1_constructor():
+#     """
+#     Test to check the constructor when PostgreSQL credentials are not provided to
+#     connect to the PostgreSQL database. An exception will be raised.
+#     """
+#     global psql_user
+#     psql_user = os.environ["POSTGRES_USER"]
+#     os.environ["POSTGRES_USER"] = ""
+#     global psql_pswd
+#     psql_pswd = os.environ.get("POSTGRES_PSWD")
+#     os.environ["POSTGRES_PSWD"] = ""
+#     with pytest.raises(InvalidDatabaseCredentials):
+#         assert main_ops.MainOperations()
 
-def test2_get_user_instagram_common_data():
+def test1_get_user_instagram_common_data():
     """
     Test to check the method which gets, preprocesses and stores user data using the
     LevPasha Instagram API without providing the username. It will raise an exception.
     """
     mo = main_ops.MainOperations()
     with pytest.raises(UsernameNotFound):
-        assert mo.get_user_instagram_common_data('')
+        assert mo.get_user_instagram_common_data('', None)
+        
+def test2_get_user_instagram_common_data():
+    """
+    Test to check the method which gets, preprocesses and stores user data using the
+    LevPasha Instagram API without providing a valid mode to insert the user data
+    in the Mongo database. It will raise an exception.
+    """
+    mo = main_ops.MainOperations()
+    with pytest.raises(InvalidMode):
+        assert mo.get_user_instagram_common_data("lidia.96.sm", "invalid_mode")
+        
+def test3_get_user_instagram_common_data():
+    """
+    Test to check the method which gets, preprocesses and stores user data using the
+    LevPasha Instagram API. In this test, the collection to insert the user data
+    will be the 'test' collection.
+    """
+    # global psql_user
+    # os.environ["POSTGRES_USER"] = psql_user
+    # global psql_pswd
+    # os.environ["POSTGRES_PSWD"] = psql_pswd
+    try:
+        mo = main_ops.MainOperations()
+        username = "lidia.96.sm"
+        result = mo.get_user_instagram_common_data(username, "test")
+        assert type(result) == dict
+    except MaxRequestsExceed:
+        print("Max requests exceed. Wait to send more.")
         
 def test1_preprocess_and_store_common_data():
     """
@@ -62,7 +71,7 @@ def test1_preprocess_and_store_common_data():
     """
     mo = main_ops.MainOperations()
     with pytest.raises(UserDataNotFound):
-        assert mo.preprocess_and_store_common_data(None, None)
+        assert mo.preprocess_and_store_common_data(None, None, None)
         
 def test2_preprocess_and_store_common_data():
     """
@@ -71,7 +80,7 @@ def test2_preprocess_and_store_common_data():
     """
     mo = main_ops.MainOperations()
     with pytest.raises(InvalidSocialMediaSource):
-        assert mo.preprocess_and_store_common_data({'username':'lidia'}, None)
+        assert mo.preprocess_and_store_common_data({'username':'lidia'}, None, None)
         
 def test3_preprocess_and_store_common_data():
     """
@@ -80,20 +89,30 @@ def test3_preprocess_and_store_common_data():
     """
     mo = main_ops.MainOperations()
     with pytest.raises(InvalidSocialMediaSource):
-        assert mo.preprocess_and_store_common_data({'username':'lidia'}, 'Random')
+        assert mo.preprocess_and_store_common_data({'username':'lidia'}, 'Random', None)
         
 def test4_preprocess_and_store_common_data():
+    """
+    Test to check the method which preprocesses and stores user data from any
+    social media source without providing a valid mode to insert the user data
+    in the Mongo database. An exception will be raised.
+    """
+    mo = main_ops.MainOperations()
+    with pytest.raises(InvalidMode):
+        assert mo.preprocess_and_store_common_data({'username':'lidia'}, 'Instagram', 'invalid_mode')
+        
+def test5_preprocess_and_store_common_data():
     """
     Test to check the method which preprocesses and stores user data from any social
     media source without providing a valid MongoDB. In order to do that, the 
     MongoDB object is set to a invalid value, so an exception will be raised.
     """
     mo = main_ops.MainOperations()
-    mo.mongodb = ""
+    mo.mongodb_object = ""
     with pytest.raises(InvalidMongoDbObject):
-        assert mo.preprocess_and_store_common_data({'username':'lidia'}, 'Instagram')
+        assert mo.preprocess_and_store_common_data({'username':'lidia'}, 'Instagram', 'test')
 
-def test5_preprocess_and_store_common_data():
+def test6_preprocess_and_store_common_data():
     """
     Test to preprocess and store user data in the Mongo database from any 
     social media source.
@@ -114,5 +133,5 @@ def test5_preprocess_and_store_common_data():
     user_data = {'profile':profile, 'medias':medias, 'likers':likers, 
                   'comments':texts, 'contacts':contacts}
     mo = main_ops.MainOperations()
-    result = mo.preprocess_and_store_common_data(user_data, 'Instagram')
+    result = mo.preprocess_and_store_common_data(user_data, 'Instagram', 'test')
     assert type(result) == dict
