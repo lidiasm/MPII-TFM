@@ -182,6 +182,12 @@ class InvalidBarPlotData(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
+class InvalidPiePlotData(Exception):
+    """Class exception to point out that the data provided to draw a pie chart
+    is wrong."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
 class ProfilesNotFound(Exception):
     """Class exception to point out that the list of profiles to analyze is not found"""
     def __init__(self, mensaje):
@@ -191,14 +197,20 @@ class UserActivityNotFound(Exception):
     """Class exception to point out that the user activity to analyze is not found"""
     def __init__(self, mensaje):
         self.mensaje = mensaje
-
-class PostsNotFound(Exception):
-    """Class exception to point out that there is not list of posts to analyze."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
         
 class PostInteractionsNotFound(Exception):
     """Class exception to point out that there is not list of post interactions to analyze."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class PostPopularityNotFound(Exception):
+    """Class exception to point out that there is not list of post popularity to analyze."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class TextTupleNotFound(Exception):
+    """Class exception to point out that the provided list of texts is not a 
+    list of tuples."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
