@@ -26,7 +26,7 @@ class CommonData:
                 None if the MongoDB operations are not required.
             - The list of the required keys for the user profile.
             - The list of the required keys for the media posts.
-            - The list of the required keys for the media likers. 
+            - The list of the required keys for the media likers.
             - The list of the required keys for the media texts.
             - The list of avalaible social media sources.
             - The list of stopwords to remove from text.
@@ -44,15 +44,15 @@ class CommonData:
         self.mongodb = mongodb
         self.profile_keys = ['userid', 'username', 'name', 'biography', 'gender', 'profile_pic',
           'location', 'birthday', 'date_joined', 'n_followers', 'n_followings', 'n_medias']
-        self.media_keys = ['id_media', 'like_count', 'comment_count']
+        self.media_keys = ['id_media', 'taken_at', 'title', 'like_count', 'comment_count', 'url']
         self.liker_keys = ['id_media', 'users']
         self.text_keys = ['id_media', 'texts']
         self.text_list_keys = ['user', 'text']
         self.social_media_sources = ["instagram"]
         self.stopwords = ['a', 'an', 'the', 'and', 'or', 'i', 'you', 'he', 'she',
-                          'it', 'we', 'they', 'my', 'your', 'his', 'her', 'its', 
+                          'it', 'we', 'they', 'my', 'your', 'his', 'her', 'its',
                           'ours', 'yours', 'them', 'me', 'us']
-    
+
     def set_mongodb_connection(self, mongodb_connection):
         """
         Sets the connection to the Mongo database in order to operate with it.
@@ -60,7 +60,7 @@ class CommonData:
         Parameters
         ----------
         mongodb_connection : MongoDB
-            It's a initialized MongoDB object which contains the connection to 
+            It's a initialized MongoDB object which contains the connection to
             the Mongo database.
 
         Raises
@@ -121,11 +121,11 @@ class CommonData:
         # Check that the provided user id is valid
         if (type(user_profile['userid']) != int or user_profile['userid'] < 0):
             raise InvalidUserId("ERROR. The profile should have a non-empty id.")
-        
+
         # Check the provided values
         for key in user_profile:
             user_profile[key] = 'None' if user_profile[key] == None else str(user_profile[key])
-        
+
         # Add the social media source
         user_profile['social_media'] = social_media
         return user_profile
@@ -133,7 +133,7 @@ class CommonData:
     def preprocess_contacts(self, contacts, social_media, userid):
         """
         Preprocesses the list of usernames which are the followers and followings
-        of a specific user. 
+        of a specific user.
 
         Parameters
         ----------
@@ -176,12 +176,12 @@ class CommonData:
         # Check the provided user id
         if (type(userid) != str or userid == str):
             raise InvalidUserId("ERROR. The user id should be a non-empty string.")
-        
+
         # Followers and followings only can contain non-empty strings (usernames).
         validFollowers = [follower for follower in contacts['followers'] if type(follower) == str and follower != ""]
         validFollowings = [following for following in contacts['followings'] if type(following) == str and following != ""]
 
-        return {'followers':validFollowers, 'followings':validFollowings, 
+        return {'followers':validFollowers, 'followings':validFollowings,
                     'social_media':social_media, 'userid':str(userid)}
 
     def preprocess_medias(self, medias, social_media, userid):
@@ -229,7 +229,7 @@ class CommonData:
         # Check the provided user id
         if (type(userid) != str or userid == ""):
             raise InvalidUserId("ERROR. The user id should be a non-empty string.")
-        
+
         # Preprocessing
         for media in medias:
             # Check the provided data
@@ -247,12 +247,12 @@ class CommonData:
             for key in media:
                 # Preprocess the None values
                 media[key] = 'None' if media[key] == None else str(media[key])
-        
+
         # Add the preprocessed medias
         preprocessed_medias = {}
         preprocessed_medias['medias'] = medias
         # Add the social media source
-        preprocessed_medias["social_media"] = social_media 
+        preprocessed_medias["social_media"] = social_media
         # Add the id of the user who owns the media posts
         preprocessed_medias["userid"] = userid
         return preprocessed_medias
@@ -301,7 +301,7 @@ class CommonData:
         # Check the provided user id
         if (type(userid) != str or userid == ""):
             raise InvalidUserId("ERROR. The user id should be a non-empty string.")
-        
+
         # Preprocessing
         for media in likers:
             # Check the provided data
@@ -321,13 +321,13 @@ class CommonData:
                 raise LikerListNotFound("ERROR. The people who liked the medias should be in a non-empty list.")
             prep_users = [user for user in media['users'] if type(user) == str and user != ""]
             media['users'] = prep_users
-            
+
         # Final liker dict to return
         preprocessed_likers = {}
         preprocessed_likers['likers'] = likers
         preprocessed_likers['social_media'] = social_media
         preprocessed_likers['userid'] = userid
-        
+
         return preprocessed_likers
 
     def preprocess_media_comments(self, comments, social_media, userid):
@@ -375,7 +375,7 @@ class CommonData:
         # Check the provided user id
         if (type(userid) != str or userid == ""):
             raise InvalidUserId("ERROR. The user id should be a non-empty string.")
-        
+
         # Preprocessing
         for media in comments:
             # Check the provided data
@@ -389,12 +389,9 @@ class CommonData:
                 raise InvalidMediaId("ERROR. Each media should have its id as a non-empty string.")
             # Transform the media id to string
             media['id_media'] = str(media['id_media'])
-            
+
             # Check that the texts are in a list
             ## But it could be an empty list in case the media hasn't got any comments
-            
-            print(type(media['texts']))
-            print(media['texts'])
             if (type(media['texts']) != list):
                 raise TextListNotFound("ERROR. The texts from the medias should be in a non-empty list.")
             # Check that each text wrote from a user is in a dict
@@ -414,15 +411,15 @@ class CommonData:
                     preproc_texts.append({'user':record['user'], 'text':record['text']})
             # Update the preprocessed texts
             media['texts'] = preproc_texts
-            
+
         # Final text dict to return
         preprocessed_texts = {}
         preprocessed_texts['comments'] = comments
         preprocessed_texts['social_media'] = social_media
         preprocessed_texts['userid'] = userid
-        
+
         return preprocessed_texts
-    
+
     def preprocess_user_data(self, user_data, social_media):
         """
         Preprocesses the social media user data such as the profile, medias, likers,
@@ -440,13 +437,13 @@ class CommonData:
         A dict with the preprocessed user data from any social media.
         """
         profile = self.preprocess_profile(user_data['profile'], social_media)
-        # Get the user id 
+        # Get the user id
         userid = profile['userid']
         contacts = self.preprocess_contacts(user_data['contacts'], social_media, userid)
         medias = self.preprocess_medias(user_data['medias'], social_media, userid)
         likers = self.preprocess_media_likers(user_data['likers'], social_media, userid)
         comments = self.preprocess_media_comments(user_data['comments'], social_media, userid)
-        data = {'profile':profile, 'media_list':medias, 'media_likers':likers, 
+        data = {'profile':profile, 'media_list':medias, 'media_likers':likers,
                 'media_comments':comments, 'contacts':contacts}
         return data
 
@@ -480,7 +477,7 @@ class CommonData:
         # Check the elements of the list
         if (not all(isinstance(text, str) for text in texts)):
             raise InvalidTextList("ERROR. All texts should be non-empty strings.")
-        
+
         # Google Translator object
         translator = Translator()
         # Clean the texts
@@ -498,7 +495,7 @@ class CommonData:
             non_special_characters = re.sub(r'[#@\"\-"*$%&\+\_]', ' ', non_numbers)
             # Add the cleaned text to the list of cleaned texts
             cleaned_texts.append(non_special_characters)
-        
+
         return cleaned_texts
 
     def insert_user_data(self, user_data, collection, query=None):
@@ -599,4 +596,3 @@ class CommonData:
         # Set the collection
         self.mongodb.set_collection(collection)
         return self.mongodb.get_records(query)
-        
