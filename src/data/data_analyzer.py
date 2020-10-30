@@ -45,7 +45,6 @@ class DataAnalyzer:
         self.profile_evolution_path = "./imgs/profiles-evolution/"
         self.user_activity_path = "./imgs/user-activity/"
         self.post_evolution_path = "./imgs/posts-evolution/"
-        self.post_popularity_path = "./imgs/posts-popularity/"
         self.text_sentiments_path = "./imgs/text-sentiments/"
     
     def get_values_per_one_week(self, values, keys):
@@ -379,27 +378,28 @@ class DataAnalyzer:
     ############################ TEXT ANALYSIS ##############################
     def sentiment_analysis_text(self, username, text_list):
         """
-        
+        Performs a sentiment analysis on a list of texts in order to show the
+        number of positive, neutral and negative texts on a pie plot along with
+        the polarity of each one of them, which shows how sure the classifier is
+        when it labeled each text. The plot will be saved as an image.
 
         Parameters
         ----------
-        username : TYPE
-            DESCRIPTION.
-        text_list : TYPE
-            DESCRIPTION.
+        username : str
+            It's the username of the studied user.
+        text_list : list of tuples
+            It's the list of texts to analyse along with their ids.
 
         Raises
         ------
         UsernameNotFound
-            DESCRIPTION.
+            If the provided username is not a non-empty string.
         TextTupleNotFound
-            DESCRIPTION.
+            If the provided texts to analyse are not a non-empty list of strings.
 
         Returns
         -------
-        TYPE
-            DESCRIPTION.
-
+        True if the pie chart could be plotted and saved as an image, False if it couldn't.
         """
         # Check the provided username
         if (type(username) != str or username == ""):
