@@ -245,7 +245,8 @@ def test8_preprocess_medias():
     without providing valid media ids, so an exception will be raised.
     """
     data = commondata.CommonData()
-    medias = [{"id_media":-1, "like_count":54, "comment_count":5}]
+    medias = [{"id_media":-1, "taken_at":"24/10/2020", "title":None,
+               "like_count":54, "comment_count":5, "url":None}]
     with pytest.raises(InvalidMediaId):
         assert data.preprocess_medias(medias, 'Instagram', '23456')
                 
@@ -257,9 +258,9 @@ def test9_preprocess_medias():
     """                    
     data = commondata.CommonData()
     medias = [
-        {"id_media":'123', "like_count":54, "comment_count":5},
-        {"id_media":'456', "like_count":35, "comment_count":128},
-        {"id_media":'789', "like_count":15, "comment_count":1}
+        {"id_media":'123', "taken_at":"24/10/2020", "title":None, "like_count":54, "comment_count":5, "url":None},
+        {"id_media":'456', "taken_at":"24/10/2020", "title":None, "like_count":35, "comment_count":128, "url":None},
+        {"id_media":'789', "taken_at":"24/10/2020", "title":None, "like_count":15, "comment_count":1, "url":None}
         ]
     preprocessed_medias = data.preprocess_medias(medias, 'Instagram', '123456')
     check = []
@@ -509,9 +510,9 @@ def test1_preprocess_user_data():
     contacts = {'followers':[1, 'user1', 'user2', 'user3'], 
                 'followings':['user1',' user2', 4, 5]}
     medias = [
-        {"id_media":'123', "like_count":54, "comment_count":5},
-        {"id_media":'456', "like_count":35, "comment_count":128},
-        {"id_media":'789', "like_count":15, "comment_count":1}
+        {"id_media":'123', "taken_at":"24/10/2020", "title":None, "like_count":54, "comment_count":5, "url":None},
+        {"id_media":'456', "taken_at":"24/10/2020", "title":None, "like_count":35, "comment_count":128, "url":None},
+        {"id_media":'789', "taken_at":"24/10/2020", "title":None, "like_count":15, "comment_count":1, "url":None}
         ]
     likers = [{"id_media":'1', "users":['user1', 5, 'user2', True, 'user3']}]
     comments = [{"id_media":'1', "texts":[{'user':'user1', 'text':'Text from user1'}, 
