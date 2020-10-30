@@ -20,14 +20,18 @@ import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize, InvalidLinePlotData, ProfilesNotFound, UsernameNotFound \
-    , InvalidBarPlotData, UserActivityNotFound, PostsNotFound, PostInteractionsNotFound
+from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize \
+    , InvalidLinePlotData, ProfilesNotFound, UsernameNotFound \
+    , InvalidBarPlotData, UserActivityNotFound, PostInteractionsNotFound \
+    , PostPopularityNotFound, InvalidSocialMediaSource, InvalidPiePlotData \
+    , TextTupleNotFound
 
 class DataAnalyzer:
     
     def __init__(self):
         """
         Creates a DataAnalyzer object whose attributes are:
+            - The list of avalaible social media sources
             - The list of colours to draw the plots.
             - The default path to store the differents plots.
 
@@ -35,10 +39,14 @@ class DataAnalyzer:
         -------
         A DataAnalyzer object.
         """
+        self.social_media_sources = ["instagram"]
         self.colors_line_plots = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
         self.plot_tests_path = "./imgs/tests/"
         self.profile_evolution_path = "./imgs/profiles-evolution/"
         self.user_activity_path = "./imgs/user-activity/"
+        self.post_evolution_path = "./imgs/posts-evolution/"
+        self.post_popularity_path = "./imgs/posts-popularity/"
+        self.text_sentiments_path = "./imgs/text-sentiments/"
     
     def get_values_per_one_week(self, values, keys):
         """
@@ -197,7 +205,7 @@ class DataAnalyzer:
         # Set the path and the title of the file
         file_name = self.profile_evolution_path + username
         # Draw the line plot
-        return self.plot_lines([result['n_followers'], result['n_followings'], result['n_posts']],
+        return self.plot_lines_chart([result['n_followers'], result['n_followings'], result['n_posts']],
                  ['Followers', 'Followings', 'Posts'], result['date'], file_name)
     
     def user_activity(self, username, activity_list):
@@ -258,24 +266,188 @@ class DataAnalyzer:
             
         # Draw the bar plot
         file_name = self.user_activity_path + username
-        return self.plot_bars(post_list, result['date'], file_name, differences)
+        return self.plot_bars_chart(post_list, result['date'], file_name, differences)
     
     ############################ POSTS ANALYSIS ##############################
-    # def post_evolution(self, username, post_list, interaction_list):
-    #     # Check the provided username
-    #     if (type(username) != str or username == ""):
-    #         raise UsernameNotFound("ERROR. The username should be a non-empty string.")
-    #     # Check the provided list of posts
-    #     if (type(post_list) != list or len(post_list) == 0):
-    #         raise PostsNotFound("ERROR. The posts should be in a non-empty list.")
-    #     # Check the provided list of interactions to performance the analysis
-    #     if (type(interaction_list) != list or len(interaction_list) == 0):
-    #         raise PostInteractionsNotFound("ERROR. The posts should be in a non-empty list.")
+    def post_evolution(self, username, post_interactions):
+        """
+        Draws a line plot about the evolution of the interactions on the posts
+        from a specific user. The plot will be saved as an image.
 
+        Parameters
+        ----------
+        username : str
+            It's the username of the studied user.
+        post_interactions : list of tuples
+            It's the list of post interactions.
+
+        Raises
+        ------
+        UsernameNotFound
+            If the provided username is not a non-empty string.
+        PostInteractionsNotFound
+            If the provided post interactions are not a non-empty list of tuples.
+
+        Returns
+        -------
+        True if the plot could be drawn and saved, False if it couldn't.
+        """
+        # Check the provided username
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        # Check the provided list of posts
+        if (type(post_interactions) != list or len(post_interactions) == 0):
+            raise PostInteractionsNotFound("ERROR. The posts should be in a non-empty list.")
+        # Check that there are four types of values for: date, n_posts, n_followers and n_followings
+        for interaction in post_interactions:
+            if (type(interaction) != tuple or len(interaction) != 3):
+                raise PostInteractionsNotFound("ERROR. The four fields to analyze the profile evolution should be tuples.")
+        
+        # Get the values per one week
+        if (len(post_interactions) <= 7):
+            username += "_1week"
+            result = self.get_values_per_one_week(post_interactions, 
+                          ['date', 'like_count', 'comment_count'])
+        # Get the values per more than a week
+        else:
+            result = self.get_values_per_many_weeks(post_interactions, 
+                        ['date', 'like_count', 'comment_count'])
+            username += "_"+str(len(result['date']))+"weeks"
+        
+        # Set the path and the title of the file
+        file_name = self.post_evolution_path + username
+        # Draw the line plot
+        return self.plot_lines_chart([result['like_count'], result['comment_count']],
+                 ['Like count', 'Comment count'], result['date'], file_name)
+    
+    def post_popularity(self, username, social_media, post_popularities):
+        """
+        Get the popularity data from each post from a specific user in order
+        to plot them in a HTML table. Depending on the social media source,
+        the data could be different.
+
+        Parameters
+        ----------
+        username : str
+            It's the username of the studied user.
+        social_media : str
+            It's the social media source which the data came from.
+        post_popularities : list of tuples
+            It's the list of the best or worst posts.
+
+        Raises
+        ------
+        UsernameNotFound
+            If the provided username is not a non-empty string.
+        InvalidSocialMediaSource
+            If the provided social media source is not a non-empty string or 
+            it's not valid.
+        PostPopularityNotFound
+            If the provided posts are not in a non-empty list of tuples.
+
+        Returns
+        -------
+        A list of lists in which there are the data of each post per row.
+        Example: [[title, title, title...], [url, url, url]...]
+        """
+        # Check the provided username
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        # Check the provided social media source
+        if (type(social_media) != str or social_media == ""):
+            raise InvalidSocialMediaSource("ERROR. The social media source should be a non-empty string.")
+        if (social_media.lower() not in self.social_media_sources):
+            raise InvalidSocialMediaSource("ERROR. The provided social media is not valid")
+        # Check the provided list of posts
+        if (type(post_popularities) != list or len(post_popularities) == 0 or
+            not all(isinstance(post, tuple) for post in post_popularities)):
+            raise PostPopularityNotFound("ERROR. The posts should be in a non-empty list.")
+        # Check if the data are in tuples 
+        size = len(post_popularities[0])
+        for item in post_popularities:
+            if (size != len(item)):
+                raise PostPopularityNotFound("ERROR. All posts should have the same number of data.")
+        
+        # Get the data of each post per row
+        value_list = []
+        for i in range(0, size):
+            post_values = [post[i] for post in post_popularities]
+            value_list.append(post_values)
+        
+        return value_list
+    
+    ############################ TEXT ANALYSIS ##############################
+    def sentiment_analysis_text(self, username, text_list):
+        """
+        
+
+        Parameters
+        ----------
+        username : TYPE
+            DESCRIPTION.
+        text_list : TYPE
+            DESCRIPTION.
+
+        Raises
+        ------
+        UsernameNotFound
+            DESCRIPTION.
+        TextTupleNotFound
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        # Check the provided username
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
+        # Check the provided list of post texts
+        if (type(text_list) != list or len(text_list) == 0):
+            raise TextTupleNotFound("ERROR. The posts should be in a non-empty list.")
+
+        # Perform the sentiment analysis
+        analyzer = SentimentIntensityAnalyzer()
+        text_sentiments = []
+        total_sentiments = {'pos':0.0, 'neu':0.0, 'neg':0.0}
+        total_degree = {'pos':0.0, 'neu':0.0, 'neg':0.0}
+        analyzed_texts = 0
+        for text in text_list:
+            # Check that there are two fields: id and text
+            if (type(text) != tuple or len(text) != 2):
+                raise TextTupleNotFound("ERROR. The two fields to analyze the post texts should be tuples.")
+            
+            # Get the sentiments
+            analysis = analyzer.polarity_scores(text[1])
+            del analysis['compound']
+            # Get the sentiment of the text
+            sentiment = "none"
+            if (analysis['pos'] != 0 or analysis['neu'] != 0 or analysis['neg'] != 0):
+                analyzed_texts += 1
+                sentiment = max(analysis, key=analysis.get)
+                # Total count
+                total_sentiments[sentiment] += 1
+                total_degree[sentiment] += analysis[sentiment]
+            
+            # Get the degree of each sentiment
+            text_sentiments.append((text[0], analysis['pos'], analysis['neu'],
+                                     analysis['neg'], sentiment))
+        # Plot the pie chart
+        values = list(total_sentiments.values())
+        labels = ["Positive\npolarity: "+str(round(total_degree['pos']/analyzed_texts,2))+" %",
+                  "Neutral\npolarity: "+str(round(total_degree['neu']/analyzed_texts,2))+" %",
+                  "Negative\npolarity: "+str(round(total_degree['neg']/analyzed_texts,2))+" %"]
+        file_name = self.text_sentiments_path + username
+        colours = ['lightgreen', 'gold', 'lightcoral']
+        
+        return self.plot_pie_chart(values, labels, file_name, colours)            
+        
             
     ###########################################################################
     ############################## PLOT METHODS  ##############################
-    def plot_lines(self, list_values, legend_labels, x_labels, file):
+    def plot_lines_chart(self, list_values, legend_labels, x_labels, file):
         """
         Draws the provided data in a line plot and set the legend as well as the
         labels for the X axis. The colours will be chosen randomly.
@@ -283,12 +455,12 @@ class DataAnalyzer:
 
         Parameters
         ----------
-        list_values : list
+        list_values : list of numbers
             They are the values to plot in the Y axis.
-        legend_labels : list
-            They are the values to plot in the X axis.
-        x_labels : str
-            It's the title for the X axis.
+        x_labels : list of strings
+            They are the labels for each different value.
+        legend_labels : list of strings
+            They are the labels for each different data.
         file : str
             It's the path and file name to save the plot as an image.
 
@@ -333,7 +505,7 @@ class DataAnalyzer:
         
         return os.path.isfile(file_title)
 
-    def plot_bars(self, values, x_labels, file, differences=None):
+    def plot_bars_chart(self, values, x_labels, file, differences=None):
         """
         Draws the provided data in a bar plot and set the labels for the X axis
         The colours will be chosen randomly.
@@ -341,10 +513,10 @@ class DataAnalyzer:
 
         Parameters
         ----------
-        list_values : list
+        values : list of numbers
             They are the values to plot in the Y axis.
-        x_labels : str
-            It's the title for the X axis.
+        x_labels : list of strings
+            They are the labels for each one of the values.
         file : str
             It's the path and file name to save the plot as an image.
 
@@ -358,7 +530,7 @@ class DataAnalyzer:
         True if the plot could be saved as an image, False if it couldn't.
         """
         # Check the provided data
-        if (type(values) != list or type(x_labels) != list):
+        if (type(values) != list or len(values) == 0 or len(x_labels) == 0 or type(x_labels) != list):
             raise InvalidBarPlotData("ERROR. Values and x_labels should be non-emtpy lists.")
         # Check strings like y_label, plot_title and file_title
         if (type(file) != str or file == ""):            
@@ -388,3 +560,54 @@ class DataAnalyzer:
         plt.savefig(file_title)
         
         return os.path.isfile(file_title)
+    
+    def plot_pie_chart(self, values, labels, file, colours=None):
+        """
+        Draws the provided data in a pie chart and set the labels for each
+        piece. The colours can be provided or they will be chosen randomly.
+        In the end, the plot will be saved as an image in the provided path and file name.
+
+        Parameters
+        ----------
+        values : list of numbers
+            They're the values to plot in the pie chart.
+        labels : list of strings
+            They are the labels for each different value.
+        colours: list of strings
+            They are the colours to plot each piece of the pie chart.
+        file : str
+            It's the path and file name to save the plot as an image.
+
+        Raises
+        ------
+        InvalidPiePlotData
+            If some of the provided parameters are wrong.
+
+        Returns
+        -------
+        True if the pie chart could be plotted and saved in a fil, False if it couldn't.
+        """
+        # Check the provided data
+        if (type(values) != list or type(labels) != list or len(values) == 0  or len(labels) == 0):
+            raise InvalidPiePlotData("ERROR. Values and labels should be non emtpy lists.")
+        # Values and x_labels should have the same lenght to be plotted
+        if (len(values) != len(labels)):
+            raise InvalidPiePlotData("ERROR. Values and labels should have the same lenght.")
+        # Check the provided path and file name
+        if (type(file) != str or file == ""):
+            raise InvalidPiePlotData("ERROR. The title should be a non-empty string.")
+        # Check the provided colours
+        if (type(colours) != str and type(colours) != list):
+            colours = np.random.rand(len(values),3)
+        
+        # Plot the pie chart
+        plt.figure()
+        plt.pie(values, labels=labels, colors=colours, autopct='%1.1f%%', shadow=True, startangle=140)
+        plt.axis('equal')
+        now = datetime.now()
+        current_time = now.strftime("%d_%m_%Y_%H_%M_%S")
+        file_title = file+"_"+current_time+".png"
+        plt.savefig(file_title)
+        
+        return os.path.isfile(file_title)
+    
