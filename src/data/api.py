@@ -18,6 +18,7 @@ from exceptions import InvalidCredentials \
 from InstagramAPI import InstagramAPI
 import time 
 import pickle
+import time
 
 class Api:
     
@@ -185,9 +186,21 @@ class Api:
             max_id = self.connection.LastJson.get('next_max_id', '')
             items_list = self.connection.LastJson['items']
             for i in items_list:
+                url = None
+                if ('video_versions' in i):
+                    url = i['video_versions'][0]['url']
+                elif ('image_versions2' in i):
+                    url = i['image_versions2']['candidates'][0]['url']
+                elif ('carousel_media' in i):
+                    url = i['carousel_media'][0]['image_versions2']['candidates'][0]['url']
+        
                 posts.append({'id_media':i['id'], 
+                              'title':i['caption']['text'],
+                              'taken_at':time.strftime('%d/%m/%Y', time.localtime(i['taken_at'])),
                               'like_count':i['like_count'], 
-                              'comment_count':i['comment_count']})
+                              'comment_count':i['comment_count'],
+                              'url':url
+                              })
             
             n_downloaded_posts += len(items_list)
             if (n_downloaded_posts >= limit): break
@@ -446,21 +459,28 @@ class Api:
             # Profile
             user_data['profile'] = self.get_levpasha_instagram_profile(search_user)
             time.sleep(30)
+            #print("\nPROFILE\n", user_data['profile'])
             
             # Posts
             user_data['medias'] = self.get_levpasha_instagram_posts(user_data['profile']['userid'])
             time.sleep(30)
+            #print("\nMEDIAS\n", len(user_data['medias']))
+            
             # Likers
             user_data['likers'] = self.get_levpasha_instagram_posts_likers \
                 (user_data['profile']['username'], user_data['medias'])
             time.sleep(30)
+            #print("\nLIKERS\n",len(user_data['likers']))
+            
             # Comments of the posts
             user_data['comments'] = self.get_levpasha_instagram_posts_comments(
                 user_data['profile']['username'], user_data['medias'])
             time.sleep(30)
+            #print("\nCOMMENTS\n",len(user_data['comments'] ))
             
             # Followers and followings
             user_data['contacts'] = self.get_levpasha_instagram_contacts(user_data['profile']['userid'])
+            #print("\nCONTACTS\n", user_data['contacts'] )
             
         except MaxRequestsExceed:   # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
