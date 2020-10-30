@@ -122,8 +122,8 @@ def test6_preprocess_and_store_common_data():
                 "gender" : "None", "profile_pic" : "https://instagram_example", 
                 "location" : "None", "birthday" : "None", "date_joined" : "None", 
                 "n_followers" : 61, "n_followings":45, "n_medias" : 6}
-    medias = [{'id_media': '1', 'like_count': 29, 'comment_count': 14}, 
-              {'id_media': '2', 'like_count': 18, 'comment_count': 0}]
+    medias = [{'id_media': '1', "taken_at":"24/10/2020", "title":None, 'url':None, 'like_count': 29, 'comment_count': 14}, 
+              {'id_media': '2', "taken_at":"24/10/2020", "title":None, 'url':None,'like_count': 18, 'comment_count': 0}]
     likers = [{'id_media':'1', 'users':['user1','user2','user3']}]
     texts = [{'id_media': '1', 
               'texts': [{'user': 'user1', 'text': 'aa'}, {'user': 'user2', 'text': 'ee'}]},

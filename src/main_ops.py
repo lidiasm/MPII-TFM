@@ -45,9 +45,9 @@ class MainOperations:
         # Mongo database credentials and collections
         self.mongodb_object = MongoDB('test')
         self.mongodb_collections = {
-            'test':{'profiles':'test', 'medias':'test', 'likers':'test', 
+            'test':{'profiles':'test', 'medias':'test', 'likers':'test',
                     'comments':'test', 'contacts':'test'},
-            'real':{'profiles':'profiles', 'medias':'medias', 'likers':'likers', 
+            'real':{'profiles':'profiles', 'medias':'medias', 'likers':'likers',
                     'comments':'comments', 'contacts':'contacts'}
             }
         # CommonData object to preprocess the user data before inserting them
@@ -58,7 +58,7 @@ class MainOperations:
         # psql_pswd = os.environ.get("POSTGRES_PSWD")
         # if (type(psql_user) != str or type(psql_pswd) != str or psql_user == "" or psql_pswd == ""):
         #     raise InvalidDatabaseCredentials("ERROR. PostgreDB should be non-empty strings.")
-            
+
         # self.mongodb = MongoDB('profiles')
         # self.common_data = commondata.CommonData(self.mongodb)
         # #self.data_analysis = data_analyzer.DataAnalyzer()
@@ -165,7 +165,7 @@ class MainOperations:
         # Check the provided mode
         if (mode != "test" and mode != "real"):
             raise InvalidMode("ERROR. The mode should be 'test' or 'real.")
-            
+
         # Check the Mongo database object
         if (type(self.mongodb_object) != MongoDB):
             raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
@@ -176,7 +176,7 @@ class MainOperations:
         # if there are some matches (id, date)
         query = {'id':str(preprocessed_data['profile']['userid'])+"_"+preprocessed_data['profile']['social_media'],
                  'date':(date.today()).strftime("%d-%m-%Y")}
-        
+
         # Store the preprocessed profile
         profile = self.common_data_object.insert_user_data(
             preprocessed_data['profile'], self.mongodb_collections[mode]['profiles'], query)
@@ -192,7 +192,14 @@ class MainOperations:
         # Store the preprocessed followers and followings
         contacts = self.common_data_object.insert_user_data(
             preprocessed_data['contacts'], self.mongodb_collections[mode]['contacts'], query)
-        
-        return {'profile':profile, 'media':medias, 'likers':likers, 
+
+        return {'profile':profile, 'media':medias, 'likers':likers,
                 'comments':comments, 'contacts':contacts}
-    
+
+# if __name__ == "__main__":
+#     import time
+#     start = time.time()
+#     obj = MainOperations()
+#     user_data = obj.get_user_instagram_common_data("audispain", 'real')
+#     end = time.time()
+#     print("\nTIME: ", end - start)
