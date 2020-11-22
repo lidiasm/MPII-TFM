@@ -68,7 +68,7 @@ def test3_empty_table():
     Test to check the method which deletes all the records from a specific table.
     In this test, the table 'TestParent' will be empty.
     """
-    result = test_connection.empty_table("TestParent")
+    result = test_connection.empty_table("testparent")
     assert result == True
     
 def test4_empty_table():
@@ -76,7 +76,7 @@ def test4_empty_table():
     Test to check the method which deletes all the records from a specific table.
     In this test, the table 'TestChild' will be empty.
     """
-    result = test_connection.empty_table("TestChild")
+    result = test_connection.empty_table("testchild")
     assert result == True
 
 def test5_empty_table():
@@ -84,7 +84,7 @@ def test5_empty_table():
     Test to check the method which deletes all the records from a specific table.
     In this test, the table 'TestFK' will be empty.
     """
-    result = test_connection.empty_table("TestFK")
+    result = test_connection.empty_table("testfk")
     assert result == True
     
 def test1_insert_data():
@@ -106,109 +106,157 @@ def test2_insert_data():
 def test3_insert_data():
     """
     Test to check the method which inserts new data to a specific table without
-    providing the new item. An exception will be raised.
+    providing the new values to insert and the select values to check if the
+    new items are already in the database. An exception will be raised.
     """
     with pytest.raises(InvalidQueryValues):
         test_connection.insert_data('insert_test_parent', None, None)
-
+        
 def test4_insert_data():
     """
     Test to check the method which inserts new data to a specific table without
-    providing a valid new item with the required data. An exception will be raised.
+    providing valid new values to insert them in the database. An exception will be raised.
     """
+    new_values = [{"id":"1", "is_parent":True},
+                  {"id":"2", "is_parent":True, "name":"Second parent"}]
+    check_values = [{"id":"1"}]
     with pytest.raises(InvalidQueryValues):
-        test_connection.insert_data('insert_test_parent', [{'name':'name'}], None)
+        test_connection.insert_data('insert_test_parent', new_values, check_values)
         
 def test5_insert_data():
     """
     Test to check the method which inserts new data to a specific table without
-    providing the values to check if the new item should be inserted. An exception will be raised.
+    providing valid check values to know if the new items are already in the 
+    database. An exception will be raised.
     """
-    new_parent = [{'id':'parent_one', 'is_parent':True, 'name':'Parent 1'}]
+    new_values = [{"id":"1", "is_parent":True, "name":"Second parent"}]
     with pytest.raises(InvalidQueryValues):
-        test_connection.insert_data('insert_test_parent', new_parent, None)
-
+        test_connection.insert_data('insert_test_parent', new_values, [1,2,3])
+        
 def test6_insert_data():
     """
     Test to check the method which inserts new data to a specific table without
-    providing valid values to check if the new item should be inserted. An exception will be raised.
+    providing the same number of new items and the check values, so an exception
+    will be raised.
     """
-    new_parent = [{'id':'parent_one', 'is_parent':True, 'name':'Parent 1'}]
-    invalid_check = {'name':'name'}
+    new_values = [{"id":"1", "is_parent":True, "name":"First parent"},
+                  {"id":"2", "is_parent":True, "name":"Second parent"}]
+    check_values = [{"id":"1"}]
     with pytest.raises(InvalidQueryValues):
-        test_connection.insert_data('insert_test_parent', new_parent, invalid_check)
-    
+        test_connection.insert_data('insert_test_parent', new_values, check_values)
+        
 def test7_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    a new parent item will be inserted into TestParent table.
+    Test to check the method which inserts new data to a specific table without
+    providing the required keys for the check values to know if the new items
+    are already in the database. So an exception will be raised.
     """
-    new_parent = [{'id':'parent_one', 'is_parent':True, 'name':'Parent 1'}]
-    check_values = {'id':'parent_one'}
-    result = test_connection.insert_data('insert_test_parent', new_parent, check_values)
-    assert result == True
-
+    new_values = [{"id":"1", "is_parent":True, "name":"First parent"},
+                  {"id":"2", "is_parent":True, "name":"Second parent"}]
+    check_values = [{"name":"1"}, {"name":"2"}]
+    with pytest.raises(InvalidQueryValues):
+        test_connection.insert_data('insert_test_parent', new_values, check_values)
+        
 def test8_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    the new parent is already in the TestParent table so it won't be inserted again.
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, four new items will be inserted in the
+    'TestParent' table because none of them are already in the database.
     """
-    new_parent = [{'id':'parent_one', 'is_parent':True, 'name':'Parent 1'}]
-    check_values = {'id':'parent_one'}
-    result = test_connection.insert_data('insert_test_parent', new_parent, check_values)
-    assert result == False
-
+    new_values = [{"id":"1", "is_parent":True, "name":"First parent"},
+                  {"id":"2", "is_parent":True, "name":"Second parent"},
+                  {"id":"3", "is_parent":True, "name":"Third parent"},
+                  {"id":"4", "is_parent":True, "name":"Fourth parent"}]
+    check_values = [{"id":"1"}, {"id":"2"}, {"id":"3"}, {"id":"4"}]
+    ids = test_connection.insert_data('insert_test_parent', new_values, check_values)
+    assert len(ids) == len(new_values)
+    
 def test9_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    a new child item will be inserted into TestChild table.
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, only two of the four new items will be inserted
+    in the 'TestParent' table because the other two are already in the database.
     """
-    new_child = [{'id':'parent_one', 'is_parent':False, 'name':'Child 1'}]
-    check_values = {'name':'Child 1'}
-    result = test_connection.insert_data('insert_test_child', new_child, check_values)
-    assert result == True
+    new_values = [{"id":"1", "is_parent":True, "name":"First parent"},
+                  {"id":"5", "is_parent":True, "name":"Fith parent"},
+                  {"id":"3", "is_parent":True, "name":"Third parent"},
+                  {"id":"6", "is_parent":True, "name":"Sixth parent"}]
+    check_values = [{"id":"1"}, {"id":"5"}, {"id":"3"}, {"id":"6"}]
+    ids = test_connection.insert_data('insert_test_parent', new_values, check_values)
+    assert len(ids) < len(new_values)
     
 def test10_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    the new child item is already in the TestChild table so it won't be inserted again.
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, four new items will be inserted in the
+    'TestChild' table because none of them are already in the database.
     """
-    new_child = [{'id':'parent_one', 'is_parent':False, 'name':'Child 1'}]
-    check_values = {'name':'Child 1'}
-    result = test_connection.insert_data('insert_test_child', new_child, check_values)
-    assert result == False
-
+    new_values = [{"id":"1", "is_parent":False, "name":"First child"},
+                  {"id":"2", "is_parent":False, "name":"Second child"},
+                  {"id":"3", "is_parent":False, "name":"Third child"},
+                  {"id":"4", "is_parent":False, "name":"Fourth child"}]
+    check_values = [{"name":"First child"}, {"name":"Second child"}, 
+                    {"name":"Third child"}, {"name":"Fourth child"}]
+    ids = test_connection.insert_data('insert_test_child', new_values, check_values)
+    assert len(ids) == len(new_values)
+    
 def test11_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    a new fk item will be inserted because it's not already in the table and the
-    related parent item does exist.
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, only one of the four new items will be inserted
+    in the 'TestChild' table because the other two are already in the database.
     """
-    new_fk = [{'id':'parent_one', 'field_one':'Any field'}]
-    check_values = {'id':'parent_one', 'field_one':'Any field'}
-    result = test_connection.insert_data('insert_test_fk', new_fk, check_values)
-    assert result == True
-
+    new_values = [{"id":"1", "is_parent":False, "name":"First child"},
+                  {"id":"2", "is_parent":False, "name":"Second child"},
+                  {"id":"9", "is_parent":False, "name":"Nineth child"},
+                  {"id":"4", "is_parent":False, "name":"Fourth child"}]
+    check_values = [{"name":"First child"}, {"name":"Second child"}, 
+                    {"name":"Nineth child"}, {"name":"Fourth child"}]
+    ids = test_connection.insert_data('insert_test_child', new_values, check_values)
+    assert len(ids) < len(new_values)
+    
 def test12_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    the new fk item already exists so it won't be inserted.
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, four new items will be inserted in the
+    'TestFK' table because none of them are already in the database.
     """
-    new_fk = [{'id':'parent_one', 'field_one':'Any field'}]
-    check_values = {'id':'parent_one', 'field_one':'Any field'}
-    result = test_connection.insert_data('insert_test_fk', new_fk, check_values)
-    assert result == False
+    new_values = [{"id":"1", "field_one":"First field"},
+                  {"id":"2", "field_one":"Second field"},
+                  {"id":"3", "field_one":"Third field"},
+                  {"id":"4", "field_one":"Fourth field"}]
+    check_values = new_values
+    ids = test_connection.insert_data('insert_test_fk', new_values, check_values)
+    assert len(ids) == len(new_values)
     
 def test13_insert_data():
     """
-    Test to check the method which inserts new data to a specific table. In this test,
-    the new fk item is related to a non-existing parent item so it won't be inserted.
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, only one of the four new items will be inserted
+    in the 'TestFK' table because the other two are already in the database.
     """
-    new_fk = [{'id':'non-existing-parent', 'field_one':'Any field'}]
-    check_values = {'id':'non-existing-parent', 'field_one':'Any field'}
-    with pytest.raises(InvalidQueryValues):
-        test_connection.insert_data('insert_test_fk', new_fk, check_values)
+    new_values = [{"id":"1", "field_one":"First field"},
+                  {"id":"2", "field_one":"Second field"},
+                  {"id":"6", "field_one":"Sixth field"},
+                  {"id":"4", "field_one":"Fourth field"}]
+    check_values = new_values
+    ids = test_connection.insert_data('insert_test_fk', new_values, check_values)
+    assert len(ids) < len(new_values)
     
+def test14_insert_data():
+    """
+    Test to check the method which inserts new data to a specific table in the
+    Postgres database. In this test, some of the items have non-existing values
+    in the foreign keys so an exception will be raised.
+    """
+    new_values = [{"id":"100", "field_one":"Invalid field"},
+                  {"id":"200", "field_one":"Invalid field"},
+                  {"id":"600", "field_one":"Invalid field"},
+                  {"id":"5", "field_one":"Fifth field"}]
+    check_values = new_values
+    with pytest.raises(InvalidQueryValues):
+        test_connection.insert_data('insert_test_fk', new_values, check_values)
+        
 def test1_get_data():
     """
     Test to check the method which gets data from a specific table. In this test,
