@@ -18,10 +18,10 @@ import os
 
 # Store the right username to connect to the API to test the connection
 # method setting invalid credentials.
-username = os.environ["INSTAGRAM_USER2"]
+username = os.environ["INSTAGRAM_USER"]
 
 # Username to test the class with.
-search_user = "lidia.96.sm"
+search_user = "pablo_cuevas15"
 
 # API object
 api = Api()
@@ -32,7 +32,7 @@ def test1_connect_levpasha_instagram_api():
     providing a valid username. In order to do that, the credential env variables
     are set to empty strings. It will raise an exception.
     """
-    os.environ["INSTAGRAM_USER2"] = ""
+    os.environ["INSTAGRAM_USER"] = ""
     with pytest.raises(InvalidCredentials):
         api.connect_levpasha_instagram_api(use_session_file=False)
 
@@ -42,7 +42,7 @@ def test2_connect_levpasha_instagram_api():
     Instagram API providing invalid credentials. In order to do that, 
     the credential env variables are set to wrong values. It will raise an exception.
     """
-    os.environ["INSTAGRAM_USER2"] = "hey"
+    os.environ["INSTAGRAM_USER"] = "hey"
     with pytest.raises(InvalidCredentials):
         api.connect_levpasha_instagram_api(use_session_file=False)
 
@@ -51,7 +51,7 @@ def test3_connect_levpasha_instagram_api():
     Test to connect to LevPasha Instagram API using Instagram credentials saving 
     the connection object into a file.
     """
-    os.environ["INSTAGRAM_USER2"] = username
+    os.environ["INSTAGRAM_USER"] = username
     result = api.connect_levpasha_instagram_api(use_session_file=False)
     assert result.LastJson['status'] == 'ok'
 
@@ -114,58 +114,6 @@ def test3_get_levpasha_instagram_posts():
             assert type(posts) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
-
-def test1_get_levpasha_instagram_posts_likers():
-    """
-    Test to check the method which gets the usernames of the people who liked 
-    the posts of a specific user using LevPasha Instagram API without providing
-    a valid username. It will raise an exception.
-    """
-    with pytest.raises(UsernameNotFound):
-        api.get_levpasha_instagram_posts_likers(None, None)
-
-def test2_get_levpasha_instagram_posts_likers():
-    """
-    Test to check the method which gets the usernames of the people who liked 
-    the posts of a specific user using LevPasha Instagram API without providing
-    their posts. It will raise an exception.
-    """
-    with pytest.raises(PostListNotFound):
-        api.get_levpasha_instagram_posts_likers(search_user, {})
-
-def test3_get_levpasha_instagram_posts_likers():
-    """
-    Test to check the method which gets the usernames of the people who liked 
-    the posts of a specific user using LevPasha Instagram API without providing
-    valid posts. It will raise an exception.
-    """
-    invalid_posts = [1234]
-    with pytest.raises(PostDictNotFound):
-        api.get_levpasha_instagram_posts_likers(search_user, invalid_posts)
-        
-def test4_get_levpasha_instagram_posts_likers():
-    """
-    Test to check the method which gets the usernames of the people who liked 
-    the posts of a specific user using LevPasha Instagram API without providing
-    valid posts. It will raise an exception.
-    """
-    invalid_posts = [{'post':13}]
-    with pytest.raises(PostDictNotFound):
-        api.get_levpasha_instagram_posts_likers(search_user, invalid_posts)
-
-def test5_get_levpasha_instagram_posts_likers():
-    """
-    Test to check the method which gets the usernames of the people who liked 
-    the posts of a specific user using LevPasha Instagram API.
-    """
-    try:
-        global posts
-        if (type(posts) == list and len(posts) > 0):
-            api_likers = Api()
-            likers = api_likers.get_levpasha_instagram_posts_likers(search_user, posts)
-            assert type(likers) == list
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")
         
 def test1_get_levpasha_instagram_posts_comments():
     """
@@ -216,30 +164,6 @@ def test5_get_levpasha_instagram_posts_comments():
             api_comments = Api()
             comments = api_comments.get_levpasha_instagram_posts_comments(search_user, posts)
             assert type(comments) == list
-    except MaxRequestsExceed:
-        print("Max requests exceed. Please wait to send more.")
-        
-def test1_get_levpasha_instagram_contacts():
-    """
-    Test to check the method which gets the usernames of the followings and followers
-    of a specific user using LevPasha Instagram API without providing a valid user id.
-    It will raise an exception.
-    """
-    with pytest.raises(InvalidUserId):
-        api.get_levpasha_instagram_contacts(user_id=-90)
-
-def test2_get_levpasha_instagram_contacts():
-    """
-    Test to check the method which gets the usernames of the followings and followers
-    of a specific user using LevPasha Instagram API. It will return 100 followers
-    and 100 followings max.
-    """
-    try:
-        global profile
-        if (type(profile) == dict):
-            api_contacts = Api()
-            contacts = api_contacts.get_levpasha_instagram_contacts(user_id=profile['userid'])
-            assert type(contacts['followers']) == list and type(contacts['followings']) == list
     except MaxRequestsExceed:
         print("Max requests exceed. Please wait to send more.")
 

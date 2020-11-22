@@ -7,18 +7,15 @@ will be stored in the database.
 
 @author: Lidia Sánchez Mérida
 """
-
 import os
 from os import path
 import sys
 sys.path.append("../")
-from exceptions import InvalidCredentials \
-    , UsernameNotFound, MaxRequestsExceed, InvalidUserId, InvalidLimit \
-    , PostListNotFound, PostDictNotFound
+from exceptions import InvalidCredentials, UsernameNotFound, MaxRequestsExceed \
+    , InvalidUserId, InvalidLimit, PostListNotFound, PostDictNotFound
 from InstagramAPI import InstagramAPI
 import time 
 import pickle
-import time
 
 class Api:
     
@@ -33,8 +30,7 @@ class Api:
         """
         self.connection = None
         
-    def connect_levpasha_instagram_api(self, use_session_file=True, 
-                                       session_file="./levpasha_session.txt"):
+    def connect_levpasha_instagram_api(self, use_session_file=True, session_file="./levpasha_session.txt"):
         """
         Connects to the LevPasha Instagram API. The two avalaible ways are:
             - Using a file in which there is a connection object to the API.
@@ -65,16 +61,28 @@ class Api:
         if (path.exists(session_file) and use_session_file):
             self.connection = pickle.load(open(session_file, "rb"))
         else:
-            username = os.environ.get("INSTAGRAM_USER2")
-            pswd = os.environ.get("INSTAGRAM_PSWD2")
+            username = os.environ.get("INSTAGRAM_USER")
+            pswd = os.environ.get("INSTAGRAM_PSWD")
             if (type(username) != str or type(pswd) != str or username == None or
                 pswd == None or username == "" or pswd == ""):
                 raise InvalidCredentials("Username and/or password are not right.")
             
             self.connection = InstagramAPI(username, pswd)
             self.connection.login()
-            if (self.connection.LastJson['status'] != 'ok'):
-                raise InvalidCredentials("Invalid Instagram credentials.")
+            if (self.connection.LastJson['status'] != 'ok'): # pragma no cover
+                # Retry the connection with other credentials
+                username = os.environ.get("INSTAGRAM_USER2")
+                pswd = os.environ.get("INSTAGRAM_PSWD2")
+                if (type(username) != str or type(pswd) != str or username == None or
+                    pswd == None or username == "" or pswd == ""):
+                    raise InvalidCredentials("Username and/or password are not right.")
+                
+                self.connection = InstagramAPI(username, pswd)
+                self.connection.login()
+                
+                # Raise exception if the second connection does not work
+                if (self.connection.LastJson['status'] != 'ok'):
+                    raise InvalidCredentials("Invalid Instagram credentials.")
             
             if (type(session_file) != str or session_file == ""):
                 session_file = "./levpasha_session.txt"
@@ -193,10 +201,10 @@ class Api:
                     url = i['image_versions2']['candidates'][0]['url']
                 elif ('carousel_media' in i):
                     url = i['carousel_media'][0]['image_versions2']['candidates'][0]['url']
-        
+                # Format the date
                 posts.append({'id_media':i['id'], 
                               'title':i['caption']['text'],
-                              'taken_at':time.strftime('%d/%m/%Y', time.localtime(i['taken_at'])),
+                              'taken_at':time.strftime('%d-%m-%Y', time.localtime(i['taken_at'])),
                               'like_count':i['like_count'], 
                               'comment_count':i['comment_count'],
                               'url':url
@@ -209,75 +217,6 @@ class Api:
             time.sleep(20)
             
         return posts
-    
-    def get_levpasha_instagram_posts_likers(self, username, posts):
-        """
-        Gets the usernames of the people who liked some Instagram posts of a 
-        specific user.
-
-        Parameters
-        ----------
-        username : str
-            The username of the user to get the people who liked their posts.
-        posts : list of dicts.
-            It's the list of posts of the user. It'll be used to get the post ids
-            in order to get the usernames of the people who liked them.
-
-        Raises
-        ------
-        UsernameNotFound
-            If the provided username is not a non-empty string.
-        PostListNotFound
-            If the provided list of posts is not a non-empty list of dicts.
-        PostDictNotFound
-            If the provided list of posts is not a non-empty list of dicts.
-        MaxRequestsExceed
-            If the maximum number of requests has been excedeed.
-
-        Returns
-        -------
-        likers : list of dicts.
-            A list of dicts in which each dict contains the people who liked each
-            post.
-        """
-        if (type(username) != str or username == ""):
-            raise UsernameNotFound("ERROR. The username should be a non empty string.")
-        if (type(posts) != list or len(posts) == 0):
-            raise PostListNotFound("ERROR. There aren't any posts to get their likers.")
-        # Check the connection to the API Instagram
-        if (self.connection == None):
-            self.connection = self.connect_levpasha_instagram_api()
-            
-        # Iterate over each post in order to get the usernames of the people who liked it.
-        likers = []
-        for post in posts:
-            # Check each post
-            if (type(post) != dict or len(post) == 0):
-                raise PostDictNotFound("ERROR. Each post should be a non empty dict.")
-            if ('id_media' not in post):
-                raise PostDictNotFound("ERROR. Each post should have its id.")
-                
-            self.connection.getMediaLikers(post['id_media'])
-            # IMPORTANT !
-            ## Prevent max requests exception
-            if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
-                raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-            
-            if ('users' in self.connection.LastJson):
-                users = self.connection.LastJson['users']
-                current_likers = []
-                # Get the usernames of the people who liked the current post
-                for user in users:
-                    if (user['username'] != username):
-                        current_likers.append(user['username'])
-            
-            # Store the likers of each post
-            likers.append({'id_media':post['id_media'], 'users':current_likers})
-            # IMPORTANT!
-            ## Wait some time to avoid flooding the servers.
-            time.sleep(20)
-        
-        return likers
      
     def get_levpasha_instagram_posts_comments(self, username, posts):
         """
@@ -311,7 +250,7 @@ class Api:
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. The username should be a non empty string.")
         if (type(posts) != list or len(posts) == 0):
-            raise PostListNotFound("ERROR. There aren't any posts to get their likers.")
+            raise PostListNotFound("ERROR. There aren't any posts to get their comments.")
         # Check the connection to the API Instagram
         if (self.connection == None):
             self.connection = self.connect_levpasha_instagram_api()
@@ -345,73 +284,14 @@ class Api:
         
         return comments
     
-    def get_levpasha_instagram_contacts(self, user_id):
-        """
-        Gets the usernames of the followers and followings of a specific user.
-
-        Parameters
-        ----------
-        user_id : integer
-            It's the user id which represents the user to get their post data.
-
-        Raises
-        ------
-        InvalidUserId
-            If the provided user id is not a positive integer.
-        MaxRequestsExceed
-            If the maximum number of requests has been excedeed.
-
-        Returns
-        -------
-        A dict whose keys are:
-            - followings, which contains the list of followings.
-            - followers, which contains the list of followers.
-        """
-        # Check the user id
-        if (type(user_id) != int or user_id < 0):
-            raise InvalidUserId("ERROR. The user id should be a positive number.")
-        # Check the connection to the API Instagram
-        if (self.connection == None):
-            self.connection = self.connect_levpasha_instagram_api()
-        
-        # IMPORTANT!
-        ## Max 100 followings
-        self.connection.getUserFollowings(user_id)
-        if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
-            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
-        # List of usernames of the followings 
-        followings_usernames = []
-        followings = self.connection.LastJson['users']
-        for following in followings:
-            followings_usernames.append(following['username'])
-        
-        # IMPORTANT!
-        ## Wait some time to avoid flooding the servers.
-        time.sleep(20)
-            
-        # IMPORTANT!
-        ## Max 100 followers
-        self.connection.getUserFollowers(user_id)
-        if (self.connection.LastJson['status'].lower() != 'ok'):    # pragma: no cover
-            raise MaxRequestsExceed("Max requests exceed. Wait to send more.")  
-            
-        # List of usernames of the followers
-        followers_usernames = []
-        followers = self.connection.LastJson['users']
-        for follower in followers:
-            followers_usernames.append(follower['username'])
-        
-        return {'followings':followings_usernames, 'followers':followers_usernames}
-    
     def get_levpasha_instagram_data(self, search_user, use_session_file=True, 
                                     session_file="./levpasha_session.txt"):
         """
         Gets Instagram data from a specific user account. In order to do that,
         the previous methods will be used to get data such as:
             - The profile.
-            - The posts of the user along with the people who liked them as well
-                as the comments.
-                - The list of followings and followers.
+            - The posts of the user.
+            - The comments wrote on the posts.
 
         Parameters
         ----------
@@ -440,13 +320,9 @@ class Api:
                 - profile, which contains the dict of the user profile.
                 - posts, which contains a list of the posts of the user with
                     their ids, titles and number of likes and comments.
-                - likers, which contains the list of usernames which represent
-                    the people who liked each media.
                 - texts, which contains a list of the posts of the user with their
                     ids, the usernames of the people who wrote comments on them 
                     as well as the text.
-                - followings, which is the list of followings of the user.
-                - followers, which is the list of followers of the user.
                 
         """
         if (type(search_user) != str or search_user == ""):
@@ -459,29 +335,16 @@ class Api:
             # Profile
             user_data['profile'] = self.get_levpasha_instagram_profile(search_user)
             time.sleep(30)
-            #print("\nPROFILE\n", user_data['profile'])
-            
+            print("\nPROFILE\n", user_data['profile'])
             # Posts
             user_data['medias'] = self.get_levpasha_instagram_posts(user_data['profile']['userid'])
             time.sleep(30)
-            #print("\nMEDIAS\n", len(user_data['medias']))
-            
-            # Likers
-            user_data['likers'] = self.get_levpasha_instagram_posts_likers \
-                (user_data['profile']['username'], user_data['medias'])
-            time.sleep(30)
-            #print("\nLIKERS\n",len(user_data['likers']))
-            
+            print("\nMEDIAS\n", len(user_data['medias']))
             # Comments of the posts
             user_data['comments'] = self.get_levpasha_instagram_posts_comments(
                 user_data['profile']['username'], user_data['medias'])
             time.sleep(30)
-            #print("\nCOMMENTS\n",len(user_data['comments'] ))
-            
-            # Followers and followings
-            user_data['contacts'] = self.get_levpasha_instagram_contacts(user_data['profile']['userid'])
-            #print("\nCONTACTS\n", user_data['contacts'] )
-            
+            print("\nCOMMENTS\n",len(user_data['comments'] ))
         except MaxRequestsExceed:   # pragma: no cover
             raise MaxRequestsExceed("Max requests exceed. Wait to send more.")
         
