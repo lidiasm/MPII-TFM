@@ -10,10 +10,10 @@ import sys
 sys.path.append("../")
 import mongodb
 from exceptions import InvalidMongoDbObject, ProfileDictNotFound, InvalidTextList \
-    , ContactDictNotFound, MediaListNotFound, MediaDictNotFound, LikerListNotFound \
-    , TextListNotFound, TextDictNotFound, UserDataNotFound, CollectionNotFound \
-    , InvalidQuery, InvalidSocialMediaSource, InvalidUserId, InvalidMediaId, LikerDictNotFound
-from datetime import date
+    , MediaListNotFound, MediaDictNotFound, TextListNotFound, TextDictNotFound \
+    , UserDataNotFound, CollectionNotFound, InvalidQuery, InvalidSocialMediaSource \
+    , UsernameNotFound, InvalidMediaId, InvalidQueryValues, InvalidUserId
+from datetime import date, datetime
 from googletrans import Translator
 import re
 
@@ -26,10 +26,10 @@ class CommonData:
                 None if the MongoDB operations are not required.
             - The list of the required keys for the user profile.
             - The list of the required keys for the media posts.
-            - The list of the required keys for the media likers.
             - The list of the required keys for the media texts.
             - The list of avalaible social media sources.
             - The list of stopwords to remove from text.
+            - The relationship between the user data and the collection to save them.
 
         Parameters
         ----------
@@ -42,16 +42,23 @@ class CommonData:
         A CommonData object.
         """
         self.mongodb = mongodb
-        self.profile_keys = ['userid', 'username', 'name', 'biography', 'gender', 'profile_pic',
-          'location', 'birthday', 'date_joined', 'n_followers', 'n_followings', 'n_medias']
-        self.media_keys = ['id_media', 'taken_at', 'title', 'like_count', 'comment_count', 'url']
-        self.liker_keys = ['id_media', 'users']
+        self.profile_keys = ['biography', 'birthday', 'date_joined', 'gender', 
+                          'location', 'n_followers', 'n_followings', 'n_medias', 
+                          'name', 'profile_pic', 'userid', 'username']
+        self.media_keys = ['comment_count','id_media', 'like_count', 'taken_at', 'title', 'url']
         self.text_keys = ['id_media', 'texts']
-        self.text_list_keys = ['user', 'text']
+        self.text_list_keys = ['text', 'user',]
         self.social_media_sources = ["instagram"]
         self.stopwords = ['a', 'an', 'the', 'and', 'or', 'i', 'you', 'he', 'she',
                           'it', 'we', 'they', 'my', 'your', 'his', 'her', 'its',
                           'ours', 'yours', 'them', 'me', 'us']
+        self.related_collections = {
+            "profiles":"insert_profile",
+            "medias":"insert_medias",
+            "comments":"insert_comments",
+            "test":"insert_test",
+            "test_medias":"insert_test",
+            "test_comments":"insert_test"}
 
     def set_mongodb_connection(self, mongodb_connection):
         """
@@ -94,7 +101,7 @@ class CommonData:
         ------
         ProfileDictNotFound
             If the provided user profile is not a dict.
-        UsernameNotFound
+        InvalidUserId
             If the provided user profile has not a 'username' key.
         InvalidSocialMediaSource
             If the provided social media source is not a non-empty string or it's
@@ -128,63 +135,10 @@ class CommonData:
 
         # Add the social media source
         user_profile['social_media'] = social_media
+        user_profile['date'] = datetime.strptime((date.today()).strftime("%d-%m-%Y"),'%d-%m-%Y')
         return user_profile
-
-    def preprocess_contacts(self, contacts, social_media, userid):
-        """
-        Preprocesses the list of usernames which are the followers and followings
-        of a specific user.
-
-        Parameters
-        ----------
-        contacts : dict
-            It's the dict with the list of followings and followers.
-        social_media : str
-            It's the social media which the user data came from.
-        userid : str
-            It's the id of the studied user account.
-
-        Raises
-        ------
-        ContactDictNotFound
-            If the followers or followings are not in a dict.
-        InvalidSocialMediaSource
-            If the provided social media source is not a non-empty string or it's
-            not one of the avalaible social media sources.
-        InvalidUserId
-            If the provided user id is not a positive integer.
-
-        Returns
-        -------
-        A dict which contains the list of preprocessed followers and followings
-        as well as the social media source.
-        """
-        # Check the data type
-        if (type(contacts) != dict or len(contacts) == 0):
-            raise ContactDictNotFound("ERROR. Contacts should be a non-empty dict.")
-        # Check the keys
-        if ('followers' not in contacts or 'followings' not in contacts):
-            raise ContactDictNotFound("ERROR. Contacts should have 'followers' "+
-                  "and 'followings' keys.")
-        if (type(contacts['followers']) != list or type(contacts['followings']) != list):
-            raise ContactDictNotFound("ERROR. The followers and followings should be in lists.")
-        # Check the provided social media source
-        if (type(social_media) != str or social_media == ""):
-            raise InvalidSocialMediaSource("ERROR. The social media source should be a non-empty string.")
-        if (social_media.lower() not in self.social_media_sources):
-            raise InvalidSocialMediaSource("ERROR. Avalaible social media sources: "+str(self.social_media_sources))
-        # Check the provided user id
-        if (type(userid) != str or userid == str):
-            raise InvalidUserId("ERROR. The user id should be a non-empty string.")
-
-        # Followers and followings only can contain non-empty strings (usernames).
-        validFollowers = [follower for follower in contacts['followers'] if type(follower) == str and follower != ""]
-        validFollowings = [following for following in contacts['followings'] if type(following) == str and following != ""]
-
-        return {'followers':validFollowers, 'followings':validFollowings,
-                    'social_media':social_media, 'userid':str(userid)}
-
-    def preprocess_medias(self, medias, social_media, userid):
+    
+    def preprocess_medias(self, medias, social_media, username):
         """
         Preprocesses the list of medias of a specific user. Each media is a dict
         whose keys are: id_media, title, like_count and comment_count in order
@@ -196,8 +150,8 @@ class CommonData:
             It's the list of medias of a specific user.
         social_media : str
             It's the social media which the user data came from.
-        userid : str
-            It's the id of the studied user account.
+        username : str
+            It's the username of the studied user account.
 
         Raises
         ------
@@ -208,8 +162,8 @@ class CommonData:
         InvalidSocialMediaSource
             If the provided social media source is not a non-empty string or it's
             not one of the avalaible social media sources.
-        InvalidUserId
-            If the provided user id is not a non-empty string.
+        UsernameNotFound
+            If the provided username is not a non-empty string.
 
         Returns
         -------
@@ -227,8 +181,8 @@ class CommonData:
         if (social_media.lower() not in self.social_media_sources):
             raise InvalidSocialMediaSource("ERROR. Avalaible social media sources: "+str(self.social_media_sources))
         # Check the provided user id
-        if (type(userid) != str or userid == ""):
-            raise InvalidUserId("ERROR. The user id should be a non-empty string.")
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
 
         # Preprocessing
         for media in medias:
@@ -251,86 +205,12 @@ class CommonData:
         # Add the preprocessed medias
         preprocessed_medias = {}
         preprocessed_medias['medias'] = medias
-        # Add the social media source
         preprocessed_medias["social_media"] = social_media
-        # Add the id of the user who owns the media posts
-        preprocessed_medias["userid"] = userid
+        preprocessed_medias['date'] = datetime.strptime((date.today()).strftime("%d-%m-%Y"),'%d-%m-%Y')
+        preprocessed_medias["username"] = username
         return preprocessed_medias
 
-    def preprocess_media_likers(self, likers, social_media, userid):
-        """
-        Preprocesses the list of people who liked the medias of a specific user.
-        All usernames which are not strings will be deleted.
-
-        Parameters
-        ----------
-        likers : list of dicts
-            It's the list of dicts in which there are the list of users who liked
-            the medias of a specific user.
-        social_media : str
-            It's the social media which the user data came from.
-        userid : str
-            It's the id of the studied user account.
-
-        Raises
-        ------
-        LikerListNotFound
-            If the provided likers are not in a list of strings.
-        InvalidSocialMediaSource
-            If the provided social media source is not a non-empty string or it's
-            not one of the avalaible social media sources.
-        InvalidUserId
-            If the provided user id is not a non-empty string.
-
-        Returns
-        -------
-        A dict with the list of people who liked the medias of a specific user as
-        well as the social media source.
-        """
-        # Check if the likers are in a list
-        if (type(likers) != list or len(likers) == 0):
-            raise LikerListNotFound("ERROR. Likers should be a non-empty list.")
-        # Check the items of the list
-        if (not all(isinstance(record, dict) for record in likers)):
-            raise LikerListNotFound("ERROR. Likers should be a non-empty list of dicts.")
-        # Check the provided social media source
-        if (type(social_media) != str or social_media == ""):
-            raise InvalidSocialMediaSource("ERROR. The social media source should be a non-empty string.")
-        if (social_media.lower() not in self.social_media_sources):
-            raise InvalidSocialMediaSource("ERROR. Avalaible social media sources: "+str(self.social_media_sources))
-        # Check the provided user id
-        if (type(userid) != str or userid == ""):
-            raise InvalidUserId("ERROR. The user id should be a non-empty string.")
-
-        # Preprocessing
-        for media in likers:
-            # Check the provided data
-            media_liker_keys = list(media.keys())
-            media_liker_keys.sort()
-            self.liker_keys.sort()
-            if (media_liker_keys != self.liker_keys):
-                raise LikerDictNotFound("ERROR. Some of the required data are missing.")
-            # Check that each media has its id
-            if (type(media['id_media']) != str or media['id_media'] == ""):
-                raise InvalidMediaId("ERROR. Each media should have its id as a non-empty string.")
-            # Transform the media id to string
-            media['id_media'] = str(media['id_media'])
-            # Check the provided list of likers
-            ## It could be an empty list in case the media hasn't been liked by anyone
-            if (type(media['users']) != list):
-                raise LikerListNotFound("ERROR. The people who liked the medias should be in a non-empty list.")
-            prep_users = [user for user in media['users'] if type(user) == str and user != ""]
-            media['users'] = prep_users
-
-        # Final liker dict to return
-        preprocessed_likers = {}
-        preprocessed_likers['likers'] = likers
-        preprocessed_likers['social_media'] = social_media
-        preprocessed_likers['userid'] = userid
-
-        return preprocessed_likers
-
-    def preprocess_media_comments(self, comments, social_media, userid):
+    def preprocess_media_comments(self, comments, social_media, username):
         """
         Preprocesses the comments wrote by the users on the medias of a specific
         user account.
@@ -342,8 +222,8 @@ class CommonData:
             who wrote the text and the text itself.
         social_media : str
             It's the social media which the user data came from.
-        userid : int
-            It's the id of the studied user account.
+        username : str
+            It's the username of the studied user account.
 
         Raises
         ------
@@ -354,14 +234,14 @@ class CommonData:
         InvalidSocialMediaSource
             If the provided social media source is not a non-empty string or it's
             not one of the avalaible social media sources.
-        InvalidUserId
-            If the provided user id is not a positive integer.
+        UsernameNotFound
+            If the provided username is not a positive integer.
 
         Returns
         -------
         A dict with the media texts as well as the social media source.
         """
-        # Check if the likers are in a list
+        # Check if the comments are in a list
         if (type(comments) != list or len(comments) == 0):
             raise TextListNotFound("ERROR. Texts should be a non-empty list.")
         # Check the items of the list
@@ -373,8 +253,8 @@ class CommonData:
         if (social_media.lower() not in self.social_media_sources):
             raise InvalidSocialMediaSource("ERROR. Avalaible social media sources: "+str(self.social_media_sources))
         # Check the provided user id
-        if (type(userid) != str or userid == ""):
-            raise InvalidUserId("ERROR. The user id should be a non-empty string.")
+        if (type(username) != str or username == ""):
+            raise UsernameNotFound("ERROR. The username should be a non-empty string.")
 
         # Preprocessing
         for media in comments:
@@ -416,14 +296,15 @@ class CommonData:
         preprocessed_texts = {}
         preprocessed_texts['comments'] = comments
         preprocessed_texts['social_media'] = social_media
-        preprocessed_texts['userid'] = userid
+        preprocessed_texts['date'] = datetime.strptime((date.today()).strftime("%d-%m-%Y"),'%d-%m-%Y')
+        preprocessed_texts['username'] = username
 
         return preprocessed_texts
 
     def preprocess_user_data(self, user_data, social_media):
         """
-        Preprocesses the social media user data such as the profile, medias, likers,
-        texts as well as the followers and followings.
+        Preprocesses the social media user data such as the profile, medias as
+        well as their comments.
 
         Parameters
         ----------
@@ -438,13 +319,10 @@ class CommonData:
         """
         profile = self.preprocess_profile(user_data['profile'], social_media)
         # Get the user id
-        userid = profile['userid']
-        contacts = self.preprocess_contacts(user_data['contacts'], social_media, userid)
-        medias = self.preprocess_medias(user_data['medias'], social_media, userid)
-        likers = self.preprocess_media_likers(user_data['likers'], social_media, userid)
-        comments = self.preprocess_media_comments(user_data['comments'], social_media, userid)
-        data = {'profile':profile, 'media_list':medias, 'media_likers':likers,
-                'media_comments':comments, 'contacts':contacts}
+        username = profile['username']
+        medias = self.preprocess_medias(user_data['medias'], social_media, username)
+        comments = self.preprocess_media_comments(user_data['comments'], social_media, username)
+        data = {'profile':profile, 'media_list':medias, 'media_comments':comments}
         return data
 
     def clean_texts(self, texts):
@@ -483,22 +361,39 @@ class CommonData:
         # Clean the texts
         cleaned_texts = []
         for text in texts:
-            # Translate to English
-            english_text = (translator.translate(text, dest="en")).text
+            import time 
+            start = time.time()
+            # try:
+            #     # Translate to English
+            #     english_text = (translator.translate(text, dest="en")).text
+            # except: #pragma no cover
+            #     english_text = text
+            end = time.time()
+            #print("Translate: ",end - start)
             # Remove specific stopwords
+            english_text = text
+            start = time.time()
             english_words = english_text.split()
             non_stopwords = [word for word in english_words if word.lower() not in self.stopwords]
             non_stopwords = ' '.join(non_stopwords)
+            end = time.time()
+            # print("Stopwords" ,end - start)
             # Remove numbers
+            start = time.time()
             non_numbers = re.sub(r"\d+", "", non_stopwords)
+            end = time.time()
+            # print("Non numbers",end - start)
             # Remove some special characters
+            start = time.time()
             non_special_characters = re.sub(r'[#@\"\-"*$%&\+\_]', ' ', non_numbers)
+            end = time.time()
+            # print("Special chracters", end - start)
             # Add the cleaned text to the list of cleaned texts
             cleaned_texts.append(non_special_characters)
 
         return cleaned_texts
 
-    def insert_user_data(self, user_data, collection, query=None):
+    def insert_user_data(self, user_data, collection):
         """
         Inserts user data from any social media source in a collection of Mongo
         database. In order to identify each document and when it was inserted,
@@ -514,9 +409,6 @@ class CommonData:
             It's the user data from any social media source.
         collection : str
             It's the collection in which the user data is going to be inserted.
-        query : dict, optional
-            It's the query to make in order to insert the user data if there aren't
-            any matches. The default value is None, no query.
 
         Raises
         ------
@@ -538,61 +430,70 @@ class CommonData:
         # Check the provided collection
         if (collection == "" or type(collection) != str):
             raise CollectionNotFound("ERROR. The collection name should be a non-empty string.")
-        # Check the provided query
-        if (query != None):
-            if (type(query) != dict or len(query) == 0):
-                raise InvalidQuery("ERROR. The query should be a non-empty dict.")
-        # Check the current MongoDB object
+        # Check if the collection exists
+        if (collection not in self.related_collections):
+            raise CollectionNotFound("ERROR. The provided collection does not exist.")
+         # Check the current MongoDB object
         if (type(self.mongodb) != mongodb.MongoDB):
                 raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
                                        "should be a MongoDB object.")
-
-        # Stores user data in the specified collection of a Mongo database.
-        ## Add two keys: id (userid+social_media) and the date
-        user_data['id'] = str(user_data['userid']) + "_" + user_data['social_media']
-        user_data['date'] = (date.today()).strftime("%d-%m-%Y")
+        
         # Set the collection to insert the user data
         self.mongodb.set_collection(collection)
+        # Stores user data in the specified collection of a Mongo database.
+        return self.mongodb.insert_item(user_data)
 
-        return self.mongodb.insert_item(user_data, query)
-
-    def get_user_data(self, query, collection):
+    def get_user_data(self, collection, query, values={}):
         """
-        Gets user data from some collection of the Mongo database specifying a
-        query in order to filter the records to return.
+        Gets the matched records from a specific collection and related to a
+        specific query.
 
         Parameters
         ----------
-        query : dict
-            It's the dict which contains the keys and their values to filter the
-            user data of the collection.
         collection : str
-            It's the collection in which the query will be made to return the user
-            data.
+            It's the collection in which the query will be made and the data will
+            be recovered.
+        query : str
+            It's the query to make in order to get the matched records.
+        values : dict, optional
+            They're the parameters to add to the query in order to filter the
+            data to recover. The default is {}.
 
         Raises
         ------
-        InvalidQuery
-            If the provided query is not a non-empty dict.
         CollectionNotFound
             If the provided collection is not a non-empty string.
+        InvalidQuery
+            If the provided query is not a non-empty string or does not exist.
+        InvalidQueryValues
+            If the provided values are not in a dict.
         InvalidMongoDbObject
-            If the MongoDB object has not the connection to the Mongo database.
+            If the MongoDB object does not contain the connection to the Mongo database.
 
         Returns
         -------
-        The returned user data if there are any.
+        A dict which contains the matched records as dicts too.
         """
-        # Check the provided query
-        if (type(query) != dict or len(query) == 0):
-            raise InvalidQuery("ERROR. The query should be a non-empty dict.")
+        # Check the MongoDB object
+        if (type(self.mongodb) != mongodb.MongoDB):
+            raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
+                                   "should be a MongoDB object.")
         # Check the provided collection
         if (collection == "" or type(collection) != str):
             raise CollectionNotFound("ERROR. The collection name should be a non-empty string.")
-        # Check the MongoDB object
-        if (type(self.mongodb) != mongodb.MongoDB):
-                raise InvalidMongoDbObject("ERROR. The connection to the MongoDB database "+
-                                       "should be a MongoDB object.")
+        # Check if the provided collection exists
+        if (collection not in self.related_collections):
+            raise CollectionNotFound("ERROR. The provided collection does not exist.")
+        # Check the provided query
+        if (type(query) != str or query == ""):
+            raise InvalidQuery("ERROR. The query should be a non-empty dict.")
+        # Check if the provided query exists
+        if (query not in self.mongodb.get_queries):
+            raise InvalidQuery("ERROR. The provided query does not exist.")
+        # Check the values
+        if (type(values) != dict):
+            raise InvalidQueryValues("ERROR. The values should be a dict.")
+        
         # Set the collection
         self.mongodb.set_collection(collection)
-        return self.mongodb.get_records(query)
+        return self.mongodb.get_records(query, values)
