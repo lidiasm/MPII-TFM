@@ -15,7 +15,8 @@ import data_analyzer
 from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize \
     , InvalidLinePlotData, UsernameNotFound, ProfilesNotFound, InvalidBarPlotData \
     , UserActivityNotFound, PostInteractionsNotFound, InvalidPiePlotData \
-    , InvalidSocialMediaSource, PostPopularityNotFound, TextTupleNotFound
+    , InvalidSocialMediaSource, PostPopularityNotFound, TextTupleNotFound \
+    , SentimentTupleNotFound, TextDataDictNotFound
     
 # DataAnalyzer object to run the data analyzer methods
 da = data_analyzer.DataAnalyzer()
@@ -144,7 +145,7 @@ def test4_plot_lines_chart():
     legend_labels = ["line 1", "line 2", "line 3"]
     x_labels = ["26/07", "27/07", "29/07"]
     result = da.plot_lines_chart(values, legend_labels, x_labels, da.plot_tests_path+"test_lines_plot")
-    assert result == True
+    assert result[0] == True
     
 def test1_profile_evolution():
     """
@@ -186,7 +187,7 @@ def test4_profile_evolution():
                     ("28/10/2020", "26", "148", "124")]
     result = da.profile_evolution("lidiasm", profile_list)
     time(5)
-    assert result == True
+    assert result["state"] == True
     
 def test5_profile_evolution():
     """
@@ -207,7 +208,7 @@ def test5_profile_evolution():
                     ("31/10/2020", "40", "145", "140")]
     result = da.profile_evolution("lidiasm", profile_list)
     time(5)
-    assert result == True
+    assert result["state"] == True
     
 def test1_plot_bars_chart():
     """
@@ -246,7 +247,7 @@ def test4_plot_bars_chart():
     values = [5, 2, 15, 8, 9]
     x_labels = ['label1', 'label2', 'label3', 'label4', 'label5']
     result = da.plot_bars_chart(values, x_labels, da.plot_tests_path+"test_bar_plot")
-    assert result == True
+    assert result[0] == True
 
 def test5_plot_bars_chart():
     """
@@ -256,7 +257,7 @@ def test5_plot_bars_chart():
     x_labels = ['label1', 'label2', 'label3', 'label4', 'label5']
     result = da.plot_bars_chart(values, x_labels, da.plot_tests_path+"test_bar_plot",
                           [-3, 13, -7, -1])
-    assert result == True
+    assert result[0] == True
     
 def test1_user_activity():
     """
@@ -309,7 +310,7 @@ def test5_user_activity():
                       ("28/10/2020", "38")
                       ]
     result = da.user_activity("lidiasm", user_activity)
-    assert result == True
+    assert result["state"] == True
         
 def test6_user_activity():
     """
@@ -331,7 +332,7 @@ def test6_user_activity():
                       ]
     result = da.user_activity("lidiasm", user_activity)
     time(5)
-    assert result == True
+    assert result["state"] == True
 
 def test1_post_evolution():
     """
@@ -373,7 +374,7 @@ def test4_post_evolution():
                     ("28/10/2020", "159", "89")]
     result = da.post_evolution("lidiasm", post_interactions)
     time(5)
-    assert result == True
+    assert result["state"] == True
     
 def test5_post_evolution():
     """
@@ -395,7 +396,7 @@ def test5_post_evolution():
                     ("31/10/2020", "278", "289")]
     result = da.post_evolution("lidiasm", post_interactions)
     time(5)
-    assert result == True
+    assert result["state"] == True
     
 def test1_post_popularity():
     """
@@ -404,67 +405,27 @@ def test1_post_popularity():
     so an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
-        assert da.post_popularity(None, None, None)
+        assert da.post_popularity(None, None)
         
 def test2_post_popularity():
     """
     Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the social media source is
+    on a selected set of interactions. In this test, the medias to analyze are
     not provided so an exception will be raised.
     """
-    with pytest.raises(InvalidSocialMediaSource):
-        assert da.post_popularity("lidia.96.sm", None, None)
+    with pytest.raises(PostPopularityNotFound):
+        assert da.post_popularity("lidia.96.sm", None)
         
 def test3_post_popularity():
     """
     Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the provided social media
-    source is not valid, so an exception will be raised.
+    on a selected set of interactions. In this test, the posts will be sorted
+    by the average number of likes and comments in descending order.
     """
-    with pytest.raises(InvalidSocialMediaSource):
-        assert da.post_popularity("lidia.96.sm", "Invalid Social Media", None)
-        
-def test4_post_popularity():
-    """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the list of popular posts is
-    not provided so an exception will be raised.
-    """
-    with pytest.raises(PostPopularityNotFound):
-        assert da.post_popularity("lidia.96.sm", "Instagram", None)
-        
-def test5_post_popularity():
-    """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the provided list of popular
-    posts is not valid so an exception will be raised.
-    """
-    popular_posts = [1,2,3,4]
-    with pytest.raises(PostPopularityNotFound):
-        assert da.post_popularity("lidia.96.sm", "Instagram", popular_posts)
-        
-def test6_post_popularity():
-    """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the provided list of popular
-    posts is not valid so an exception will be raised.
-    """
-    popular_posts = [(1,2,3), (4,5,6), (7,8,9,10)]
-    with pytest.raises(PostPopularityNotFound):
-        assert da.post_popularity("lidia.96.sm", "Instagram", popular_posts)
-        
-def test7_post_popularity():
-    """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the data is similar to 
-    Instagram data because the posts have titles. The metric to get the popularity
-    is the average of likes.
-    """
-    popular_posts = [("Title of post 1", "URL", "24/10/2020", "Average likes: 1234"),
-                     ("Title of post 2", "URL", "27/10/2020", "Average likes: 1122")]
-    post_list = da.post_popularity("lidia.96.sm", "Instagram", popular_posts)
-    check = [True for post in post_list if (len(post)) == 2]
-    assert len(list(set(check))) == 1 and list(set(check))[0] == True
+    posts = {"ids":[1,2,3,4], 
+             "data":[('123', '145', '174'), ('456', '45', '78'), ('789', '485', '25'), ('012', '489', '584')]}
+    post_ranking = da.post_popularity("lidia.96.sm", posts)
+    assert type(post_ranking) == list and len(post_ranking) == 4
 
 def test1_plot_pie_chart():
     """
@@ -504,7 +465,7 @@ def test4_plot_pie_chart():
     labels = ['Positive', 'Neutral', 'Negative']
     file = da.plot_tests_path + "test_pie_plot"
     result = da.plot_pie_chart(values, labels, file, None)
-    assert result == True
+    assert result[0] == True
     
 def test5_plot_pie_chart():
     """
@@ -517,7 +478,7 @@ def test5_plot_pie_chart():
     labels = ['Positive', 'Neutral', 'Negative']
     file = da.plot_tests_path + "test_pie_plot"
     result = da.plot_pie_chart(values, labels, file, ["green", "yellow", "red"])
-    assert result == True
+    assert result[0] == True
     
 def test1_sentiment_analysis_text():
     """
@@ -534,7 +495,7 @@ def test2_sentiment_analysis_text():
     of texts. In this test, the texts to analyse are not provided so
     an exception will be raised.
     """
-    with pytest.raises(TextTupleNotFound):
+    with pytest.raises(TextDataDictNotFound):
         da.sentiment_analysis_text("lidia.96.sm", [])
         
 def test3_sentiment_analysis_text():
@@ -544,20 +505,91 @@ def test3_sentiment_analysis_text():
     raised.
     """
     with pytest.raises(TextTupleNotFound):
-        da.sentiment_analysis_text("lidia.96.sm", [1,2,3,4])
+        da.sentiment_analysis_text("lidia.96.sm", {"ids":[1,2,3], "data":[1,2,3]})
         
 def test4_sentiment_analysis_text():
     """
     Test to check the method which performs a sentiment analysis based on a list
     of texts. The results are plotted on a pie chart.
     """
-    text_list = [('1', '🔥'), ('2', '@audispain Electric blue'), 
-                 ('3', '@audispain true to the white AUDI ALWAYSEE !!!! 😎'), 
-                 ('4', '@audispain I love it in white and dark gray. Thanks for filling Instagram with perfection. ❤️'), 
-                 ('5', '@audispain could donate me one 🙌, even if it is an old model, I would be happy to be able to walk my daughter'), 
-                 ('6', 'I black ..... uauuuuu awesome black👏👏👏🏼👏🏻👏👏👏'), 
-                 ('7', 'Personally the typical metallic blue color of the rs 😍'), 
-                 ('8', '@audispain if my Q2 is black and I love it ..... 💋💋'), 
-                 ('9', '😍'), ('10', 'A pure road machine 👏👏❤️')]
+    text_list = {"ids":[1,2,3,4,5,6,7,8,9,10], 
+                 "data":[('🔥',), ('@audispain Electric blue',), 
+                 ('@audispain true to the white AUDI ALWAYSEE !!!! 😎',), 
+                 ('@audispain I love it in white and dark gray. Thanks for filling Instagram with perfection. ❤️',), 
+                 ('@audispain could donate me one 🙌, even if it is an old model, I would be happy to be able to walk my daughter',), 
+                 ('I black ..... uauuuuu awesome black👏👏👏🏼👏🏻👏👏👏',), 
+                 ('Personally the typical metallic blue color of the rs 😍',), 
+                 ('@audispain if my Q2 is black and I love it ..... 💋💋',), 
+                 ('😍',), ('A pure road machine 👏👏❤️',)]}
     result = da.sentiment_analysis_text("lidia.96.sm", text_list)
-    assert result == True
+    assert result['state'] == True and type(result["data"]) == list and len(result["data"]) == len(text_list["data"])
+
+def test1_user_behaviours():
+    """
+    Test to check the method which gets the evolution of the number of haters
+    and friends based on a performed sentiment analysis during a specific period 
+    of time. In this test, the username of the studied user is not provided so 
+    an exception will be raised.
+    """
+    with pytest.raises(UsernameNotFound):
+        da.user_behaviours(None, None)
+        
+def test2_user_behaviours():
+    """
+    Test to check the method which gets the evolution of the number of haters
+    and friends based on a performed sentiment analysis during a specific period 
+    of time. In this test, the list of identified sentiments is not provided 
+    so an exception will be raised.
+    """
+    with pytest.raises(SentimentTupleNotFound):
+        da.user_behaviours("lidia.96.sm", None)
+        
+def test3_user_behaviours():
+    """
+    Test to check the method which gets the evolution of the number of haters
+    and friends based on a performed sentiment analysis during a specific period 
+    of time. In this test, the provided list of sentiments is not valid so an
+    exception will be raised.
+    """
+    with pytest.raises(SentimentTupleNotFound):
+        da.user_behaviours("lidia.96.sm", [1,2,3,4,5])
+        
+def test4_user_behaviours():
+    """
+    Test to check the method which gets the evolution of the number of haters
+    and friends based on a performed sentiment analysis during a specific period 
+    of time. In this test, the provided data is for seven days so the plot will
+    draw the number of haters and friends per day.
+    """
+    user_list = [("24/10/2020", "user1", "pos"),
+                 ("24/10/2020", "user2", "neg"),
+                 ("24/10/2020", "user1", "neu"),
+                 ("24/10/2020", "user1", "pos"),
+                 ("25/10/2020", "user3", "none"),
+                 ("25/10/2020", "user3", "pos"),
+                 ("26/10/2020", "user1", "neg"),
+                 ("26/10/2020", "user2", "none"),
+                 ("26/10/2020", "user4", "pos"),
+                 ("27/10/2020", "user1", "neu"),
+                 ("28/10/2020", "user1", "pos"),]
+    result = da.user_behaviours("lidia.96.sm", user_list)
+    assert result["state"] == True
+    
+def test5_user_behaviours():
+    """
+    Test to check the method which gets the evolution of the number of haters
+    and friends based on a performed sentiment analysis during a specific period 
+    of time. In this test, the provided data is for more than seven days so the
+    plot will show the average of haters and friends per week.
+    """
+    user_list = [("24/10/2020", "user1", "pos"), ("24/10/2020", "user2", "neg"),
+                 ("25/10/2020", "user1", "neu"), ("25/10/2020", "user1", "pos"),
+                 ("26/10/2020", "user3", "none"), ("26/10/2020", "user3", "pos"),
+                 ("27/10/2020", "user1", "neg"), ("27/10/2020", "user2", "none"),
+                 ("28/10/2020", "user4", "pos"), ("28/10/2020", "user1", "neg"),
+                 ("29/10/2020", "user1", "neg"), ("29/10/2020", "user1", "neg"),
+                 ("30/10/2020", "user1", "neg"), ("30/10/2020", "user1", "neg"),
+                 ("31/10/2020", "user1", "neg"),("31/10/2020", "user1", "neg"),
+                 ("32/10/2020", "user1", "pos"),("32/10/2020", "user1", "neg"),]
+    result = da.user_behaviours("lidia.96.sm", user_list)
+    assert result["state"] == True
