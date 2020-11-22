@@ -666,7 +666,7 @@ class PostgreDB:
         # Try to connect to the database        
         try:
             self.connection = psycopg2.connect(host="localhost", user=user, 
-                               password=pswd, database=self.database_name, port="5433")
+                               password=pswd, database=self.database_name)
             self.cursor = self.connection.cursor()
             return self.cursor
         except Exception: # pragma no cover
@@ -805,8 +805,6 @@ class PostgreDB:
         
         # Check the check values, if they are provided
         data_to_insert = new_values
-        
-        print("LONG", len(check_values))
         if (len(check_values) > 0):
             if (type(check_values) != list or not all(isinstance(item, dict) for item in check_values)):
                 raise InvalidQueryValues("ERROR. The new and select values should be non-empty list of dicts.")
