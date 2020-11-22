@@ -73,11 +73,6 @@ class InvalidMongoDbObject(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class ContactDictNotFound(Exception):
-    """Class exception to point out that the dict of contacts don't exist."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje        
-        
 class InvalidMediaId(Exception):
     """Class exception to point out that the media id is not found or is invalid."""
     def __init__(self, mensaje):
@@ -93,16 +88,6 @@ class MediaDictNotFound(Exception):
     """Class exception to point out that the provided media is not a dict."""
     def __init__(self, mensaje):
         self.mensaje = mensaje   
-
-class LikerListNotFound(Exception):
-    """Class exception to point out that likers should be a list."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class LikerDictNotFound(Exception):
-    """Class exception to point out that each liker should be in a dict."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
         
 class TextListNotFound(Exception):
     """Class exception to point out that the list of texts from medias is not valid."""
@@ -208,14 +193,46 @@ class PostPopularityNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
+class TextDataDictNotFound(Exception):
+    """Class exception to point out that the provided text data to analyze is not
+    a valid dict."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
 class TextTupleNotFound(Exception):
-    """Class exception to point out that the provided list of texts is not a 
-    list of tuples."""
+    """Class exception to point out that the provided text is not in a tuple."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class SentimentTupleNotFound(Exception):
+    """Class exception to point out that the provided list of identified sentiments
+    is not a list of tuples."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class FollowerInteractionsNotFound(Exception):
+    """Class exception to point out that the provided list of followers interactions
+    is not valid."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
 
 ############################ CLASS MAINOPERATIONS #############################
 class InvalidMode(Exception):
     """Class exception to point out that the provided mode is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidAnalysis(Exception):
+    """Class exception to point out that the provided analysis to perform is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidAnalysisResults(Exception):
+    """Class exception to point out that the provided analysis results are not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
+class InvalidDates(Exception):
+    """Class exception to point out that the provided range of dates is wrong."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
