@@ -9,10 +9,11 @@ classes which need to operate with the Mongo database.
 """
 import os
 import pymongo
+from datetime import datetime
 import sys
 sys.path.append('src/exceptions')
-from exceptions import ConnectionNotFound, CollectionNotFound, NewItemNotFound \
-    , InvalidDatabaseCredentials, InvalidQuery
+from exceptions import ConnectionNotFound, CollectionNotFound \
+    , InvalidDatabaseCredentials, InvalidQuery, NewItemNotFound, InvalidQueryValues
 
 class MongoDB:
     
@@ -21,6 +22,8 @@ class MongoDB:
         Creates a MongoDB object whose attributes are:
             - The name of the database to connect with.
             - The Mongo database URI and credentials.
+            - The queries to make in order to get some data.
+            - The relationship between the insert and the get queries.
             - The connection to the specified collection in the Mongo database.
 
         Parameters
@@ -38,12 +41,45 @@ class MongoDB:
         -------
         A MongoDB object with the connection made to the database.
         """
+        # Check the provided collection to connect with
         if (type(collection) != str or collection == ""):
             raise InvalidDatabaseCredentials("ERROR. The collection name to connect to should be a non-empty string.")
+        # Check the provided URI to connect to the database
         uri = os.environ.get("MONGODB_URI")
         if (type(uri) != str or uri == ""):
             raise InvalidDatabaseCredentials("ERROR. The MongoDB uri should be a non-empty string stored as a env variable.")
-        # Connection
+        
+        # Queries to get data
+        self.get_queries = {
+            "get_dates":{
+                "query":{"date":1},
+                "fields":[]
+            },
+            "get_item":{
+                "query":{"username":None, "social_media":None, "date":{"$gte":None, "$lte":None}},
+                "fields":["username", "social_media", "date_ini", "date_fin"]
+            },
+            "get_test":{
+                "query":{"username":None, "date":{"$gte":None, "$lte":None}, "social_media":None},
+                "fields":["username", "date_ini", "date_fin", "social_media"]
+            },
+            "general_check":{
+                "query":{"username":None, "date":None, "social_media":None},
+                "fields":["username", "date", "social_media"]
+            }
+        }
+        
+        # Queries to delete some records from a specific collection
+        self.delete_queries = {
+            "delete_all":{
+                "query":{}
+            },
+            "delete_item":{
+                "query":{"username":None, "date":None, "social_media":None}
+            }
+        }
+        
+        # Make the connection
         self.client = pymongo.MongoClient(uri)
         self.db = "socialnetworksdb"
         self.connection = self.client[self.db][collection]
@@ -72,97 +108,113 @@ class MongoDB:
         self.connection = self.client[self.db][new_collection]
         return self.connection
     
-    def get_records(self, query={}):
+    def get_records(self, query, values={}):
         """
-        Gets the records related to the specified query. If there is not provided
-        query, then all the documents of the current collection will be returned.
+        Gets the records which matched with the specified query and values from
+        the connected collection in the Mongo database.
 
         Parameters
         ----------
-        query : dict
-            It's a dict whose keys are the fields in which the method will search
-            and the values are the values to search for in the current collection
-            in the Mongo database.
-            If the dict is empty, the entire collection will be returned.
+        query : str
+            It's the query to make in order to get the data.
+        values : dict, optional
+            They are the required values to make the query, in case it has them. 
+            The default is a empty dict.
 
         Raises
         ------
-        CollectionNotFound
-            If the connection has not been made.
+        ConnectionNotFound
+            If the connection to the Mongo database has not been made.
+        InvalidQuery
+            If the provided query is not a non-empty string or does not exist.
+        InvalidQueryValues
+            If the provided values to make the query are not a non-empty dict
+            or they haven't the required keys.
 
         Returns
         -------
-        The matched records related to the specified query.
+        A list which contains the matched records as dicts.
         """
+        # Check if the connection has been made
         if (type(self.connection) != pymongo.collection.Collection):
             raise ConnectionNotFound("ERROR. There is not connection to the database.")
         # Check the provided query
-        if (type(query) != dict):
-            raise InvalidQuery("ERROR. The query should be a dict.")
-        # Check the keys are string and the values exist
-        if (len(query) > 0):
-            if (not all(isinstance(key,str) for key in query) or None in query.values()):
-                raise InvalidQuery("ERROR. The query should have string keys and non-None values.")
-            
-        # Make the query
-        item_rows = self.connection.find(query)
-        documents = {}
-        document_index = 0
+        if (type(query) != str or query == ""):
+            raise InvalidQuery("ERROR. The query should be a non-empty string.")
+        if (query not in self.get_queries):
+            raise InvalidQuery("ERROR. The provided query does not exist.")
+        # Check the provided values
+        required_values = self.get_queries[query]["fields"]
+        if (len(required_values) > 0 and (type(values) != dict or len(values) == 0)):
+            raise InvalidQueryValues("ERROR. The specified query needs some values.")
+        if (required_values != list(values.keys())):
+            raise InvalidQueryValues("ERROR. The provided values to make the query are wrong.")
+        
+        # Complete the query
+        final_query = self.get_queries[query]["query"]
+        if (query == "get_dates"):
+            item_rows = self.connection.find({}, final_query)
+        elif (query == "general_check"):
+            for key in final_query:
+                final_query[key] = values[key]
+            # Make the final query
+            item_rows = self.connection.find(final_query)
+        else:
+            for key in required_values:
+                if (key == "date_ini"):
+                    final_query["date"]["$gte"] = datetime.strptime(values[key],"%d-%m-%Y")
+                elif (key == "date_fin"):
+                    final_query["date"]["$lte"] = datetime.strptime(values[key],"%d-%m-%Y") 
+                else:
+                    final_query[key] = values[key]
+                    
+            # Make the final query
+            item_rows = self.connection.find(final_query)
+        
+        documents = []
         for item_r in item_rows:
-            # Transform the id from the database to string.
-            item_r['_id'] = str(item_r['_id'])
-            documents[document_index] = item_r
-            document_index += 1
+            # Delete the Mongo id because it's useless
+            del item_r["_id"]
+            documents.append(item_r)
             
         return documents
     
-    def insert_item(self, new_item, query=None):
+    def insert_item(self, new_item):
         """
-        Adds a new item to the current collection in the Mongo database, if 
-        the PK is different (id, date).
+        Inserts a new record in a specific collection in the Mongo database if
+        it doesn't already exist.
 
         Parameters
         ----------
         new_item : dict
-            It's a dict with the new data to insert to the current collection in the
-            Mongo database. The keys should be non-empty strings and it can't contain
-            None values.
-        query : dict
-            It's a dict which could contain the query to make in order to check
-            if the new item already exists in the Mongo database. The keys should be non-empty strings and it can't contain
-            None values.
-            If it's None, then not checking will be done and the new item will
-            be always inserted.
+            It's the new data to insert.
 
         Raises
         ------
-        CollectionNotFound
+        ConnectionNotFound
             If the connection to the Mongo database has not been made.
         NewItemNotFound
-            If the new item to insert does not exist.
+            If the provided values to make the query are not a non-empty dict.
 
         Returns
         -------
-        A string which represents the id of the new added item.
-        None if it hasn't been inserted.
+        A string id if the item could be inserted, None if it couldn't.
         """
-        items = {}
+        # Check if the connection has been made
         if (type(self.connection) != pymongo.collection.Collection):
             raise ConnectionNotFound("ERROR. There is not connection to the database.")
+        # Check the provided new item
         if (type(new_item) != dict or len(new_item) == 0):
-            raise NewItemNotFound("ERROR. The new item does not exist.")
-        # Check the provided query
-        if (query != None):
-            if (type(query) != dict or len(query) == 0):
-                raise InvalidQuery("ERROR. The query should be a non-empty dict.")
-            # Check the keys are string and the values exist
-            if (not all(isinstance(key,str) for key in query) or None in query.values()):
-                raise InvalidQuery("ERROR. The query should have string keys and non-None values.")
-            # Searchs for items which have match with the specified query 
-            items = self.get_records(query)
-            
-        # If there are not matched items, the new item can be inserted
-        if (len(items) == 0):
+            raise NewItemNotFound("ERROR. The new item to insert should be a non-empty dict.")
+        
+        # Check if the item to insert already exists
+        final_query = self.get_queries["general_check"]["query"]
+        for key in self.get_queries["general_check"]["fields"]:
+            final_query[key] = new_item[key]
+        
+        matched_records = self.get_records("general_check", final_query)
+        # Insert the query if there are not equal records
+        if (len(matched_records) == 0):
             id_new_item = self.connection.insert_one(new_item.copy(), bypass_document_validation=True).inserted_id
             return str(id_new_item)
     
@@ -176,35 +228,56 @@ class MongoDB:
         """
         return self.connection.count_documents({})
     
-    def delete_records(self, query={}):
+    def delete_records(self, query, values={}):
         """
-        Deletes the matched records related to the specified query in the current
-        collection in the Mongo database. 
-        If there is not provided query, every document of the current collection
-        will be removed.
+        Deletes the matched records from a specific collection and related to
+        the provided query.
 
         Parameters
         ----------
-        query : dict
-            It's a dict which contains the query with string keys and non-None values
-            to search for items with those features in order to remove them.
-            If it's empty, the entire collection will be removed.
-        
+        query : str
+            It's the query to make in order to remove the matched records.
+        values : dict, optional
+            They're the values to make the query. The default is {}.
+
+        Raises
+        ------
+        ConnectionNotFound
+            If the connection to the Mongo database has not been made.
+        InvalidQuery
+            If the provided query is not a non-empty string or does not exist.
+        InvalidQueryValues
+            If the provided values to make the query are not a non-empty dict
+            or they haven't the required keys.
+
         Returns
         -------
         The number of deleted records.
         """
+        # Check if the connection has been made
         if (type(self.connection) != pymongo.collection.Collection):
             raise ConnectionNotFound("ERROR. There is not connection to the database.")
         # Check the provided query
-        if (type(query) != dict):
-            raise InvalidQuery("ERROR. The query should be a dict.")
-        # Check the keys are string and the values exist
-        if (len(query) > 0):
-            if (not all(isinstance(key,str) for key in query) or None in query.values()):
-                raise InvalidQuery("ERROR. The query should have string keys and non-None values.")
+        if (type(query) != str or query == ""):
+            raise InvalidQuery("ERROR. The query should be a non-empty string.")
+        if (query not in self.delete_queries):
+            raise InvalidQuery("ERROR. The provided query does not exist.")
+        # Check the provided values
+        required_values = list(self.delete_queries[query]["query"].keys())
+        if (len(required_values) > 0 and (type(values) != dict or len(values) == 0)):
+            raise InvalidQueryValues("ERROR. The specified query needs some values.")
+        if (required_values != list(values.keys())):
+            raise InvalidQueryValues("ERROR. The provided values to make the query are wrong.")
+        
+        # Complete the query
+        final_query = self.delete_queries[query]["query"]
+        if (len(required_values) > 0):
+            for key in final_query:
+                if (key == "date"):
+                    final_query[key] = datetime.strptime(values[key],"%d-%m-%Y")
+                else:
+                    final_query[key] = values[key]
         
         # Delete the matched items related to the specified query
-        result = self.connection.delete_many(query)
+        result = self.connection.delete_many(final_query)
         return result.deleted_count
-    
