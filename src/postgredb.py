@@ -34,27 +34,22 @@ class PostgreDB:
         # Database name
         self.database_name = "socialnetworksdb"
         # Tables of the database
-        self.tables = ['profiles', 'medias', 'mediacomments', 'mediatitles', 'mediacontent',
+        self.tables = ['testparent', 'testchild', 'testfk',
+                       'testprofiles', 'testprofilesevolution','testprofilesactivity',
+                       'testmedias', 'testmediasevolution', 'testmediaspopularity',
+                       'testmediatitles', 'testmediacomments',
+                       'testtextsentiments', 'testcommentsentiments',
                        
-                       'profilesevolution', 'profiles_profilesevolution',
-                       'profilesactivity', 'profiles_profilesactivity',
-                       'mediasevolution', 'medias_mediasevolution', 'mediaspopularity',
-                       'sentimentanalysis', 'titlesentimentanalysis',
-                       
-                       'testparent', 'testchild', 'testfk', 
-                       'testprofiles', 'testprofilesevolution', 'testprofiles_testprofilesevolution',
-                       'testprofilesactivity', 'testprofiles_testprofilesactivity',
-                       'testmedias', 'testmediasevolution', 'testmedias_testmediasevolution', 
-                       'testmediaspopularity', 'testmedias_testmediaspopularity',
-                       'testmediacomments', 'testmediatitles', 'testmediacontent',
-                       'testsentimentanalysis', 'testtitlesentimentanalysis']
+                       'profiles', 'profilesevolution', 'profilesactivity',
+                       'medias', 'mediasevolution', 'mediaspopularity',
+                       'textsentiments'
+                       ]
         # Connect to the database
         self.connect_to_database()
         
-        ## PREDEFINED QUERIES
-        # Select queries, to get data from the database
+        # Predefined queryies
+        ## 1. SELECT QUERIES
         self.select_queries = {
-            ########################### TEST TABLES ###########################
             'check_test_parent':{
                 'query':'SELECT id FROM testparent WHERE id=%s',
                 'fields':['id']},
@@ -65,326 +60,327 @@ class PostgreDB:
                 'query':'SELECT id_test_fk FROM testfk WHERE id=%s AND field_one=%s',
                 'fields':['id', 'field_one']},
             
-            # Test Profiles
+            ########################### TEST ANALYSIS ###################################
+            # FOR PROFILES ANALYSIS
+            ## Check if the profile to insert is already in the database
             'check_test_profile':{
                 'query':"SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s AND date=%s",
                 'fields':['username', 'social_media', 'date']},
+            ## Get the required profiles for the ProfilesEvolution
             'test_get_profiles':{
-                'query':'SELECT id_profile, date, n_medias, n_followers, n_followings FROM testprofiles WHERE '+
+                'query':'SELECT date, n_medias, n_followers, n_followings FROM testprofiles WHERE '+
                     'username=%s AND social_media=%s AND date>=%s AND date<=%s',
                 'fields':['username', 'social_media', 'date_ini', 'date_fin']},
-            'test_get_profiles_activity':{
-                'query':'SELECT id_profile, date, n_medias FROM testprofiles WHERE '+
+            ## Get the required profiles for the ProfilesActivity
+            'test_get_nmedias_profiles':{
+                'query':'SELECT date, n_medias FROM testprofiles WHERE '+
                     'username=%s AND social_media=%s AND date>=%s AND date<=%s',
                 'fields':['username', 'social_media', 'date_ini', 'date_fin']},
-            # Test Profiles Evolution analysis
+            ## Check if the ProfilesEvolution analysis results are already in the database
             'check_test_profile_evolution':{
-                'query':'SELECT id_profile_evolution FROM testprofilesevolution WHERE date_ini=%s AND date_fin=%s',
-                'fields':["date_ini", "date_fin"]},
-            'check_test_profile_profile_evolution':{
-                'query':'SELECT id_profile_evolution FROM testprofiles_testprofilesevolution WHERE '+
-                'id_profile=%s AND id_profile_evolution=%s',
-                'fields':["id_profile", "id_profile_evolution"]},
+                'query':'SELECT id_profile_evolution FROM testprofilesevolution WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
+                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+            ## Get the ProfilesEvolution analysis results of a specific range of dates and username
             'test_profile_evolution':{
-                'query':'SELECT date_ini, date_fin, mean_medias, mean_followers, mean_followings '+
-                        'FROM testprofilesevolution WHERE date_ini>=%s AND date_fin <= %s AND id_profile_evolution '+
-                        'IN (SELECT id_profile_evolution FROM testprofiles_testprofilesevolution WHERE id_profile '+
-                        'IN (SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']},
-            # Test Profiles Activity analysis
+                'query':'SELECT n_week, mean_followers, mean_followings, mean_medias FROM '+
+                    'testprofilesevolution WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':["date_ini", "date_fin", "id_user"]
+            },
+            ## Check if the ProfilesActivity analysis results are already in the database
             'check_test_profile_activity':{
-                'query':'SELECT id_profile_activity FROM testprofilesactivity WHERE date_ini=%s AND date_fin=%s',
-                'fields':["date_ini", "date_fin"]},
-            'check_test_profile_profile_activity':{
-                'query':'SELECT id_profile_activity FROM testprofiles_testprofilesactivity WHERE '+
-                'id_profile=%s AND id_profile_activity=%s',
-                'fields':["id_profile", "id_profile_activity"]},
+                'query':'SELECT id_profile_activity FROM testprofilesactivity WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
+                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+            ## Get the ProfilesActivity analysis results of a specific range of dates and username
             'test_profile_activity':{
-                'query':'SELECT date_ini, date_fin, mean_medias '+
-                        'FROM testprofilesactivity WHERE date_ini>=%s AND date_fin <= %s AND id_profile_activity '+
-                        'IN (SELECT id_profile_activity FROM testprofiles_testprofilesactivity WHERE id_profile '+
-                        'IN (SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']},
+                'query':'SELECT n_week, mean_medias FROM testprofilesactivity WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':["date_ini", "date_fin", "id_user"]
+            },
             
-            # Test Medias
+            # FOR MEDIAS ANALYSIS 
+            ## Check if the media to insert is already in the database
             'check_test_media':{
                 'query':'SELECT id_media_aut FROM testmedias WHERE id_media=%s AND date=%s',
                 'fields':['id_media', 'date']
             },
+            # Get the required medias to perform a MediasEvolution analysis
             'test_get_medias':{
-                'query':"SELECT id_media_aut, date, like_count, comment_count FROM testmedias "+
+                'query':"SELECT date, like_count, comment_count FROM testmedias "+
                     "WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)",
                 'fields':['date_ini', 'date_fin', 'username', 'social_media'],
             },
-            # Test MediaComments
-            'check_test_medias_for_comment':{
-                'query':"SELECT id_media_aut FROM testmedias WHERE type='common' AND id_media=%s AND date=%s AND id_profile IN "+
+            # Get the required medias to perform a MediasPopularity analysis
+            'test_get_medias_with_id':{
+                'query':"SELECT id_media, like_count, comment_count FROM testmedias "+
+                    "WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)",
-                'fields':['id_media', 'date', 'username', 'social_media'],
+                'fields':['date_ini', 'date_fin', 'username', 'social_media'],
             },
+            # Check if a specific comment is already in the database before inserting it
             'check_test_media_comment':{
-                'query':"SELECT id_text FROM testmediacomments WHERE type='comment' AND text=%s AND author=%s AND id_media_aut=%s",
-                'fields':["text", "author", "id_media_aut"]
+                'query':"SELECT id_text FROM testmediacomments WHERE type='comment' AND original_text=%s AND author=%s AND id_media_aut=%s",
+                'fields':["original_text", "author", "id_media_aut"]
             },
-            'test_get_media_comment':{
-                'query':"SELECT id_text, text FROM testmediacomments WHERE type='comment' AND date >= %s AND date <= %s AND id_media_aut IN "+
+            # Get the required comments to perform a CommentsSentiments analysis
+            'test_get_media_comments':{
+                'query':"SELECT id_text, preprocessed_text, original_text FROM testmediacomments WHERE type='comment' AND date >= %s AND date <= %s AND id_media_aut IN "+
                     "(SELECT id_media_aut FROM testmedias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s))",
                 'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin", "username", "social_media"]
             },
-            # Test MediaTitles
+            # Check if the media title to insert is already in the database
             'check_test_media_title':{
-                'query':"SELECT id_text FROM testmediatitles WHERE type='title' AND id_media_aut=%s AND text=%s AND author=%s",
-                'fields':['id_media_aut', 'text', 'author']
+                'query':"SELECT id_text FROM testmediatitles WHERE type='title' AND id_media_aut=%s AND original_text=%s AND author=%s",
+                'fields':['id_media_aut', 'original_text', 'author']
             },
-            'test_get_media_title':{
-                'query':"SELECT id_text, text FROM testmediatitles WHERE type='title' AND id_media_aut=%s AND author=%s",
-                'fields':['id_media_aut', 'author']
-            },
-            'test_get_media_title_for_sentiment':{
-                'query':"SELECT id_text, text FROM testmediatitles WHERE type='title' AND date >= %s AND date <= %s AND id_media_aut IN "+
+            # Get the required comments to perform a CommentsSentiments analysis
+            'test_get_media_titles':{
+                'query':"SELECT id_text, preprocessed_text, original_text FROM testmediatitles WHERE type='title' AND date >= %s AND date <= %s AND id_media_aut IN "+
                     "(SELECT id_media_aut FROM testmedias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s))",
                 'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin", "username", "social_media"]
             },
-            # Test Medias Evolution analysis
+            # Check if there are any MediasEvolution analysis results which are similar to
+            # the new results to insert
             'check_test_media_evolution':{
-                'query':'SELECT id_media_evolution FROM testmediasevolution WHERE date_ini=%s AND date_fin=%s',
-                'fields':['date_ini', 'date_fin']
+                'query':'SELECT id_media_evolution FROM testmediasevolution WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s',
+                'fields':['date_ini', 'date_fin', "id_user", "time"]
             },
-            'check_test_media_media_evolution':{
-                'query':'SELECT id_media_aut FROM testmedias_testmediasevolution WHERE id_media_evolution=%s AND id_media_aut=%s',
-                'fields':['id_media_evolution', 'id_media_aut']
-            },
+            # Get the MediasEvolution analysis results to plot them directly
             'test_media_evolution':{
-                'query':'SELECT date_ini, date_fin, mean_likes, mean_comments FROM testmediasevolution '+
-                    'WHERE date_ini>=%s AND date_fin<=%s AND id_media_evolution IN '+
-                    '(SELECT id_media_evolution FROM testmedias_testmediasevolution WHERE id_media_aut IN '+
-                    '(SELECT id_media_aut FROM testmedias WHERE id_profile IN '+
-                    '(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']
+                'query':'SELECT time, mean_likes, mean_comments FROM testmediasevolution '+
+                    'WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':['date_ini', 'date_fin', 'id_user']
             },
-            # Test Medias Popularity analysis
-            'check_test_media_media_popularity':{
-                'query':'SELECT id_media_aut FROM testmedias_testmediaspopularity WHERE id_media_popularity=%s AND id_media_aut=%s',
-                'fields':['id_media_popularity', 'id_media_aut']
+            # Check if there are any MediasPopularity analysis results which are similar to
+            # the new results to insert
+            'check_test_media_popularity':{
+                'query':'SELECT id_media_popularity FROM testmediaspopularity WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND id_media=%s',
+                'fields':['date_ini', 'date_fin', "id_user", "id_media"]
             },
-            'test_get_medias_popularity':{
-                'query':"SELECT id_media_aut, id_media, like_count, comment_count FROM testmedias "+
-                    "WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
-                    "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)",
-                'fields':['date_ini', 'date_fin', 'username', 'social_media'],
-            },
-            'test_get_medias_for_popularity':{
-                'query':"SELECT id_media_aut, uploaded_date FROM testmedias WHERE id_media_aut=%s AND type='common'",
-                'fields':['id_media_aut']
-            },
+            # Get the MediasPopularity analysis results to plot them directly
             'test_media_popularity':{
-                'query':'SELECT date_ini, date_fin, mean_likes, mean_comments FROM testmediaspopularity '+
-                    'WHERE date_ini>=%s AND date_fin<=%s AND id_media_popularity IN '+
-                    '(SELECT id_media_popularity from testmedias_testmediaspopularity WHERE id_media_aut IN '+
-                    '(SELECT id_media_aut FROM testmedias WHERE id_profile IN '+
-                    '(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']
+                'query':'SELECT mean_likes, mean_comments FROM testmediaspopularity '+
+                    'WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':['date_ini', 'date_fin', 'id_user']
             },
-            # Test Sentiment Analysis 
+            # Check if there is a similar SentimentAnalysis before inserting the new one
             'check_test_sentiment_analysis':{
-                'query':"SELECT id_text FROM testsentimentanalysis WHERE id_text=%s",
-                'fields':["id_text"]
+                'query':"SELECT id_text_sentiment FROM testtextsentiments WHERE "+
+                    "date_ini=%s AND date_fin=%s AND id_user=%s AND type=%s",
+                'fields':["date_ini", "date_fin", "id_user", "type"]
             },
+            # Get the CommentSentiment analysis results to plot them directly
             'test_comment_sentiment_analysis':{
-                'query':"SELECT GREATEST(pos_degree, neu_degree, neg_degree), sentiment FROM testsentimentanalysis WHERE id_text IN "+
-                    "(SELECT id_text FROM testmediacomments WHERE type='comment' AND date>=%s AND date<=%s AND id_media_aut IN "+
-                    "(SELECT id_media_aut FROM testmedias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
-                    "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)))",
-                'fields':["media_date_ini", "media_date_fin", "comment_date_ini", "comment_date_fin", "username", "social_media"]
+                'query':"SELECT n_pos, n_neu, n_neg, pos_degree, neu_degree, neg_degree FROM testtextsentiments "+
+                    "WHERE date_ini=%s AND date_fin=%s AND id_user=%s AND type='comments'",
+                'fields':["date_ini", "date_fin", "id_user"]
             },
-            'check_test_title_sentiment_analysis':{
-                'query':"SELECT id_text FROM testtitlesentimentanalysis WHERE id_text=%s",
-                'fields':["id_text"]
+            # Check if a text sentiment analysis already exists
+            'check_test_comment_sentiment':{
+                'query':'SELECT id_comment_sentiment FROM testcommentsentiments WHERE original_text=%s',
+                'fields':["original_text"]
             },
+            # Get the CommentSentiment analysis results to plot them directly
             'test_title_sentiment_analysis':{
-                'query':"SELECT GREATEST(pos_degree, neu_degree, neg_degree), sentiment FROM testsentimentanalysis WHERE id_text IN "+
-                    "(SELECT id_text FROM testmediatitles WHERE type='comment' AND date>=%s AND date<=%s AND id_media_aut IN "+
-                    "(SELECT id_media_aut FROM testmedias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
-                    "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s)))",
-                'fields':["media_date_ini", "media_date_fin", "comment_date_ini", "comment_date_fin", "username", "social_media"]
+                'query':"SELECT n_pos, n_neu, n_neg, pos_degree, neu_degree, neg_degree FROM testtextsentiments "+
+                    "WHERE date_ini=%s AND date_fin=%s AND id_user=%s AND type='titles'",
+                'fields':["date_ini", "date_fin", "id_user"]
             },
-            # Test UsersBehaviours
-            'test_comment_users_behaviours':{
-                'query':"SELECT id_text, date, author FROM testmediacomments WHERE date>=%s AND date<=%s AND type='comment' AND id_media_aut IN "+
+            # Get the analysed comments as well as their authors to study their behaviours
+            'test_get_comments_and_authors':{
+                'query':"SELECT date, author, original_text FROM testmediacomments WHERE type='comment' "+
+                    "AND date>=%s AND date<=%s AND id_media_aut IN "+
                     "(SELECT id_media_aut FROM testmedias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM testprofiles WHERE username=%s AND social_media=%s))",
-                'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin", "username", "social_media"],
+                'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin",
+                          "username", "social_media"]
             },
-            'test_sentiment_users_behaviours':{
-                'query':"SELECT sentiment FROM testsentimentanalysis WHERE id_text=%s",
-                'fields':["id_text"]
+            # Get the sentiment from a analysed comment 
+            'test_get_comment_sentiment':{
+                'query':"SELECT sentiment FROM testcommentsentiments WHERE original_text=%s",
+                'fields':["original_text"]
             },
-    
-            ########################### REAL TABLES ###########################
-            # For Profiles table
+            # Check if there are similar UserBehaviours analysis before inserting a new one
+            'check_test_user_behaviour':{
+                'query':"SELECT id_user_behaviour FROM testuserbehaviours WHERE "+
+                    "date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s",
+                'fields':["date_ini", "date_fin", "id_user", "time"]
+            },
+            # Get the UserBehaviours analysis results to plot them directly
+            'test_user_behaviours':{
+                'query':'SELECT time, n_likers, n_haters FROM testuserbehaviours WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':['date_ini', 'date_fin', 'id_user']
+            },
+            
+            ############################### REAL ANALYSIS ##################################
+            # FOR PROFILES_EVOLUTION AND PROFILES_ACTIVITY
+            ## Check if the profile to insert is already in the database
             'check_profile':{
-                'query':'SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s AND date=%s',
+                'query':"SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s AND date=%s",
                 'fields':['username', 'social_media', 'date']},
+            ## Get the required profiles for the ProfilesEvolution
             'get_profiles':{
-                'query':'SELECT id_profile, date, n_medias, n_followers, n_followings FROM profiles WHERE '+
+                'query':'SELECT date, n_medias, n_followers, n_followings FROM profiles WHERE '+
                     'username=%s AND social_media=%s AND date>=%s AND date<=%s',
                 'fields':['username', 'social_media', 'date_ini', 'date_fin']},
-            'get_profiles_activity':{
-                'query':'SELECT id_profile, date, n_medias FROM profiles WHERE '+
+            ## Get the required profiles for the ProfilesActivity
+            'get_nmedias_profiles':{
+                'query':'SELECT date, n_medias FROM profiles WHERE '+
                     'username=%s AND social_media=%s AND date>=%s AND date<=%s',
                 'fields':['username', 'social_media', 'date_ini', 'date_fin']},
-            # For ProfilesEvolution tables
+            ## Check if the ProfilesEvolution analysis results are already in the database
             'check_profile_evolution':{
-                'query':'SELECT id_profile_evolution FROM profilesevolution WHERE date_ini=%s AND date_fin=%s',
-                'fields':["date_ini", "date_fin"]},
-            'check_profile_profile_evolution':{
-                'query':'SELECT id_profile_evolution FROM profiles_profilesevolution WHERE '+
-                'id_profile=%s AND id_profile_evolution=%s',
-                'fields':["id_profile", "id_profile_evolution"]},
+                'query':'SELECT id_profile_evolution FROM profilesevolution WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
+                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+            ## Get the ProfilesEvolution analysis results of a specific range of dates and username
             'profile_evolution':{
-                'query':'SELECT date_ini, date_fin, mean_medias, mean_followers, mean_followings '+
-                        'FROM profilesevolution WHERE date_ini>=%s AND date_fin <= %s AND id_profile_evolution '+
-                        'IN (SELECT id_profile_evolution FROM profiles_profilesevolution WHERE id_profile '+
-                        'IN (SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']},
-            # For Profiles Activity tables
+                'query':'SELECT n_week, mean_followers, mean_followings, mean_medias FROM '+
+                    'profilesevolution WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':["date_ini", "date_fin", "id_user"]
+            },
+            ## Check if the ProfilesActivity analysis results are already in the database
             'check_profile_activity':{
-                'query':'SELECT id_profile_activity FROM profilesactivity WHERE date_ini=%s AND date_fin=%s',
-                'fields':["date_ini", "date_fin"]},
-            'check_profile_profile_activity':{
-                'query':'SELECT id_profile_activity FROM profiles_profilesactivity WHERE '+
-                'id_profile=%s AND id_profile_activity=%s',
-                'fields':["id_profile", "id_profile_activity"]},
+                'query':'SELECT id_profile_activity FROM profilesactivity WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
+                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+            ## Get the ProfilesActivity analysis results of a specific range of dates and username
             'profile_activity':{
-                'query':'SELECT date_ini, date_fin, mean_medias '+
-                        'FROM profilesactivity WHERE date_ini>=%s AND date_fin <= %s AND id_profile_activity '+
-                        'IN (SELECT id_profile_activity FROM profiles_profilesactivity WHERE id_profile '+
-                        'IN (SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']},
-            # For Medias table
+                'query':'SELECT n_week, mean_medias FROM profilesactivity WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':["date_ini", "date_fin", "id_user"]
+            },
+            
+            # FOR MEDIAS ANALYSIS 
+            ## Check if the media to insert is already in the database
             'check_media':{
                 'query':'SELECT id_media_aut FROM medias WHERE id_media=%s AND date=%s',
                 'fields':['id_media', 'date']
             },
+            # Get the required medias to perform a MediasEvolution analysis
             'get_medias':{
-                'query':"SELECT id_media_aut, date, like_count, comment_count FROM medias "+
+                'query':"SELECT date, like_count, comment_count FROM medias "+
                     "WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)",
                 'fields':['date_ini', 'date_fin', 'username', 'social_media'],
             },
-            # For MediaComments
-            'check_medias_for_comment':{
-                'query':"SELECT id_media_aut FROM medias WHERE type='common' AND id_media=%s AND date=%s AND id_profile IN "+
+            # Get the required medias to perform a MediasPopularity analysis
+            'get_medias_with_id':{
+                'query':"SELECT id_media, like_count, comment_count FROM medias "+
+                    "WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)",
-                'fields':['id_media', 'date', 'username', 'social_media'],
+                'fields':['date_ini', 'date_fin', 'username', 'social_media'],
             },
+            # Check if a specific comment is already in the database before inserting it
             'check_media_comment':{
-                'query':"SELECT id_text FROM mediacomments WHERE type='comment' AND text=%s AND author=%s AND id_media_aut=%s",
-                'fields':["text", "author", "id_media_aut"]
+                'query':"SELECT id_text FROM mediacomments WHERE type='comment' AND original_text=%s AND author=%s AND id_media_aut=%s",
+                'fields':["original_text", "author", "id_media_aut"]
             },
-            'get_media_comment':{
-                'query':"SELECT id_text, text FROM mediacomments WHERE type='comment' AND date >= %s AND date <= %s AND id_media_aut IN "+
+            # Get the required comments to perform a CommentsSentiments analysis
+            'get_media_comments':{
+                'query':"SELECT id_text, preprocessed_text, original_text FROM mediacomments WHERE type='comment' AND date >= %s AND date <= %s AND id_media_aut IN "+
                     "(SELECT id_media_aut FROM medias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s))",
                 'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin", "username", "social_media"]
             },
-            # For MediaTitles table
+            # Check if the media title to insert is already in the database
             'check_media_title':{
-                'query':"SELECT id_text FROM mediatitles WHERE type='comment' AND id_media_aut=%s AND text=%s AND author=%s",
-                'fields':['id_media_aut', 'text', 'author']
+                'query':"SELECT id_text FROM mediatitles WHERE type='title' AND id_media_aut=%s AND original_text=%s AND author=%s",
+                'fields':['id_media_aut', 'original_text', 'author']
             },
-            'get_media_title':{
-                'query':"SELECT id_text, text FROM mediatitles WHERE type='title' AND id_media_aut=%s AND author=%s",
-                'fields':['id_media_aut', 'author']
-            },
-            # For Medias Evolution tables
-            'check_media_evolution':{
-                'query':'SELECT id_media_evolution FROM mediasevolution WHERE date_ini=%s AND date_fin=%s',
-                'fields':['date_ini', 'date_fin']
-            },
-            'check_media_media_evolution':{
-                'query':'SELECT id_media_aut FROM medias_mediasevolution WHERE id_media_evolution=%s AND id_media_aut=%s',
-                'fields':['id_media_evolution', 'id_media_aut']
-            },
-            'media_evolution':{
-                'query':'SELECT date_ini, date_fin, mean_likes, mean_comments FROM mediasevolution '+
-                    'WHERE date_ini>=%s AND date_fin<=%s AND id_media_evolution IN '+
-                    '(SELECT id_media_evolution FROM medias_mediasevolution WHERE id_media_aut IN '+
-                    '(SELECT id_media_aut FROM medias WHERE id_profile IN '+
-                    '(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']
-            },
-            # For Medias Popularity tables
-            'check_media_media_popularity':{
-                'query':'SELECT id_media_aut FROM medias_mediaspopularity WHERE id_media_popularity=%s AND id_media_aut=%s',
-                'fields':['id_media_popularity', 'id_media_aut']
-            },
-            'get_medias_popularity':{
-                'query':"SELECT id_media_aut, id_media, like_count, comment_count FROM medias "+
-                    "WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
-                    "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)",
-                'fields':['date_ini', 'date_fin', 'username', 'social_media'],
-            },
-            'get_medias_for_popularity':{
-                'query':"SELECT id_media_aut, uploaded_date FROM medias WHERE id_media_aut=%s AND type='common'",
-                'fields':['id_media_aut']
-            },
-            'media_popularity':{
-                'query':'SELECT date_ini, date_fin, mean_likes, mean_comments FROM mediaspopularity '+
-                    'WHERE date_ini>=%s AND date_fin<=%s AND id_media_popularity IN '+
-                    '(SELECT id_media_popularity from medias_mediaspopularity WHERE id_media_aut IN '+
-                    '(SELECT id_media_aut FROM medias WHERE id_profile IN '+
-                    '(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)))',
-                'fields':['date_ini', 'date_fin', 'username', 'social_media']
-            },
-            # For Comment Sentiment Analysis
-            'check_sentiment_analysis':{
-                'query':"SELECT id_text FROM sentimentanalysis WHERE id_text=%s",
-                'fields':["id_text"]
-            },
-            'comment_sentiment_analysis':{
-                'query':"SELECT GREATEST(pos_degree, neu_degree, neg_degree), sentiment FROM sentimentanalysis WHERE id_text IN "+
-                    "(SELECT id_text FROM mediacomments WHERE type='comment' AND date>=%s AND date<=%s AND id_media_aut IN "+
-                    "(SELECT id_media_aut FROM medias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
-                    "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)))",
-                'fields':["media_date_ini", "media_date_fin", "comment_date_ini", "comment_date_fin", "username", "social_media"]
-            },
-            # For Title Sentiment Analysis
-            'check_title_sentiment_analysis':{
-                'query':"SELECT id_text FROM titlesentimentanalysis WHERE id_text=%s",
-                'fields':["id_text"]
-            },
-            'get_media_title_for_sentiment':{
-                'query':"SELECT id_text, text FROM mediatitles WHERE type='title' AND date >= %s AND date <= %s AND id_media_aut IN "+
+            # Get the required comments to perform a CommentsSentiments analysis
+            'get_media_titles':{
+                'query':"SELECT id_text, preprocessed_text, original_text FROM mediatitles WHERE type='title' AND date >= %s AND date <= %s AND id_media_aut IN "+
                     "(SELECT id_media_aut FROM medias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s))",
                 'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin", "username", "social_media"]
             },
-            'title_sentiment_analysis':{
-                'query':"SELECT GREATEST(pos_degree, neu_degree, neg_degree), sentiment FROM titlesentimentanalysis WHERE id_text IN "+
-                    "(SELECT id_text FROM mediacomments WHERE type='comment' AND date>=%s AND date<=%s AND id_media_aut IN "+
-                    "(SELECT id_media_aut FROM medias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
-                    "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s)))",
-                'fields':["media_date_ini", "media_date_fin", "comment_date_ini", "comment_date_fin", "username", "social_media"]
+            # Check if there are any MediasEvolution analysis results which are similar to
+            # the new results to insert
+            'check_media_evolution':{
+                'query':'SELECT id_media_evolution FROM mediasevolution WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s',
+                'fields':['date_ini', 'date_fin', "id_user", "time"]
             },
-            # For Users Behaviours
-            'comment_users_behaviours':{
-                'query':"SELECT id_text, date, author FROM mediacomments WHERE date>=%s AND date<=%s AND type='comment' AND id_media_aut IN "+
+            # Get the MediasEvolution analysis results to plot them directly
+            'media_evolution':{
+                'query':'SELECT time, mean_likes, mean_comments FROM mediasevolution '+
+                    'WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':['date_ini', 'date_fin', 'id_user']
+            },
+            # Check if there are any MediasPopularity analysis results which are similar to
+            # the new results to insert
+            'check_media_popularity':{
+                'query':'SELECT id_media_popularity FROM mediaspopularity WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND id_media=%s',
+                'fields':['date_ini', 'date_fin', "id_user", "id_media"]
+            },
+            # Get the MediasPopularity analysis results to plot them directly
+            'media_popularity':{
+                'query':'SELECT mean_likes, mean_comments FROM mediaspopularity '+
+                    'WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':['date_ini', 'date_fin', 'id_user']
+            },
+            # Check if there is a similar SentimentAnalysis before inserting the new one
+            'check_sentiment_analysis':{
+                'query':"SELECT id_text_sentiment FROM textsentiments WHERE "+
+                    "date_ini=%s AND date_fin=%s AND id_user=%s AND type=%s",
+                'fields':["date_ini", "date_fin", "id_user", "type"]
+            },
+            # Get the CommentSentiment analysis results to plot them directly
+            'comment_sentiment_analysis':{
+                'query':"SELECT n_pos, n_neu, n_neg, pos_degree, neu_degree, neg_degree FROM textsentiments "+
+                    "WHERE date_ini=%s AND date_fin=%s AND id_user=%s AND type='comments'",
+                'fields':["date_ini", "date_fin", "id_user"]
+            },
+            # Check if a text sentiment analysis already exists
+            'check_comment_sentiment':{
+                'query':'SELECT id_comment_sentiment FROM commentsentiments WHERE original_text=%s',
+                'fields':["original_text"]
+            },
+            # Get the CommentSentiment analysis results to plot them directly
+            'title_sentiment_analysis':{
+                'query':"SELECT n_pos, n_neu, n_neg, pos_degree, neu_degree, neg_degree FROM textsentiments "+
+                    "WHERE date_ini=%s AND date_fin=%s AND id_user=%s AND type='titles'",
+                'fields':["date_ini", "date_fin", "id_user"]
+            },
+            # Get the analysed comments as well as their authors to study their behaviours
+            'get_comments_and_authors':{
+                'query':"SELECT date, author, original_text FROM mediacomments WHERE type='comment' "+
+                    "AND date>=%s AND date<=%s AND id_media_aut IN "+
                     "(SELECT id_media_aut FROM medias WHERE type='common' AND date>=%s AND date<=%s AND id_profile IN "+
                     "(SELECT id_profile FROM profiles WHERE username=%s AND social_media=%s))",
-                'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin", "username", "social_media"],
+                'fields':["comment_date_ini", "comment_date_fin", "media_date_ini", "media_date_fin",
+                          "username", "social_media"]
             },
-            'sentiment_users_behaviours':{
-                'query':"SELECT sentiment FROM sentimentanalysis WHERE id_text=%s",
-                'fields':["id_text"]
-            }
+            # Get the sentiment from a analysed comment 
+            'get_comment_sentiment':{
+                'query':"SELECT sentiment FROM commentsentiments WHERE original_text=%s",
+                'fields':["original_text"]
+            },
+            # Check if there are similar UserBehaviours analysis before inserting a new one
+            'check_user_behaviour':{
+                'query':"SELECT id_user_behaviour FROM userbehaviours WHERE "+
+                    "date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s",
+                'fields':["date_ini", "date_fin", "id_user", "time"]
+            },
+            # Get the UserBehaviours analysis results to plot them directly
+            'user_behaviours':{
+                'query':'SELECT time, n_likers, n_haters FROM userbehaviours WHERE '+
+                    'date_ini=%s AND date_fin=%s AND id_user=%s',
+                'fields':['date_ini', 'date_fin', 'id_user']
+            },
         }
-        # Insert queries, to add new data to the database
+        
+        ## 2. INSERT QUERIES
         self.insert_queries = {
-            ########################### TEST TABLES ###########################
             'insert_test_parent':{
                 'query':'INSERT INTO testparent (id, is_parent, name) VALUES (%s, %s, %s) RETURNING id',
                 'fields':['id', 'is_parent', 'name'],
@@ -397,7 +393,10 @@ class PostgreDB:
                 'query':'INSERT INTO testfk (id, field_one) VALUES (%s, %s) RETURNING id_test_fk',
                 'fields':['id', 'field_one'],
                 'table':'testfk'},
-            # Insert into TestProfiles table
+            
+            ############################ TEST ANALYSIS ####################################
+            # FOR PROFILES_EVOLUTION AND PROFILES_ACTIVITY
+            ## Insert the data of a specific user profile
             'insert_test_profile':{
                 'query':"INSERT INTO testprofiles (biography, birthday, date, date_joined, "+
                     "gender, location, n_followers, n_followings, n_medias, name, profile_pic, "+
@@ -406,95 +405,83 @@ class PostgreDB:
                 'fields':['biography', 'birthday', 'date', 'date_joined', 'gender', 
                           'location', 'n_followers', 'n_followings', 'n_medias', 
                           'name', 'profile_pic', 'social_media', 'userid', 'username'],
-                'table':'testprofiles'},
-            # Insert into TestProfilesEvolution tables
+                'table':'testprofiles' 
+            },
+            # Insert the results of a specific ProfilesEvolution analysis
             'insert_test_profile_evolution':{
-                'query':"INSERT INTO testprofilesevolution (date_fin, date_ini, mean_followers, "+
-                         " mean_followings, mean_medias) VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s) RETURNING id_profile_evolution",
-                'fields':['date_fin', 'date_ini', 'mean_followers', 'mean_followings', 'mean_medias'],
+                'query':"INSERT INTO testprofilesevolution (date_fin, date_ini, id_user, mean_followers, "+
+                         " mean_followings, mean_medias, n_week) VALUES (TO_DATE(%s,'DD-MM-YYYY'), "+
+                         "TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s, %s, %s) RETURNING id_profile_evolution",
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_followers', 'mean_followings', 'mean_medias', 'n_week'],
                 'table':'testprofilesevolution'
-                },
-            'insert_test_profile_test_profile_evolution':{
-                'query':"INSERT INTO testprofiles_testprofilesevolution (id_profile, id_profile_evolution) "+
-                         "VALUES (%s, %s) RETURNING id_profile, id_profile_evolution",
-                'fields':["id_profile", "id_profile_evolution"],
-                'table':'testprofiles_testprofilesevolution'
-                },
-            # Insert into TestProfilesActivity tables
+            },
+            # Insert the results of a specific ProfilesActivity analysis
             'insert_test_profile_activity':{
-                'query':"INSERT INTO testprofilesactivity (date_fin, date_ini, mean_medias) "+
-                         "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s) RETURNING id_profile_activity",
-                'fields':['date_fin', 'date_ini', 'mean_medias'],
+                'query':"INSERT INTO testprofilesactivity (date_fin, date_ini, id_user, mean_medias, n_week) "+
+                         "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s) RETURNING id_profile_activity",
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_medias', 'n_week'],
                 'table':'testprofilesactivity'
-                },
-            'insert_test_profile_test_profile_activity':{
-                'query':"INSERT INTO testprofiles_testprofilesactivity (id_profile, id_profile_activity) "+
-                         "VALUES (%s, %s) RETURNING id_profile, id_profile_activity",
-                'fields':["id_profile", "id_profile_activity"],
-                'table':'testprofiles_testprofilesactivity'
-                },
-            # Insert into TestMedias table
+            },
+            # Insert the data of the specific medias
             'insert_test_medias':{
                 'query':"INSERT INTO testmedias (comment_count, date, id_media, id_profile, like_count, uploaded_date, type) "+
                     "VALUES (%s, %s, %s, %s, %s, TO_DATE(%s,'DD-MM-YYYY'), 'common') RETURNING id_media_aut",
                 'fields':['comment_count', 'date', 'id_media', 'id_profile', 'like_count', 'uploaded_date'],
                 'table':'testmedias'
             },
-            # Insert into TestMediaComments table
-            'insert_test_media_comments':{
-                'query':"INSERT INTO testmediacomments (author, date, id_media_aut, text, type) VALUES (%s, %s, %s, %s, 'comment') "+
-                    "RETURNING id_text",
-                'fields':['author', 'date', 'id_media_aut', 'text'],
-                'table':'testmediacomments'
-            },
-            # Insert into TestMediaTitles table
+            # Insert the title of a specific media
             'insert_test_media_titles':{
-                'query':"INSERT INTO testmediatitles (author, date, id_media_aut, text, type) VALUES (%s, %s, %s, %s, 'title') "
-                    "RETURNING id_text",
-                'fields':['author', 'date', 'id_media_aut', 'text'],
+                'query':"INSERT INTO testmediatitles (author, date, id_media_aut, original_text, preprocessed_text, type) "+
+                    "VALUES (%s, %s, %s, %s, %s, 'title') RETURNING id_text",
+                'fields':['author', 'date', 'id_media_aut', 'original_text', 'preprocessed_text'],
                 'table':'testmediatitles'
             },
-            # Insert into TestMediasEvolution tables
+            # Insert a comment from a media
+            'insert_test_media_comments':{
+                'query':"INSERT INTO testmediacomments (author, date, id_media_aut, original_text, preprocessed_text, type) "+
+                    "VALUES (%s, %s, %s, %s, %s, 'comment') RETURNING id_text",
+                'fields':['author', 'date', 'id_media_aut', 'original_text', 'preprocessed_text'],
+                'table':'testmediacomments'
+            },
+            # Insert the results of a specific MediasEvolution analysis
             'insert_test_medias_evolution':{
-                'query':'INSERT INTO testmediasevolution (date_fin, date_ini, mean_comments, mean_likes) '+
-                    'VALUES (%s, %s, %s, %s) RETURNING id_media_evolution',
-                'fields':['date_fin', 'date_ini', 'mean_comments', 'mean_likes'],
+                'query':'INSERT INTO testmediasevolution (date_fin, date_ini, id_user, '+
+                    'mean_comments, mean_likes, time) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_media_evolution',
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_comments', 'mean_likes', 'time'],
                 'table':'testmediasevolution'
             },
-            'insert_test_medias_test_medias_evolution':{
-                'query':'INSERT INTO testmedias_testmediasevolution (id_media_aut, id_media_evolution) '+
-                    'VALUES (%s, %s) RETURNING id_media_aut, id_media_evolution',
-                'fields':['id_media_aut', 'id_media_evolution'],
-                'table':'testmedias_testmediasevolution'
-            },
-            # Insert into TestMediasPopularity table
+            # Insert the results of a specific MediasEvolution analysis
             'insert_test_medias_popularity':{
-                'query':"INSERT INTO testmediaspopularity (date_fin, date_ini, mean_likes, mean_comments) "+
-                    "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s) RETURNING id_media_popularity",
-                'fields':['date_fin', 'date_ini', 'mean_comments', 'mean_likes'],
-                'table':'testmediaspopularity'
+                'query':'INSERT INTO testmediaspopularity (date_fin, date_ini, id_media, id_user, '+
+                    'mean_comments, mean_likes) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_media_popularity',
+                'fields':['date_fin', 'date_ini', 'id_media', 'id_user', 'mean_comments', 'mean_likes'],
+                'table':'mediasevolution'
             },
-            'insert_test_medias_test_medias_popularity':{
-                'query':'INSERT INTO testmedias_testmediaspopularity (id_media_aut, id_media_popularity) '+
-                    'VALUES (%s, %s) RETURNING id_media_aut, id_media_popularity',
-                'fields':['id_media_aut', 'id_media_popularity'],
-                'table':'testmedias_testmediaspopularity'
-            },
-            # Insert into TestSentimentAnalysis
+            # Insert the results of a specific CommentSentiment analysis
             'insert_test_sentiment_analysis':{
-                'query':"INSERT INTO testsentimentanalysis (id_text, neg_degree, neu_degree, pos_degree, sentiment) "+
-                    "VALUES (%s, %s, %s, %s, %s) RETURNING id_text",
-                'fields':["id_text", "neg_degree", "neu_degree", "pos_degree", "sentiment"],
-                'table':"testsentimentanalysis"
+                'query':"INSERT INTO testtextsentiments (date_fin, date_ini, id_user, n_neg, n_neu, n_pos, neg_degree, neu_degree, pos_degree, type) "+
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_text_sentiment",
+                'fields':['date_fin', 'date_ini', 'id_user', 'n_neg', 'n_neu', 'n_pos', 'neg_degree', 'neu_degree', 'pos_degree', 'type'],
+                'table':"testtextsentiments"
             },
-            'insert_test_title_sentiment_analysis':{
-                'query':"INSERT INTO testtitlesentimentanalysis (id_text, neg_degree, neu_degree, pos_degree, sentiment) "+
-                    "VALUES (%s, %s, %s, %s, %s) RETURNING id_text",
-                'fields':["id_text", "neg_degree", "neu_degree", "pos_degree", "sentiment"],
-                'table':"testtitlesentimentanalysis"
+            # Insert the result of a specific CommentSentiment analysis
+            'insert_test_comment_sentiment_analysis':{
+                'query':"INSERT INTO testcommentsentiments (original_text, sentiment, degree) "+
+                    "VALUES (%s, %s, %s) RETURNING id_comment_sentiment",
+                'fields':['original_text', 'sentiment', 'degree'],
+                'table':"testcommentsentiments"
+            },
+            # Insert the results of a new UserBehaviours analysis
+            'insert_test_user_behaviour':{
+                'query':"INSERT INTO testuserbehaviours (date_fin, date_ini, "+
+                    "id_user, n_haters, n_likers, time) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_user_behaviour",
+                'fields':["date_fin", "date_ini", "id_user", "n_haters", "n_likers", "time"],
+                'table':"testuserbehaviours"
             },
             
-            ########################### REAL TABLES ###########################
+            ###################################### REAL ANALYSIS ##################################
+            # FOR PROFILES_EVOLUTION AND PROFILES_ACTIVITY
+            ## Insert the data of a specific user profile
             'insert_profile':{
                 'query':"INSERT INTO profiles (biography, birthday, date, date_joined, "+
                     "gender, location, n_followers, n_followings, n_medias, name, profile_pic, "+
@@ -503,146 +490,122 @@ class PostgreDB:
                 'fields':['biography', 'birthday', 'date', 'date_joined', 'gender', 
                           'location', 'n_followers', 'n_followings', 'n_medias', 
                           'name', 'profile_pic', 'social_media', 'userid', 'username'],
-                'table':'profiles'},
+                'table':'profiles' 
+            },
+            # Insert the results of a specific ProfilesEvolution analysis
             'insert_profile_evolution':{
-                'query':"INSERT INTO profilesevolution (date_fin, date_ini, mean_followers, "+
-                         " mean_followings, mean_medias) VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s) RETURNING id_profile_evolution",
-                'fields':['date_fin', 'date_ini', 'mean_followers', 'mean_followings', 'mean_medias'],
+                'query':"INSERT INTO profilesevolution (date_fin, date_ini, id_user, mean_followers, "+
+                         " mean_followings, mean_medias, n_week) VALUES (TO_DATE(%s,'DD-MM-YYYY'), "+
+                         "TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s, %s, %s) RETURNING id_profile_evolution",
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_followers', 'mean_followings', 'mean_medias', 'n_week'],
                 'table':'profilesevolution'
-                },
-            'insert_profile_profile_evolution':{
-                'query':"INSERT INTO profiles_profilesevolution (id_profile, id_profile_evolution) "+
-                         "VALUES (%s, %s) RETURNING id_profile, id_profile_evolution",
-                'fields':["id_profile", "id_profile_evolution"],
-                'table':'profiles_profilesevolution'
-                },
-            # Insert into ProfilesActivity tables
+            },
+            # Insert the results of a specific ProfilesActivity analysis
             'insert_profile_activity':{
-                'query':"INSERT INTO profilesactivity (date_fin, date_ini, mean_medias) "+
-                         "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s) RETURNING id_profile_activity",
-                'fields':['date_fin', 'date_ini', 'mean_medias'],
+                'query':"INSERT INTO profilesactivity (date_fin, date_ini, id_user, mean_medias, n_week) "+
+                         "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s) RETURNING id_profile_activity",
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_medias', 'n_week'],
                 'table':'profilesactivity'
-                },
-            'insert_profile_profile_activity':{
-                'query':"INSERT INTO profiles_profilesactivity (id_profile, id_profile_activity) "+
-                         "VALUES (%s, %s) RETURNING id_profile, id_profile_activity",
-                'fields':["id_profile", "id_profile_activity"],
-                'table':'profiles_profilesactivity'
-                },
-            # Insert into Medias table
+            },
+            # Insert the data of the specific medias
             'insert_medias':{
                 'query':"INSERT INTO medias (comment_count, date, id_media, id_profile, like_count, uploaded_date, type) "+
                     "VALUES (%s, %s, %s, %s, %s, TO_DATE(%s,'DD-MM-YYYY'), 'common') RETURNING id_media_aut",
                 'fields':['comment_count', 'date', 'id_media', 'id_profile', 'like_count', 'uploaded_date'],
                 'table':'medias'
             },
-            # Insert into MediaTitles table
-            'insert_media_titles':{                
-                'query':"INSERT INTO mediatitles (author, date, id_media_aut, text, type) VALUES (%s, %s, %s, %s, 'title') "
-                    "RETURNING id_text",
-                'fields':['author', 'date', 'id_media_aut', 'text'],
+            # Insert the title of a specific media
+            'insert_media_titles':{
+                'query':"INSERT INTO mediatitles (author, date, id_media_aut, original_text, preprocessed_text, type) "+
+                    "VALUES (%s, %s, %s, %s, %s, 'title') RETURNING id_text",
+                'fields':['author', 'date', 'id_media_aut', 'original_text', 'preprocessed_text'],
                 'table':'mediatitles'
             },
-            # Insert into MediaComments table
+            # Insert a comment from a media
             'insert_media_comments':{
-                'query':"INSERT INTO mediacomments (author, date, id_media_aut, text, type) VALUES (%s, %s, %s, %s, 'comment') "+
-                    "RETURNING id_text",
-                'fields':['author', 'date', 'id_media_aut', 'text'],
+                'query':"INSERT INTO mediacomments (author, date, id_media_aut, original_text, preprocessed_text, type) "+
+                    "VALUES (%s, %s, %s, %s, %s, 'comment') RETURNING id_text",
+                'fields':['author', 'date', 'id_media_aut', 'original_text', 'preprocessed_text'],
                 'table':'mediacomments'
             },
-            # Insert into MediasEvolution tables
+            # Insert the results of a specific MediasEvolution analysis
             'insert_medias_evolution':{
-                'query':'INSERT INTO mediasevolution (date_fin, date_ini, mean_comments, mean_likes) '+
-                    'VALUES (%s, %s, %s, %s) RETURNING id_media_evolution',
-                'fields':['date_fin', 'date_ini', 'mean_comments', 'mean_likes'],
+                'query':'INSERT INTO mediasevolution (date_fin, date_ini, id_user, '+
+                    'mean_comments, mean_likes, time) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_media_evolution',
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_comments', 'mean_likes', 'time'],
                 'table':'mediasevolution'
             },
-            'insert_medias_medias_evolution':{
-                'query':'INSERT INTO medias_mediasevolution (id_media_aut, id_media_evolution) '+
-                    'VALUES (%s, %s) RETURNING id_media_aut, id_media_evolution',
-                'fields':['id_media_aut', 'id_media_evolution'],
-                'table':'medias_mediasevolution'
-            },
-            # Insert into MediasPopularity table
+            # Insert the results of a specific MediasEvolution analysis
             'insert_medias_popularity':{
-                'query':"INSERT INTO mediaspopularity (date_fin, date_ini, mean_likes, mean_comments) "+
-                    "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s) RETURNING id_media_popularity",
-                'fields':['date_fin', 'date_ini', 'mean_comments', 'mean_likes'],
-                'table':'mediaspopularity'
+                'query':'INSERT INTO mediaspopularity (date_fin, date_ini, id_media, id_user, '+
+                    'mean_comments, mean_likes) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_media_popularity',
+                'fields':['date_fin', 'date_ini', 'id_media', 'id_user', 'mean_comments', 'mean_likes'],
+                'table':'mediasevolution'
             },
-            'insert_medias_medias_popularity':{
-                'query':'INSERT INTO medias_mediaspopularity (id_media_aut, id_media_popularity) '+
-                    'VALUES (%s, %s) RETURNING id_media_aut, id_media_popularity',
-                'fields':['id_media_aut', 'id_media_popularity'],
-                'table':'medias_mediaspopularity'
-            },
-            # Insert into SentimentAnalysis
+            # Insert the results of a specific CommentSentiment analysis
             'insert_sentiment_analysis':{
-                'query':"INSERT INTO sentimentanalysis (id_text, neg_degree, neu_degree, pos_degree, sentiment) "+
-                    "VALUES (%s, %s, %s, %s, %s) RETURNING id_text",
-                'fields':["id_text", "neg_degree", "neu_degree", "pos_degree", "sentiment"],
-                'table':"sentimentanalysis"
+                'query':"INSERT INTO textsentiments (date_fin, date_ini, id_user, n_neg, n_neu, n_pos, neg_degree, neu_degree, pos_degree, type) "+
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_text_sentiment",
+                'fields':['date_fin', 'date_ini', 'id_user', 'n_neg', 'n_neu', 'n_pos', 'neg_degree', 'neu_degree', 'pos_degree', 'type'],
+                'table':"textsentiments"
             },
-            'insert_title_sentiment_analysis':{
-                'query':"INSERT INTO titlesentimentanalysis (id_text, neg_degree, neu_degree, pos_degree, sentiment) "+
-                    "VALUES (%s, %s, %s, %s, %s) RETURNING id_text",
-                'fields':["id_text", "neg_degree", "neu_degree", "pos_degree", "sentiment"],
-                'table':"titlesentimentanalysis"
+            # Insert the result of a specific CommentSentiment analysis
+            'insert_comment_sentiment_analysis':{
+                'query':"INSERT INTO commentsentiments (original_text, sentiment, degree) "+
+                    "VALUES (%s, %s, %s) RETURNING id_comment_sentiment",
+                'fields':['original_text', 'sentiment', 'degree'],
+                'table':"commentsentiments"
+            },
+            # Insert the results of a new UserBehaviours analysis
+            'insert_user_behaviour':{
+                'query':"INSERT INTO userbehaviours (date_fin, date_ini, "+
+                    "id_user, n_haters, n_likers, time) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_user_behaviour",
+                'fields':["date_fin", "date_ini", "id_user", "n_haters", "n_likers", "time"],
+                'table':"userbehaviours"
             },
         }
-        # Check queries to make before inserting new data
+        
+        # 3. INSERT-SELECT QUERIES
         self.check_queries = {
-            ## Test queries
             'insert_test_parent':'check_test_parent',
             'insert_test_child':'check_test_child',
             'insert_test_fk':'check_test_fk',
-            # For Profiles
+            
+            ######################### TEST ANALYSIS #########################
+            # FOR PROFILES ANALYSIS
             'insert_test_profile':'check_test_profile',
-            # For ProfileEvolution
             'insert_test_profile_evolution':"check_test_profile_evolution",
-            'insert_test_profile_test_profile_evolution':"check_test_profile_profile_evolution",
-            # For ProfileActivity
-            'insert_test_profile_activity':'check_test_profile_activity',
-            'insert_test_profile_test_profile_activity':"check_test_profile_profile_activity",
-            # For Medias
+            'insert_test_profile_activity':"check_test_profile_activity",
+            # FOR MEDIAS ANALYSIS
             'insert_test_medias':'check_test_media',
-            # For MediaEvolution
-            'insert_test_medias_evolution':"check_test_media_evolution",
-            'insert_test_medias_test_medias_evolution':"check_test_media_media_evolution",
-            # For MediaPopularity
-            'insert_test_medias_test_medias_popularity':"check_test_media_media_popularity",
-            # For MediaTitles
             'insert_test_media_titles':'check_test_media_title',
-            # For MediaComments
             'insert_test_media_comments':'check_test_media_comment',
-            # For SentimentAnalysis
+            'insert_test_medias_evolution':"check_test_media_evolution",
+            'insert_test_medias_popularity':"check_test_media_popularity",
+            # FOR SENTIMENT ANALYSIS
+            'insert_test_comment_sentiment_analysis':'check_test_comment_sentiment',
             'insert_test_sentiment_analysis':'check_test_sentiment_analysis',
-            'insert_test_title_sentiment_analysis':'check_test_title_sentiment_analysis',
+            # FOR USER BEHAVIOURS ANALYSIS
+            'insert_test_user_behaviour':'check_test_user_behaviour',
             
-            'delete_test_parent':'check_test_parent',
-            'delete_test_child':'check_test_child',
-            'delete_test_fk':'check_test_fk',
-            
-            ## Real queries
-            # For Profiles
+            ######################### REAL ANALYSIS #########################
+            # FOR PROFILES ANALYSIS
             'insert_profile':'check_profile',
             'insert_profile_evolution':"check_profile_evolution",
-            'insert_profile_profile_evolution':"check_profile_profile_evolution",
-            'insert_profile_activity':'check_profile_activity',
-            'insert_profile_profile_activity':"check_profile_profile_activity",
-            # For Medias
+            'insert_profile_activity':"check_profile_activity",
+            # FOR MEDIAS ANALYSIS
             'insert_medias':'check_media',
-            'insert_medias_evolution':"check_media_evolution",
-            'insert_medias_medias_evolution':"check_media_media_evolution",
-            'insert_medias_medias_popularity':"check_media_media_popularity",
-            'insert_sentiment_analysis':'check_sentiment_analysis',
-            'insert_title_sentiment_analysis':'check_title_sentiment_analysis',
-            # For MediaTitles
             'insert_media_titles':'check_media_title',
-            # For MediaComments
             'insert_media_comments':'check_media_comment',
+            'insert_medias_evolution':"check_media_evolution",
+            'insert_medias_popularity':"check_media_popularity",
+            # FOR SENTIMENT ANALYSIS
+            'insert_comment_sentiment_analysis':'check_comment_sentiment',
+            'insert_sentiment_analysis':'check_sentiment_analysis',
+            # FOR USER BEHAVIOURS ANALYSIS
+            'insert_user_behaviour':'check_user_behaviour',
         }
-    
+        
     def connect_to_database(self):
         """
         Makes the connection to the database through the environment variables which
@@ -666,7 +629,7 @@ class PostgreDB:
         # Try to connect to the database        
         try:
             self.connection = psycopg2.connect(host="localhost", user=user, 
-                               password=pswd, database=self.database_name)
+                               password=pswd, database=self.database_name, port="5433")
             self.cursor = self.connection.cursor()
             return self.cursor
         except Exception: # pragma no cover

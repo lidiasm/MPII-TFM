@@ -38,8 +38,10 @@ ALTER TABLE public.profiles OWNER TO lidia;
 --
 CREATE TABLE public.profilesevolution(
     id_profile_evolution SERIAL PRIMARY KEY,
+    id_user VARCHAR(50) NOT NULL,
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
+    n_week VARCHAR(10) NOT NULL,
     mean_followers VARCHAR(20) NOT NULL,
     mean_followings VARCHAR(20) NOT NULL,
     mean_medias VARCHAR(20) NOT NULL
@@ -50,24 +52,6 @@ CREATE TABLE public.profilesevolution(
 ALTER TABLE public.profilesevolution OWNER TO lidia;
 
 --
--- Table Profiles_ProfilesEvolution which represents the many-to-many relationship
--- between the profile evolution analysis and the profiles themselves. Each profile
--- could participate in several analysis, and one analysis will study many profiles.
---
--- If some of the profiles which has participated in one a analysis is updated/deleted,
--- then the analysis will be updated/removed too.
---
-CREATE TABLE public.profiles_profilesevolution(
-    id_profile int REFERENCES profiles (id_profile) ON UPDATE CASCADE ON DELETE CASCADE,
-    id_profile_evolution int REFERENCES profilesevolution (id_profile_evolution) ON UPDATE CASCADE,
-    CONSTRAINT profiles_profilesevolution_pkey PRIMARY KEY (id_profile, id_profile_evolution)
-);
--- 
--- Assign an owner to the table in order to operate with it.
---
-ALTER TABLE public.profiles_profilesevolution OWNER TO lidia;
-
---
 -- Table ProfilesActivity. It will store the results of the analysis which
 -- study the activity of the user based on the number of posts they upload.
 -- It has a foreign key to the Profiles table in order to check the if the studied 
@@ -75,32 +59,16 @@ ALTER TABLE public.profiles_profilesevolution OWNER TO lidia;
 --
 CREATE TABLE public.profilesactivity(
     id_profile_activity SERIAL PRIMARY KEY,
+    id_user VARCHAR(50) NOT NULL,
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
+    n_week VARCHAR(10) NOT NULL,
     mean_medias VARCHAR(20) NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
 --
 ALTER TABLE public.profilesactivity OWNER TO lidia;
-
---
--- Table Profiles_ProfilesActivity which represents the many-to-many relationship
--- between the profile activity analysis and the profiles themselves. Each profile
--- could participate in several analysis, and one analysis will study many profiles.
---
--- If some of the profiles which has participated in one a analysis is updated/deleted,
--- then the analysis will be updated/removed too.
---
-CREATE TABLE public.profiles_profilesactivity(
-    id_profile int REFERENCES profiles (id_profile) ON UPDATE CASCADE ON DELETE CASCADE,
-    id_profile_activity int REFERENCES profilesactivity (id_profile_activity) ON UPDATE CASCADE,
-    CONSTRAINT profiles_profilesactivity_pkey PRIMARY KEY (id_profile, id_profile_activity)
-);
--- 
--- Assign an owner to the table in order to operate with it.
---
-ALTER TABLE public.profiles_profilesactivity OWNER TO lidia;
 
 --
 -- Table Medias. It will contain the common data about the posts which have been
@@ -128,8 +96,10 @@ ALTER TABLE public.medias OWNER TO lidia;
 --
 CREATE TABLE public.mediasevolution(
     id_media_evolution SERIAL PRIMARY KEY,
+    id_user VARCHAR(50) NOT NULL,
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
+    time VARCHAR(10) NOT NULL,
     mean_likes VARCHAR(20) NOT NULL,
     mean_comments VARCHAR(20) NOT NULL
 );
@@ -139,50 +109,6 @@ CREATE TABLE public.mediasevolution(
 ALTER TABLE public.mediasevolution OWNER TO lidia;
 
 --
--- Table Medias_MediasEvolution. It contains the relationships between the 
--- performed Medias Evolution analysis and the posts which have participated.
---
-CREATE TABLE public.medias_mediasevolution(
-    id_media_aut int REFERENCES medias (id_media_aut) ON UPDATE CASCADE ON DELETE CASCADE,
-    id_media_evolution int REFERENCES mediasevolution (id_media_evolution) ON UPDATE CASCADE,
-    CONSTRAINT medias_mediasevolution_pkey PRIMARY KEY (id_media_aut, id_media_evolution)
-);
--- 
--- Assign an owner to the table in order to operate with it.
---
-ALTER TABLE public.medias_mediasevolution OWNER TO lidia;
-
---
--- Table MediasPopularity. It will contain the analysis result from studying the 
--- popularity of the posts based on the number of likes and comments in a specific period of time.
---
-CREATE TABLE public.mediaspopularity(
-    id_media_popularity SERIAL PRIMARY KEY,
-    date_ini DATE NOT NULL,
-    date_fin DATE NOT NULL,
-    mean_likes VARCHAR(20) NOT NULL,
-    mean_comments VARCHAR(20) NOT NULL
-);
--- 
--- Assign an owner to the table in order to operate with it.
---
-ALTER TABLE public.mediaspopularity OWNER TO lidia;
-
---
--- Table Medias_MediasPopularity. It contains the relationships between the 
--- performed Medias Popularity analysis and the posts which have participated.
---
-CREATE TABLE public.medias_mediaspopularity(
-    id_media_aut int REFERENCES medias (id_media_aut) ON UPDATE CASCADE ON DELETE CASCADE,
-    id_media_popularity int REFERENCES mediaspopularity (id_media_popularity) ON UPDATE CASCADE,
-    CONSTRAINT medias_mediaspopularity_pkey PRIMARY KEY (id_media_aut, id_media_popularity)
-);
--- 
--- Assign an owner to the table in order to operate with it.
---
-ALTER TABLE public.medias_mediaspopularity OWNER TO lidia;
-
---
 -- Table MediaComments. It will contain the comments wrote on the posts of the
 -- owner user. 
 --
@@ -190,33 +116,16 @@ CREATE TABLE public.mediacomments(
     id_text SERIAL PRIMARY KEY,
     id_media_aut INTEGER NOT NULL,
     date DATE NOT NULL,
-    text TEXT NOT NULL,
+    original_text TEXT NOT NULL,
+    preprocessed_text TEXT NOT NULL,
     author VARCHAR(50) NOT NULL,
-    type VARCHAR(10),
+    type VARCHAR(10) NOT NULL,
     FOREIGN KEY (id_media_aut) REFERENCES medias(id_media_aut) ON UPDATE CASCADE ON DELETE CASCADE
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
 --
 ALTER TABLE public.mediacomments OWNER TO lidia;
-
---
--- Table SentimentAnalysis. It will contain the sentiment analysis performed on a
--- post comment with the degree of the positive, neutral and negative sentiment as
--- well as the winner sentiment.
---
-CREATE TABLE public.sentimentanalysis(
-    id_text INTEGER PRIMARY KEY,
-    pos_degree REAL NOT NULL,
-    neu_degree REAL NOT NULL,
-    neg_degree REAL NOT NULL,
-    sentiment VARCHAR(10),
-    FOREIGN KEY (id_text) REFERENCES mediacomments(id_text) ON UPDATE CASCADE ON DELETE CASCADE
-);
--- 
--- Assign an owner to the table in order to operate with it.
---
-ALTER TABLE public.sentimentanalysis OWNER TO lidia;
 
 --
 -- Table MediaTitles. It will contain the titles of the posts which could have one,
@@ -233,19 +142,90 @@ CREATE TABLE public.mediatitles(
 ALTER TABLE public.mediatitles OWNER TO lidia;
 
 --
--- Table TitleSentimentAnalysis. It will contain the sentiment analysis performed on a
--- post title with the degree of the positive, neutral and negative sentiment as
--- well as the winner sentiment.
+-- Table MediasPopularity. It will contain the analysis result from studying the 
+-- popularity of the posts based on the number of likes and comments in a specific period of time.
 --
-CREATE TABLE public.titlesentimentanalysis(
-    id_text INTEGER PRIMARY KEY,
-    pos_degree REAL NOT NULL,
-    neu_degree REAL NOT NULL,
-    neg_degree REAL NOT NULL,
-    sentiment VARCHAR(10),
-    FOREIGN KEY (id_text) REFERENCES mediatitles(id_text) ON UPDATE CASCADE ON DELETE CASCADE
+CREATE TABLE public.mediaspopularity(
+    id_media_popularity SERIAL PRIMARY KEY,
+    id_media VARCHAR(100) NOT NULL,
+    id_user VARCHAR(50) NOT NULL,
+    date_ini DATE NOT NULL,
+    date_fin DATE NOT NULL,
+    mean_likes VARCHAR(20) NOT NULL,
+    mean_comments VARCHAR(20) NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
 --
-ALTER TABLE public.titlesentimentanalysis OWNER TO lidia;
+ALTER TABLE public.mediaspopularity OWNER TO lidia;
+
+--
+-- Table UserBehaviours. It will save the number of likers and haters in a 
+-- specific period of time based on the comment sentiment analysis.
+--
+CREATE TABLE public.userbehaviours(
+    id_user_behaviour SERIAL PRIMARY KEY,
+    id_user VARCHAR(50) NOT NULL,
+    date_ini DATE NOT NULL,
+    date_fin DATE NOT NULL,
+    time VARCHAR(10) NOT NULL,
+    n_likers VARCHAR(20) NOT NULL,
+    n_haters VARCHAR(20) NOT NULL
+);
+-- 
+-- Assign an owner to the table in order to operate with it.
+--
+ALTER TABLE public.userbehaviours OWNER TO lidia;
+
+--
+-- Table CommentSentiments. It will store the results of the sentiment analysis
+-- for each comment in order to save the identified sentiment as well as its related
+-- degree of confidence. 
+--
+CREATE TABLE public.commentsentiments(
+    id_comment_sentiment SERIAL PRIMARY KEY,
+    original_text TEXT NOT NULL,
+    sentiment VARCHAR(20) NOT NULL,
+    degree REAL NOT NULL
+);
+-- 
+-- Assign an owner to the table in order to operate with it.
+--
+ALTER TABLE public.commentsentiments OWNER TO lidia;
+
+--
+-- Table MediaTitles. It will contain the titles of the posts which could have one,
+-- like Instagram posts. This table will be the child of the MediaComments because
+-- it's a specialization of this one.
+--
+CREATE TABLE public.mediatitles(
+    CONSTRAINT mediatitles_pkey PRIMARY KEY (id_text)
+) INHERITS (mediacomments);
+
+-- 
+-- Assign an owner to the table in order to operate with it.
+--
+ALTER TABLE public.mediatitles OWNER TO lidia;
+
+--
+-- Table TextSentiments. It will contain the number of positive, neutral and negative
+-- sentiments as well as their related confidence degrees of a set of biographies,
+-- titles or comments.
+--
+CREATE TABLE public.textsentiments(
+    id_text_sentiment SERIAL PRIMARY KEY,
+    id_user VARCHAR(50) NOT NULL,
+    date_ini DATE NOT NULL,
+    date_fin DATE NOT NULL,
+    type VARCHAR(10) NOT NULL,
+    n_pos VARCHAR(20) NOT NULL,
+    n_neu VARCHAR(20) NOT NULL,
+    n_neg VARCHAR(20) NOT NULL,
+    pos_degree VARCHAR(20) NOT NULL,
+    neu_degree VARCHAR(20) NOT NULL,
+    neg_degree VARCHAR(20) NOT NULL
+);
+-- 
+-- Assign an owner to the table in order to operate with it.
+--
+ALTER TABLE public.textsentiments OWNER TO lidia;
