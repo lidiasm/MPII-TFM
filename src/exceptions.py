@@ -154,7 +154,12 @@ class InvalidQueryValues(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-############################ CLASS DATAANALYZER #############################        
+############################ CLASS DATAANALYZER #############################     
+class TextNotFound(Exception):
+    """Class exception to point out that the text from medias is not valid."""
+    def __init__(self, mensaje):
+        self.mensaje = mensaje
+        
 class InvalidLinePlotData(Exception):
     """Class exception to point out that the data provided to draw a line plot
     is wrong."""
@@ -193,18 +198,13 @@ class PostPopularityNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class TextDataDictNotFound(Exception):
+class TextDataNotFound(Exception):
     """Class exception to point out that the provided text data to analyze is not
     a valid dict."""
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class TextTupleNotFound(Exception):
-    """Class exception to point out that the provided text is not in a tuple."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class SentimentTupleNotFound(Exception):
+class SentimentNotFound(Exception):
     """Class exception to point out that the provided list of identified sentiments
     is not a list of tuples."""
     def __init__(self, mensaje):
