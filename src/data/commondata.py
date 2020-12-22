@@ -6,6 +6,7 @@ methods to verify the values of the collected data.
 
 @author: Lidia Sánchez Mérida
 """
+import time
 import sys
 sys.path.append("../")
 import mongodb
@@ -14,7 +15,7 @@ from exceptions import InvalidMongoDbObject, ProfileDictNotFound, InvalidTextLis
     , UserDataNotFound, CollectionNotFound, InvalidQuery, InvalidSocialMediaSource \
     , UsernameNotFound, InvalidMediaId, InvalidQueryValues, InvalidUserId
 from datetime import date, datetime
-from googletrans import Translator
+from google_trans_new import google_translator  
 import re
 
 class CommonData:
@@ -45,7 +46,7 @@ class CommonData:
         self.profile_keys = ['biography', 'birthday', 'date_joined', 'gender', 
                           'location', 'n_followers', 'n_followings', 'n_medias', 
                           'name', 'profile_pic', 'userid', 'username']
-        self.media_keys = ['comment_count','id_media', 'like_count', 'taken_at', 'title', 'url']
+        self.media_keys = ['comment_count','id_media', 'like_count', 'taken_at', 'title']
         self.text_keys = ['id_media', 'texts']
         self.text_list_keys = ['text', 'user',]
         self.social_media_sources = ["instagram"]
@@ -356,41 +357,30 @@ class CommonData:
         if (not all(isinstance(text, str) for text in texts)):
             raise InvalidTextList("ERROR. All texts should be non-empty strings.")
 
-        # Google Translator object
-        translator = Translator()
         # Clean the texts
         cleaned_texts = []
+        # Translator
+        translator = google_translator()  
         for text in texts:
-            import time 
-            start = time.time()
-            # try:
-            #     # Translate to English
-            #     english_text = (translator.translate(text, dest="en")).text
-            # except: #pragma no cover
-            #     english_text = text
-            end = time.time()
-            #print("Translate: ",end - start)
-            # Remove specific stopwords
-            english_text = text
-            start = time.time()
-            english_words = english_text.split()
+            try:
+                english_words = (translator.translate(text)).split()
+            except: # pragma no cover
+                try:
+                    english_words = (translator.translate(text)).split()
+                except:
+                    english_words = text
+            # Remove some stop words
             non_stopwords = [word for word in english_words if word.lower() not in self.stopwords]
             non_stopwords = ' '.join(non_stopwords)
-            end = time.time()
-            # print("Stopwords" ,end - start)
             # Remove numbers
-            start = time.time()
             non_numbers = re.sub(r"\d+", "", non_stopwords)
-            end = time.time()
-            # print("Non numbers",end - start)
             # Remove some special characters
-            start = time.time()
             non_special_characters = re.sub(r'[#@\"\-"*$%&\+\_]', ' ', non_numbers)
-            end = time.time()
-            # print("Special chracters", end - start)
             # Add the cleaned text to the list of cleaned texts
             cleaned_texts.append(non_special_characters)
-
+            # Wait a few seconds to not overwhelm the API
+            time.sleep(2)
+        
         return cleaned_texts
 
     def insert_user_data(self, user_data, collection):

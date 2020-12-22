@@ -178,7 +178,7 @@ def test8_preprocess_medias():
     """
     data = commondata.CommonData()
     medias = [{"id_media":-1, "taken_at":"24/10/2020", "title":None,
-               "like_count":54, "comment_count":5, "url":None}]
+               "like_count":54, "comment_count":5}]
     with pytest.raises(InvalidMediaId):
         assert data.preprocess_medias(medias, 'Instagram', 'username')
                 
@@ -190,9 +190,9 @@ def test9_preprocess_medias():
     """                    
     data = commondata.CommonData()
     medias = [
-        {"id_media":'123', "taken_at":"24/10/2020", "title":None, "like_count":54, "comment_count":5, "url":None},
-        {"id_media":'456', "taken_at":"24/10/2020", "title":None, "like_count":35, "comment_count":128, "url":None},
-        {"id_media":'789', "taken_at":"24/10/2020", "title":None, "like_count":15, "comment_count":1, "url":None}
+        {"id_media":'123', "taken_at":"24/10/2020", "title":None, "like_count":54, "comment_count":5},
+        {"id_media":'456', "taken_at":"24/10/2020", "title":None, "like_count":35, "comment_count":128},
+        {"id_media":'789', "taken_at":"24/10/2020", "title":None, "like_count":15, "comment_count":1}
         ]
     preprocessed_medias = data.preprocess_medias(medias, 'Instagram', 'username')
     check = []
@@ -339,9 +339,9 @@ def test1_preprocess_user_data():
                'gender':None, 'profile_pic':None, 'location':'Granada', 'birthday':None, 
                'date_joined':None, 'n_followers':123, 'n_followings':452, 'n_medias':45}
     medias = [
-        {"id_media":'123', "taken_at":"24/10/2020", "title":None, "like_count":54, "comment_count":5, "url":None},
-        {"id_media":'456', "taken_at":"24/10/2020", "title":None, "like_count":35, "comment_count":128, "url":None},
-        {"id_media":'789', "taken_at":"24/10/2020", "title":None, "like_count":15, "comment_count":1, "url":None}
+        {"id_media":'123', "taken_at":"24/10/2020", "title":None, "like_count":54, "comment_count":5},
+        {"id_media":'456', "taken_at":"24/10/2020", "title":None, "like_count":35, "comment_count":128},
+        {"id_media":'789', "taken_at":"24/10/2020", "title":None, "like_count":15, "comment_count":1}
         ]
     comments = [{"id_media":'1', "texts":[{'user':'user1', 'text':'Text from user1'}, 
                                        {'user':'user2', 'text':'Text from user2'},
