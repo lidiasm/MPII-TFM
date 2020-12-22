@@ -15,8 +15,7 @@ import data_analyzer
 from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize \
     , InvalidLinePlotData, UsernameNotFound, ProfilesNotFound, InvalidBarPlotData \
     , UserActivityNotFound, PostInteractionsNotFound, InvalidPiePlotData \
-    , InvalidSocialMediaSource, PostPopularityNotFound, TextTupleNotFound \
-    , SentimentTupleNotFound, TextDataDictNotFound
+    , PostPopularityNotFound, TextNotFound, SentimentNotFound, TextDataNotFound
     
 # DataAnalyzer object to run the data analyzer methods
 da = data_analyzer.DataAnalyzer()
@@ -419,13 +418,21 @@ def test2_post_popularity():
 def test3_post_popularity():
     """
     Test to check the method which plots the best or worst posts from a user based
+    on a selected set of interactions. In this test, the provided medias to analyze are
+    not valid so an exception will be raised.
+    """
+    with pytest.raises(PostInteractionsNotFound):
+        assert da.post_popularity("lidia.96.sm", [[1,2,3,4]])
+        
+def test4_post_popularity():
+    """
+    Test to check the method which plots the best or worst posts from a user based
     on a selected set of interactions. In this test, the posts will be sorted
     by the average number of likes and comments in descending order.
     """
-    posts = {"ids":[1,2,3,4], 
-             "data":[('123', '145', '174'), ('456', '45', '78'), ('789', '485', '25'), ('012', '489', '584')]}
-    post_ranking = da.post_popularity("lidia.96.sm", posts)
-    assert type(post_ranking) == list and len(post_ranking) == 4
+    posts = [('123', '145', '174'), ('456', '45', '78'), ('789', '485', '25'), ('012', '489', '584')]
+    result = da.post_popularity("lidia.96.sm", posts)
+    assert result["state"] == True and type(result["file"]) == str and type(result["data"]) == list
 
 def test1_plot_pie_chart():
     """
@@ -495,7 +502,7 @@ def test2_sentiment_analysis_text():
     of texts. In this test, the texts to analyse are not provided so
     an exception will be raised.
     """
-    with pytest.raises(TextDataDictNotFound):
+    with pytest.raises(TextDataNotFound):
         da.sentiment_analysis_text("lidia.96.sm", [])
         
 def test3_sentiment_analysis_text():
@@ -504,25 +511,24 @@ def test3_sentiment_analysis_text():
     of texts. The provided texts to analyse are not valid so an exception will be
     raised.
     """
-    with pytest.raises(TextTupleNotFound):
-        da.sentiment_analysis_text("lidia.96.sm", {"ids":[1,2,3], "data":[1,2,3]})
+    with pytest.raises(TextNotFound):
+        da.sentiment_analysis_text("lidia.96.sm", [1,2,3])
         
 def test4_sentiment_analysis_text():
     """
     Test to check the method which performs a sentiment analysis based on a list
     of texts. The results are plotted on a pie chart.
     """
-    text_list = {"ids":[1,2,3,4,5,6,7,8,9,10], 
-                 "data":[('🔥',), ('@audispain Electric blue',), 
-                 ('@audispain true to the white AUDI ALWAYSEE !!!! 😎',), 
-                 ('@audispain I love it in white and dark gray. Thanks for filling Instagram with perfection. ❤️',), 
-                 ('@audispain could donate me one 🙌, even if it is an old model, I would be happy to be able to walk my daughter',), 
-                 ('I black ..... uauuuuu awesome black👏👏👏🏼👏🏻👏👏👏',), 
-                 ('Personally the typical metallic blue color of the rs 😍',), 
-                 ('@audispain if my Q2 is black and I love it ..... 💋💋',), 
-                 ('😍',), ('A pure road machine 👏👏❤️',)]}
+    text_list = [('1', '🔥','🔥'), ('2', '@audispain Azul eléctrico','@audispain Electric blue'), 
+                 ('3', '@audispain verdad que blanco AUDI SIEMPREE !!!! 😎', '@audispain true to the white AUDI ALWAYSEE !!!! 😎'), 
+                 ('4', '@audispain Me encanta en blanco y gris oscuro. Gracias por llenar Instagram con la perfección. ❤️','@audispain I love it in white and dark gray. Thanks for filling Instagram with perfection. ❤️'), 
+                 ('5', '@audispain podríais donarme uno 🙌, aunque sea un modelo viejo, me encantaría poder pasear a mi hija', '@audispain could donate me one 🙌, even if it is an old model, I would be happy to be able to walk my daughter'), 
+                 ('5', 'Yo negro ..... uauuuuu precio negro👏👏👏🏼👏🏻👏👏👏', 'I black ..... uauuuuu awesome black👏👏👏🏼👏🏻👏👏👏'), 
+                 ('6', 'Personamelmente el típico color azul metálico del rs 😍', 'Personally the typical metallic blue color of the rs 😍'), 
+                 ('7', '@audispain si mi Q2 es negro y me encanta ..... 💋💋', '@audispain if my Q2 is black and I love it ..... 💋💋'), 
+                 ('8', '😍', '😍'), ('9', 'Una pura máquina de carretera 👏👏❤️', 'A pure road machine 👏👏❤️')]
     result = da.sentiment_analysis_text("lidia.96.sm", text_list)
-    assert result['state'] == True and type(result["data"]) == list and len(result["data"]) == len(text_list["data"])
+    assert result['state'] == True and type(result['file']) == str and type(result["data"]) == dict and type(result["analysis_results"]) == list
 
 def test1_user_behaviours():
     """
@@ -541,7 +547,7 @@ def test2_user_behaviours():
     of time. In this test, the list of identified sentiments is not provided 
     so an exception will be raised.
     """
-    with pytest.raises(SentimentTupleNotFound):
+    with pytest.raises(SentimentNotFound):
         da.user_behaviours("lidia.96.sm", None)
         
 def test3_user_behaviours():
@@ -551,45 +557,58 @@ def test3_user_behaviours():
     of time. In this test, the provided list of sentiments is not valid so an
     exception will be raised.
     """
-    with pytest.raises(SentimentTupleNotFound):
+    with pytest.raises(SentimentNotFound):
         da.user_behaviours("lidia.96.sm", [1,2,3,4,5])
         
 def test4_user_behaviours():
     """
     Test to check the method which gets the evolution of the number of haters
     and friends based on a performed sentiment analysis during a specific period 
+    of time. In this test, the provided list of sentiments is not valid so an
+    exception will be raised.
+    """
+    user_list = [{"author":"user1", "sentiment":"pos"},
+                 {"date":"24/10/2020", "author":"user2", "sentiment":"neg"}]
+    with pytest.raises(SentimentNotFound):
+        da.user_behaviours("lidia.96.sm", user_list)
+        
+def test5_user_behaviours():
+    """
+    Test to check the method which gets the evolution of the number of haters
+    and friends based on a performed sentiment analysis during a specific period 
     of time. In this test, the provided data is for seven days so the plot will
     draw the number of haters and friends per day.
     """
-    user_list = [("24/10/2020", "user1", "pos"),
-                 ("24/10/2020", "user2", "neg"),
-                 ("24/10/2020", "user1", "neu"),
-                 ("24/10/2020", "user1", "pos"),
-                 ("25/10/2020", "user3", "none"),
-                 ("25/10/2020", "user3", "pos"),
-                 ("26/10/2020", "user1", "neg"),
-                 ("26/10/2020", "user2", "none"),
-                 ("26/10/2020", "user4", "pos"),
-                 ("27/10/2020", "user1", "neu"),
-                 ("28/10/2020", "user1", "pos"),]
+    user_list = [{"date":"24/10/2020", "author":"user1", "sentiment":"pos"},
+                 {"date":"24/10/2020", "author":"user2", "sentiment":"neg"},
+                 {"date":"24/10/2020", "author":"user1", "sentiment":"neu"},
+                 {"date":"24/10/2020", "author":"user1", "sentiment":"pos"},
+                 {"date":"25/10/2020", "author":"user3", "sentiment":"none"},
+                 {"date":"25/10/2020", "author":"user3", "sentiment":"pos"},
+                 {"date":"26/10/2020", "author":"user1", "sentiment":"neg"},
+                 {"date":"26/10/2020", "author":"user2", "sentiment":"none"},
+                 {"date":"26/10/2020", "author":"user4", "sentiment":"pos"},
+                 {"date":"27/10/2020", "author":"user1", "sentiment":"neu"},
+                 {"date":"28/10/2020", "author":"user1", "sentiment":"pos"}]
     result = da.user_behaviours("lidia.96.sm", user_list)
     assert result["state"] == True
     
-def test5_user_behaviours():
+def test6_user_behaviours():
     """
     Test to check the method which gets the evolution of the number of haters
     and friends based on a performed sentiment analysis during a specific period 
     of time. In this test, the provided data is for more than seven days so the
     plot will show the average of haters and friends per week.
     """
-    user_list = [("24/10/2020", "user1", "pos"), ("24/10/2020", "user2", "neg"),
-                 ("25/10/2020", "user1", "neu"), ("25/10/2020", "user1", "pos"),
-                 ("26/10/2020", "user3", "none"), ("26/10/2020", "user3", "pos"),
-                 ("27/10/2020", "user1", "neg"), ("27/10/2020", "user2", "none"),
-                 ("28/10/2020", "user4", "pos"), ("28/10/2020", "user1", "neg"),
-                 ("29/10/2020", "user1", "neg"), ("29/10/2020", "user1", "neg"),
-                 ("30/10/2020", "user1", "neg"), ("30/10/2020", "user1", "neg"),
-                 ("31/10/2020", "user1", "neg"),("31/10/2020", "user1", "neg"),
-                 ("32/10/2020", "user1", "pos"),("32/10/2020", "user1", "neg"),]
+    user_list = [{"date":"24/10/2020", "author":"user1", "sentiment":"pos"}, 
+                 {"date":"24/10/2020", "author":"user2", "sentiment":"neg"},
+                 {"date":"25/10/2020", "author":"user1", "sentiment":"neu"}, {"date":"25/10/2020", "author":"user1", "sentiment":"pos"},
+                 {"date":"26/10/2020", "author":"user3", "sentiment":"none"}, {"date":"26/10/2020", "author":"user3", "sentiment":"pos"},
+                 {"date":"27/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"27/10/2020", "author":"user2", "sentiment":"none"},
+                 {"date":"28/10/2020", "author":"user4", "sentiment":"pos"}, {"date":"28/10/2020", "author":"user1", "sentiment":"neg"},
+                 {"date":"29/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"29/10/2020", "author":"user1", "sentiment":"neg"},
+                 {"date":"30/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"30/10/2020", "author":"user1", "sentiment":"neg"},
+                 {"date":"31/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"31/10/2020", "author":"user1", "sentiment":"neg"},
+                 {"date":"32/10/2020", "author":"user1", "sentiment":"pos"}, {"date":"32/10/2020", "author":"user1", "sentiment":"neg"}]
     result = da.user_behaviours("lidia.96.sm", user_list)
     assert result["state"] == True

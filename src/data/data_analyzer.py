@@ -15,15 +15,20 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 # Style like R plots
 plt.style.use('ggplot')
-# Sentiment Analysis Library
+
+# Sentiment Analyzer based on pre-trained models
+from flair.models import TextClassifier
+from flair.data import Sentence
+        
+# Sentiment Analyzer based on lexicon
 import nltk
 nltk.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize \
-    , InvalidLinePlotData, ProfilesNotFound, UsernameNotFound, TextTupleNotFound \
+    , InvalidLinePlotData, ProfilesNotFound, UsernameNotFound, TextNotFound \
     , InvalidBarPlotData, UserActivityNotFound, PostInteractionsNotFound \
-    , PostPopularityNotFound, InvalidPiePlotData, TextDataDictNotFound, SentimentTupleNotFound
+    , PostPopularityNotFound, InvalidPiePlotData, TextDataNotFound, SentimentNotFound
 
 class DataAnalyzer:
     
@@ -45,17 +50,20 @@ class DataAnalyzer:
         self.profile_evolution_path = "./imgs/profiles-evolution/"
         self.user_activity_path = "./imgs/user-activity/"
         self.post_evolution_path = "./imgs/posts-evolution/"
+        self.post_popularity_path = "./imgs/posts-popularity/"
         self.text_sentiments_path = "./imgs/text-sentiments/"
         self.user_behaviours_path = "./imgs/user-behaviours/"
         # List of avalaible analysis
         self.avalaible_analysis = [
            "profile_evolution", "profile_activity",
            "media_evolution", "media_popularity", 
-           "comment_sentiment_analysis", "title_sentiment_analysis", "users_behaviours",
+           "comment_sentiment_analysis", "title_sentiment_analysis", 
+           "user_behaviours",
            
            "test_profile_evolution", "test_profile_activity",
            "test_media_evolution", "test_media_popularity",
-           "test_comment_sentiment_analysis", "test_title_sentiment_analysis", "test_users_behaviours"]
+           "test_comment_sentiment_analysis", "test_title_sentiment_analysis", 
+           "test_user_behaviours"]
     
     def get_values_per_one_week(self, values, keys):
         """
@@ -154,12 +162,12 @@ class DataAnalyzer:
             key_values = [int(i) for i in key_values]
             while (len(key_values) > 0):
                 # Compute the average
-                result[keys[i]].append(round(sum(key_values[:7])/len(key_values[:7])))
+                result[keys[i]].append(str(round(sum(key_values[:7])/len(key_values[:7]))))
                 # Delete the computed numbers
                 key_values = key_values[7:]
         
         # Add the weeks depending on the number of averages
-        weeks = [str(i+1) + " week(s)" for i in range(0, len(result[keys[1]]))]
+        weeks = ["Week "+str(i+1) for i in range(0, len(result[keys[1]]))]
         result['date'].extend(weeks)
         
         return result
@@ -215,7 +223,7 @@ class DataAnalyzer:
         else:
             result = self.get_values_per_many_weeks(profile_list, 
                         ['date', 'n_posts', 'n_followers', 'n_followings'])
-            username += "_"+str(len(result['date']))+"weeks"
+            username += "_"+str(len(result['date']))+"weeks"        
         
         # Set the path and the title of the file
         file_name = self.profile_evolution_path + username
@@ -223,6 +231,28 @@ class DataAnalyzer:
         plot_result = self.plot_lines_chart([result['n_followers'], result['n_followings'], result['n_posts']],
                  ['Followers', 'Followings', 'Posts'], result['date'], file_name)
         return {'state':plot_result[0], 'file':plot_result[1], 'data':result}
+    
+    def get_differences(self, post_list):
+        """
+        Computes the differences between the number of uploaded posts for each
+        date.
+
+        Parameters
+        ----------
+        post_list : list of str
+            It's the list of the averages of the uploaded posts during a specific
+            range of dates.
+
+        Returns
+        -------
+        A list of integers which contains the computed differences.
+        """
+        differences = []
+        post_list = [int(value) for value in post_list]
+        for i in range(1, len(post_list)):
+            differences.append(round(post_list[i] - post_list[i-1]))
+        
+        return differences, post_list
     
     def user_activity(self, username, activity_list):
         """
@@ -278,13 +308,10 @@ class DataAnalyzer:
             username += "_"+str(len(result['date']))+"weeks"
         
         # Compute the differences between the number of posts
-        differences = []
         post_list = result['n_posts']
         # Transform the values to int in case they were the original strings
-        post_list = [int(value) for value in post_list]
-        for i in range(1, len(post_list)):
-            differences.append(round(post_list[i] - post_list[i-1]))
-            
+        differences, post_list = self.get_differences(post_list)
+        
         # Draw the bar plot
         file_name = self.user_activity_path + username
         plot_result = self.plot_bars_chart(post_list, result['date'], file_name, differences)
@@ -328,18 +355,19 @@ class DataAnalyzer:
         # Check that there are four types of values for: date, n_posts, n_followers and n_followings
         for interaction in post_interactions:
             if (type(interaction) != tuple or len(interaction) != 3):
-                raise PostInteractionsNotFound("ERROR. The four fields to analyze the profile evolution should be tuples.")
+                raise PostInteractionsNotFound("ERROR. The three fields to analyze the medias evolution should be tuples.")
         
         # Compute the mean of likes and comments for each post
         mean_post_interactions = []
         # Get the dates without duplicates
         dates = list(set([item[0] for item in post_interactions]))
         dates.sort()
+        # Compute an average of the number of comments and likes per day
         for date in dates:
             likes = [int(item[1]) for item in post_interactions if item[0] == date]
             comments = [int(item[2]) for item in post_interactions if item[0] == date]
-            mean_post_interactions.append((date, sum(likes)/len(likes), sum(comments)/len(comments)))
-                
+            mean_post_interactions.append((date, str(round(sum(likes)/len(likes))), str(round(sum(comments)/len(comments)))))
+        
         # Get the values per one week
         if (len(mean_post_interactions) <= 7):
             username += "_1week"
@@ -358,11 +386,11 @@ class DataAnalyzer:
                  ['Like count', 'Comment count'], result['date'], file_name)
         return {'state':plot_result[0], 'file':plot_result[1], 'data':result}
     
-    def post_popularity(self, username, post_popularities):
+    def post_popularity(self, username, post_popularities, mode="best"):
         """
-        Get the popularity data from each post from a specific user in order
-        to plot them in a HTML table. Depending on the social media source,
-        the data could be different.
+        Computes the popularity for each media based on the provided interactions
+        in order to show the top 10 of the best or worst medias. The analysis results
+        will be plotted in a bar chart.
 
         Parameters
         ----------
@@ -371,6 +399,8 @@ class DataAnalyzer:
         post_popularities : dict
             It's the dict which contains the media ids as well as the media
             interactions to analyze.
+        mode : str
+            It's the type of order to sort the medias.
 
         Raises
         ------
@@ -384,26 +414,45 @@ class DataAnalyzer:
 
         Returns
         -------
-        A list of lists in which there are the analysis results for each post.
+        A dict whose keys are:
+           - 'state', which indicates if the analysis have been performed and saved
+           as an image.
+           - 'file', which has the path and the file name in which there is the
+           analysis saved.
+           - 'data', which returns the analysis results.
         """
         # Check the provided username
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. The username should be a non-empty string.")
         # Check the provided list of posts
-        if (type(post_popularities) != dict or len(post_popularities) == 0):
+        if (type(post_popularities) != list or len(post_popularities) == 0):
             raise PostPopularityNotFound("ERROR. The posts should be in a non-empty dict.")
-            
-        # Computes the average of the number of likes and comments
-        media_codes = [item[0] for item in post_popularities["data"]]
-        unique_media_codes = list(dict.fromkeys(media_codes))
-        results = []
-        for code in unique_media_codes:
-            likes = [int(item[1]) for item in post_popularities["data"] if item[0] == code]
-            comments = [int(item[2]) for item in post_popularities["data"] if item[0] == code]
-            indexes = [post_popularities["ids"][post_popularities["data"].index(item)] for item in post_popularities["data"] if item[0] == code]
-            results.append((indexes, round(sum(likes)/len(likes)), round(sum(comments)/len(comments))))    
+        # Check that there are four types of values for: date, n_posts, n_followers and n_followings
+        for interaction in post_popularities:
+            if (type(interaction) != tuple or len(interaction) != 3):
+                raise PostInteractionsNotFound("ERROR. The three fields to analyze the medias popularity should be tuples.")
         
-        return results
+        # Computes the average of the number of likes and comments
+        media_codes = [item[0] for item in post_popularities]
+        unique_media_codes = list(dict.fromkeys(media_codes))
+        analysis_results = []
+        analysis_results_to_plot = []
+        for code in unique_media_codes:
+            likes = [int(item[1]) for item in post_popularities if item[0] == code]
+            comments = [int(item[2]) for item in post_popularities if item[0] == code]
+            mean_likes = round(sum(likes)/len(likes))
+            mean_comments = round(sum(comments)/len(comments))
+            analysis_results.append((code, str(mean_likes), str(mean_comments))) 
+            analysis_results_to_plot.append(round((mean_likes+mean_comments)/2) if mean_comments > 0 else str(0))
+        
+        file_name = self.post_popularity_path + username
+        # Sort the medias in ascending or descending order
+        analysis_results_to_plot.sort(reverse=True if mode == "best" else False)
+        # Take the first 10 medias
+        analysis_results_to_plot = analysis_results_to_plot[:10]
+        plot_result = self.plot_bars_chart(analysis_results_to_plot, 
+                                           list(range(1, len(analysis_results_to_plot)+1)), file_name)
+        return {'state':plot_result[0], 'file':plot_result[1], 'data':analysis_results}
     
     ############################ TEXT ANALYSIS ##############################
     def sentiment_analysis_text(self, username, text_data):
@@ -436,49 +485,74 @@ class DataAnalyzer:
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. The username should be a non-empty string.")
         # Check the provided list of post texts
-        if (type(text_data) != dict or len(text_data) == 0 or 'ids' not in text_data or 'data' not in text_data):
-            raise TextDataDictNotFound("ERROR. The preprocessed text should be a non-empty dict.")
+        if (type(text_data) != list or len(text_data) == 0):
+            raise TextDataNotFound("ERROR. The preprocessed texts to analyze should be a non-empty list of tuples.")
 
+        # For pre-trained models 
+        flair_analyzer = TextClassifier.load('sentiment')
+        # For VADER lexicon
+        vader_analyzer = SentimentIntensityAnalyzer()
+        
         # Perform the sentiment analysis
-        analysis_results = []
-        analyzer = SentimentIntensityAnalyzer()
+        text_analysis_results = []
+        analyzed_texts = 0
         total_sentiments = {'pos':0.0, 'neu':0.0, 'neg':0.0}
         total_degree = {'pos':0.0, 'neu':0.0, 'neg':0.0}
-        analyzed_texts = 0
-        
-        for i in range(0, len(text_data["ids"])):
+        for text in text_data:
             # Check that there are two fields: id and text
-            if (type(text_data["data"][i]) != tuple or len(text_data["data"][i]) != 1):
-                raise TextTupleNotFound("ERROR. The preprocessed text to analyze should be in a one-size tuple.")
+            if (type(text) != tuple or len(text) != 3):
+                raise TextNotFound("ERROR. The text to analyze should be in a three-size tuple.")
             
-            # Get the sentiments
-            analysis = analyzer.polarity_scores(text_data["data"][i][0])
-            del analysis['compound']
-            # Get the sentiment of the text
-            sentiment = "none"
-            if (analysis['pos'] != 0 or analysis['neu'] != 0 or analysis['neg'] != 0):
+            # 1. Apply a pre-trained model to identifiy the sentiment of the text
+            sentence = Sentence(text[1])
+            flair_analyzer.predict(sentence)
+            total_sentiment = sentence.labels
+            if (len(total_sentiment) > 0):
                 analyzed_texts += 1
-                sentiment = max(analysis, key=analysis.get)
-                # Total count
+                sentiment = total_sentiment[0].value
+                score = total_sentiment[0].score
+                sentiment = "pos" if sentiment.lower() == "positive" else "neg"
                 total_sentiments[sentiment] += 1
-                total_degree[sentiment] += analysis[sentiment]
+                total_degree[sentiment] += score
+                # Analysis results to insert
+                text_analysis_results.append({"original_text":text[1], "sentiment":sentiment, "degree":score})
+            # 2. Apply the VADER lexicon if the pre-trained model could not 
+            # identify the sentiment of the text
+            else: #pragma no cover
+                # Get the sentiments
+                analysis = vader_analyzer.polarity_scores(text[1])
+                del analysis['compound']
+                # Get the sentiment of the text
+                sentiment = "none"
+                if (analysis['pos'] != 0 or analysis['neu'] != 0 or analysis['neg'] != 0):
+                    analyzed_texts += 1
+                    sentiment = max(analysis, key=analysis.get)
+                    # Total count
+                    total_sentiments[sentiment] += 1
+                    total_degree[sentiment] += analysis[sentiment]
+                    
+                # Analysis results to insert
+                text_analysis_results.append({"sentiment":sentiment, 
+                                              "degree":analysis[sentiment] if sentiment != "none" else 0.0})
             
-            # Get the degree of each sentiment
-            analysis_results.append({"id_text":text_data["ids"][i], 
-                                     "pos_degree":analysis['pos'], 
-                                     "neu_degree":analysis['neu'],
-                                      "neg_degree":analysis['neg'], 
-                                      "sentiment":sentiment})
         # Plot the pie chart
         values = list(total_sentiments.values())
-        labels = ["Positive\npolarity: "+str(round(total_degree['pos']/analyzed_texts,2))+" %",
-                  "Neutral\npolarity: "+str(round(total_degree['neu']/analyzed_texts,2))+" %",
-                  "Negative\npolarity: "+str(round(total_degree['neg']/analyzed_texts,2))+" %"]
+        pos_degree = str(round(total_degree['pos']/analyzed_texts,2))
+        neu_degree = str(round(total_degree['neu']/analyzed_texts,2))
+        neg_degree = str(round(total_degree['neg']/analyzed_texts,2))
+        labels = ["Positives: "+pos_degree+" %",
+                  "Neutrals: "+neu_degree+" %",
+                  "Negatives: "+neg_degree+" %"]
         file_name = self.text_sentiments_path + username
         colours = ['lightgreen', 'gold', 'lightcoral']
         plot_result = self.plot_pie_chart(values, labels, file_name, colours)
         
-        return {'state':plot_result[0], 'file':plot_result[1], 'data':analysis_results}
+        # Prepare the analysis results to insert them to the database
+        analysis_results = {"n_pos":total_sentiments["pos"], "n_neu":total_sentiments["neu"], "n_neg":total_sentiments["neg"],
+                            "pos_degree":pos_degree, "neu_degree":neu_degree, "neg_degree":neg_degree}
+        
+        return {'state':plot_result[0], 'file':plot_result[1], 
+                'data':analysis_results, 'analysis_results':text_analysis_results}
 
     def user_behaviours(self, username, user_list):
         """
@@ -510,50 +584,51 @@ class DataAnalyzer:
         if (type(username) != str or username == ""):
             raise UsernameNotFound("ERROR. The username should be a non-empty string.")
         # Check the provided list identified sentiments
-        if (type(user_list) != list or len(user_list) == 0):
-            raise SentimentTupleNotFound("ERROR. The list of sentiments should be in a non-empty list.")
-        # Check that the list of sentiments contains tuples
-        user_counts = {}
+        if (type(user_list) != list or len(user_list) == 0 or 
+            not all(isinstance(item, dict) for item in user_list)):
+            raise SentimentNotFound("ERROR. The users to analyze should be in a non-empty list of dicts.")
+        
+        # Count the number of different sentiments for each date without duplicates
+        user_patterns = {}
         for item in user_list:
-            if (type(item) != tuple or len(item) != 3):
-                raise SentimentTupleNotFound("ERROR. Each item should be a three-length tuple.")
-            # First key: date of the downloaded data
-            if (item[0] not in user_counts):
-                user_counts[item[0]] = {}
-            # Second key: the username
-            if (item[1] not in user_counts[item[0]]):
-                user_counts[item[0]][item[1]] = {'pos':0, 'neg':0}
+            if ("date" not in item or "author" not in item or "sentiment" not in item):
+                raise SentimentNotFound("ERROR. Each item should be the three keys: 'date', 'author' and 'sentiment'.")
+            
+            # Case 1. The date is not in the analysis results
+            if (item["date"] not in user_patterns):
+                user_patterns[item["date"]] = {}
+            # Case 1.1. The user is not in the analysis results
+            if (item["author"] not in user_patterns):
+                user_patterns[item["date"]][item["author"]] = {"pos":0, "neu":0, "neg":0}
             # Add the identified sentiment
-            if (item[2] != "none" and item[2] != "neu"):
-                user_counts[item[0]][item[1]][item[2]] += 1
+            if (item["sentiment"] != "none"):
+                user_patterns[item["date"]][item["author"]][item["sentiment"]] += 1
         
-        # Count the number of friends and haters per date
-        haters_and_friends = []
-        for date in user_counts:
-            haters = 0
-            friends = 0
-            for user in user_counts[date]:
-                if (user_counts[date][user]["pos"] != 0 or user_counts[date][user]["neg"]):
-                    if (user_counts[date][user]["pos"] > user_counts[date][user]["neg"]):
-                        friends += 1
-                    else:
-                        haters += 1
-            # Add the total count
-            haters_and_friends.append((date, friends, haters))
+        # Get the number of likers and haters per date without duplicates
+        behaviour_summary = []
+        for date in user_patterns:
+            n_likers = 0
+            n_haters = 0
+            for user in user_patterns[date]:
+                if (max(user_patterns[date][user], key=user_patterns[date][user].get) == "pos"): n_likers += 1
+                elif (max(user_patterns[date][user], key=user_patterns[date][user].get) == "neg"): n_haters += 1
         
+            # Add the results per date in order to plot them
+            behaviour_summary.append((date, n_likers, n_haters))
+                    
         # Get the data per week or per more than a week
-        if (len(haters_and_friends) <= 7):
+        if (len(behaviour_summary) <= 7):
             username += "_1week"
-            result = self.get_values_per_one_week(haters_and_friends, ['date', 'friends', 'haters'])
+            result = self.get_values_per_one_week(behaviour_summary, ['date', 'likers', 'haters'])
         else:
-            result = self.get_values_per_many_weeks(haters_and_friends, ['date', 'friends', 'haters'])
+            result = self.get_values_per_many_weeks(behaviour_summary, ['date', 'likers', 'haters'])
             username += "_"+str(len(result['date']))+"weeks"
         
         # Set the path and the title of the file
         file_name = self.user_behaviours_path + username
         # Draw the line plot
-        plot_result = self.plot_lines_chart([result['friends'], result['haters']],
-                 ['Friends', 'Haters'], result['date'], file_name)
+        plot_result = self.plot_lines_chart([result['likers'], result['haters']],
+                  ['Likers', 'Haters'], result['date'], file_name)
         return {'state':plot_result[0], 'file':plot_result[1], 'data':result}
 
     ###########################################################################
