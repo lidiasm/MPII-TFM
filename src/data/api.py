@@ -194,20 +194,12 @@ class Api:
             max_id = self.connection.LastJson.get('next_max_id', '')
             items_list = self.connection.LastJson['items']
             for i in items_list:
-                url = None
-                if ('video_versions' in i):
-                    url = i['video_versions'][0]['url']
-                elif ('image_versions2' in i):
-                    url = i['image_versions2']['candidates'][0]['url']
-                elif ('carousel_media' in i):
-                    url = i['carousel_media'][0]['image_versions2']['candidates'][0]['url']
                 # Format the date
                 posts.append({'id_media':i['id'], 
                               'title':i['caption']['text'],
                               'taken_at':time.strftime('%d-%m-%Y', time.localtime(i['taken_at'])),
                               'like_count':i['like_count'], 
                               'comment_count':i['comment_count'],
-                              'url':url
                               })
             
             n_downloaded_posts += len(items_list)
