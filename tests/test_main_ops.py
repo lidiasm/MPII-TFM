@@ -6,13 +6,14 @@ Tests to check the methods of the class MainOperations.
 @author: Lidia Sánchez Mérida
 """
 from datetime import datetime
+import time
 import sys
 import pytest
 sys.path.append('src')
 import main_ops 
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
     , InvalidMongoDbObject, InvalidSocialMediaSource, InvalidMode, InvalidAnalysis \
-    , InvalidDates, CollectionNotFound, InvalidQuery, InvalidAnalysisResults
+    , InvalidDates, CollectionNotFound
     
 # MainOperations object to perform the tests
 main_ops_object = main_ops.MainOperations()
@@ -231,142 +232,6 @@ def test10_get_data_from_mongodb():
     global mongo_data
     mongo_data = main_ops_object.get_data_from_mongodb("audispain", "Instagram", "test", date_list)
     assert type(mongo_data) == list and len(mongo_data) == 3
-    
-def test1_insert_data_to_postgres():
-    """
-    Test to check the method which inserts new user data to a specific table in
-    the Postgres database. In this test, the related analysis to get the insert
-    query is not provided so an exception will be raised.
-    """
-    with pytest.raises(InvalidQuery):
-        assert main_ops_object.insert_data_to_postgres(None, None)
-        
-def test2_insert_data_to_postgres():
-    """
-    Test to check the method which inserts new user data to a specific table in
-    the Postgres database. In this test, the user data is not provided so an 
-    exception will be raised.
-    """
-    with pytest.raises(UserDataNotFound):
-        assert main_ops_object.insert_data_to_postgres("test_profile_evolution", None)
-
-def test3_insert_data_to_postgres():
-    """
-    Test to check the method which inserts new user data to a specific table in
-    the Postgres database. In this test, there are three new user data samples to
-    insert in the 'TestProfiles' table of the Postgres database. In order to always
-    insert them, all the records of the table will be removed previously.
-    """
-    # Delete all the records of the Postgres table in order to insert the data
-    main_ops_object.postgresdb_object.empty_table("testprofiles")
-    global profile_ids
-    profile_ids = main_ops_object.insert_data_to_postgres("insert_test_profile", mongo_data)
-    assert len(profile_ids) == 3
-
-def test1_get_data_from_postgresdb():
-    """
-    Test to check the method which gets user data from the Postgres database
-    depending on the provided conditions. In this test, the select query is not
-    provided so an exception will be raised.
-    """
-    with pytest.raises(InvalidQuery):
-        assert main_ops_object.get_data_from_postgresdb(None, None)
-        
-def test2_get_data_from_postgresdb():
-    """
-    Test to check the method which gets user data from the Postgres database
-    depending on the provided conditions. In this test, the select values are not
-    provided so an exception will be raised.
-    """
-    with pytest.raises(UserDataNotFound):
-        assert main_ops_object.get_data_from_postgresdb("test_get_profiles", None)
-        
-def test3_get_data_from_postgresdb():
-    """
-    Test to check the method which gets user data from the Postgres database
-    depending on the provided conditions. In this test, the recovered data will be
-    the same data samples which were inserted to the 'TestProfiles' table.
-    """
-    select_values = [{"username":"audispain", "social_media":"Instagram",
-                      "date_ini":datetime.strptime("05-11-2020",'%d-%m-%Y'), 
-                      "date_fin":datetime.strptime("07-11-2020",'%d-%m-%Y')}]
-    matched_records = main_ops_object.get_data_from_postgresdb("test_get_profiles", select_values)
-    assert len(matched_records["ids"]) == 3 and len(matched_records["data"]) == 3
-    
-def test1_insert_many_analysis_results():
-    """
-    Test to check the method which inserts the analysis results as well as the 
-    ids from the involved data samples in the related tables of the Postgres database.
-    In this test, none of the parameters are provided so an exception will be raised.
-    """
-    with pytest.raises(InvalidAnalysisResults):
-        assert main_ops_object.insert_many_analysis_results(None, None, None, None)
-        
-def test2_insert_many_analysis_results():
-    """
-    Test to check the method which inserts the analysis results as well as the 
-    ids from the involved data samples in the related tables of the Postgres database.
-    In this test, the provided analysis results are not valid so an exception will be raised.
-    """
-    with pytest.raises(InvalidAnalysisResults):
-        assert main_ops_object.insert_many_analysis_results("05-11-2020", "07-11-2020", 
-                        "test_profile_evolution", {"id":"1"})
-
-def test3_insert_many_analysis_results():
-    """
-    Test to check the method which inserts the analysis results as well as the 
-    ids from the involved data samples in the related tables of the Postgres database.
-    In this test, the provided analysis results will be inserted as well as the 
-    involved profiles which helped to perform the 'ProfileEvolution' analysis.
-    In order to run the test, the records of the two related tables will be deleted
-    previously.
-    """
-    # Delete all the records of the Postgres table in order to insert the data
-    main_ops_object.postgresdb_object.empty_table("testprofilesevolution")
-    main_ops_object.postgresdb_object.empty_table("testprofiles_testprofilesevolution")
-    analysis_results = {"data":{'date': ['First week', 'Second week', 'Third week'], 
-                        'n_posts': ['1219', '1219', '1217'], 
-                        'n_followers': ['217178', '217178', '217094'], 
-                        'n_followings': ['431', '431', '430']},
-                        "ids":profile_ids}
-    result = main_ops_object.insert_many_analysis_results("05-11-2020", "07-11-2020", 
-                "test_profile_evolution", analysis_results)
-    assert len(result["id"])> 0 and len(result["relationships"]) == len(profile_ids)
-    
-def test4_insert_many_analysis_results():
-    """
-    Test to check the method which inserts the analysis results as well as the 
-    ids from the involved data samples in the related tables of the Postgres database.
-    In this test, the provided analysis results are already in the database so
-    they won't be inserted and an exception will be raised.
-    """
-    analysis_results = {"data":{'date': ['First week', 'Second week', 'Third week'], 
-                        'n_posts': ['1219', '1219', '1217'], 
-                        'n_followers': ['217178', '217178', '217094'], 
-                        'n_followings': ['431', '431', '430']},
-                        "ids":profile_ids}
-    with pytest.raises(InvalidAnalysisResults):
-        main_ops_object.insert_many_analysis_results("05-11-2020", "07-11-2020", 
-                "test_profile_evolution", analysis_results)
-    
-def test1_insert_media_popularity_results():
-    """
-    Test to check the method which inserts the Media Popularity analysis results
-    in the database. In this test, the results are not provided so an exception
-    will be raised.
-    """
-    with pytest.raises(InvalidAnalysisResults):
-        assert main_ops_object.insert_media_popularity_results(None, None, None, None)
-    
-def test1_top_ten_medias_popularity():
-    """
-    Test to check the method which gets the ranking of the best or the worst
-    medias based on the interactions, such as the number of likes and comments.
-    In this test, the Medias Popularity analysis results are not provided so
-    an exception will be raised.
-    """
-    with pytest.raises(InvalidAnalysisResults):
-        assert main_ops_object.top_ten_medias_popularity(None, None, None, None, None, None,)
 
 def test1_perform_analysis():
     """
@@ -418,7 +283,6 @@ def test5_perform_analysis():
     with pytest.raises(InvalidSocialMediaSource):
         assert main_ops_object.perform_analysis("audispain", "test_profile_evolution", 
                                             "invalid-social-media", None, None)
-        
 def test6_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
@@ -428,7 +292,6 @@ def test6_perform_analysis():
     with pytest.raises(InvalidDates):
         assert main_ops_object.perform_analysis("audispain", "test_profile_evolution",
                                                 "Instagram", None, None)
-
 def test7_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
@@ -460,6 +323,7 @@ def test9_perform_analysis():
     """
     # Delete all the records of the Postgres table in order to insert the data
     main_ops_object.postgresdb_object.empty_table("testprofiles")
+    main_ops_object.postgresdb_object.empty_table("testprofilesevolution")
     result = main_ops_object.perform_analysis("audispain", "test_profile_evolution",
               "Instagram", "05-11-2020", "07-11-2020")
     assert type(result) == dict and result["state"] == True 
@@ -483,9 +347,6 @@ def test10_perform_analysis():
     for item in user_data:
         main_ops_object.common_data_object.insert_user_data(item, "test")
     # Delete all the records of the Postgres table in order to insert the data
-    main_ops_object.postgresdb_object.empty_table("testprofiles")
-    main_ops_object.postgresdb_object.empty_table("testprofilesevolution")
-    main_ops_object.postgresdb_object.empty_table("testprofiles_testprofilesevolution")
     result = main_ops_object.perform_analysis("audispain", "test_profile_evolution",
               "Instagram", "31-10-2020", "07-11-2020")
     assert type(result) == dict and result["state"] == True 
@@ -494,16 +355,29 @@ def test11_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is Profiles Evolution and it's been done
+    before so the method will recover the analysis results to plot them directly.
+    """
+    time.sleep(2)
+    result = main_ops_object.perform_analysis("audispain", "test_profile_evolution",
+              "Instagram", "31-10-2020", "07-11-2020")
+    assert type(result) == dict and result["state"] == True and "analysis_id" not in result
+
+def test12_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
     In this test, the analysis to perform is Profile Activity on a set of 
     three-days user data.
     """
     # Delete all the records of the Postgres table in order to insert the data
     main_ops_object.postgresdb_object.empty_table("testprofiles")
+    main_ops_object.postgresdb_object.empty_table("testprofilesactivity")
     result = main_ops_object.perform_analysis("audispain", "test_profile_activity",
               "Instagram", "05-11-2020", "07-11-2020")
     assert type(result) == dict and result["state"] == True 
     
-def test12_perform_analysis():
+def test13_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
@@ -522,14 +396,23 @@ def test12_perform_analysis():
     for item in user_data:
         main_ops_object.common_data_object.insert_user_data(item, "test")
     # Delete all the records of the Postgres table in order to insert the data
-    main_ops_object.postgresdb_object.empty_table("testprofiles")
-    main_ops_object.postgresdb_object.empty_table("testprofilesactivity")
-    main_ops_object.postgresdb_object.empty_table("testprofiles_testprofilesactivity")
     result = main_ops_object.perform_analysis("audispain", "test_profile_activity",
               "Instagram", "31-10-2020", "07-11-2020")
     assert type(result) == dict and result["state"] == True
     
-def test13_perform_analysis():
+def test14_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Profile Activity but it's been
+    done before so the method will recover the analysis results in order to plot them directly.
+    """
+    time.sleep(2)
+    result = main_ops_object.perform_analysis("audispain", "test_profile_activity",
+              "Instagram", "31-10-2020", "07-11-2020")
+    assert type(result) == dict and result["state"] == True and "analysis_id" not in result
+    
+def test15_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
@@ -537,6 +420,11 @@ def test13_perform_analysis():
     user data. In order to do that, the user data will be inserted into the 'Test'
     collection of Mongo database.
     """
+    # Delete the previous records from the collections
+    main_ops_object.mongodb_object.set_collection("test_medias")
+    main_ops_object.mongodb_object.delete_records("delete_all")
+    main_ops_object.mongodb_object.set_collection("test_comments")
+    main_ops_object.mongodb_object.delete_records("delete_all")
     # Insert five records to test the analysis
     user_data = [
         {"medias" : [
@@ -694,112 +582,337 @@ def test13_perform_analysis():
     ]
     for item in user_data:
         main_ops_object.common_data_object.insert_user_data(item, "test_medias")
+    # Insert their comments
+    comments = [
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[
+                      { "user" : "vicenteterol_", "text" : "Es una locura, otro rollo...🔥" },
+                      { "user" : "rubenj_xd", "text" : "@audispain nada el frontal está genial ⚡️" }
+                  ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "hugoortegamtz", "text" : "@mendez.alan97 concuerdo contigo mi buen. En lo personal yo creo que esos difusores de aire al frente le dan un toque mágico" },
+                      { "user" : "mendez.alan97", "text" : "@audispain todo, esta simplemente espectacular, siempre Audi nos sorprende 🙌" },
+                  ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("31-10-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[
+                      { "user" : "beatriche_rs", "text" : "@alonsorocha estas tú que vas a conducir ese coche, sigue soñando 🤣🤣🤣🤣" },
+                      { "user" : "guilleecg__", "text" : "@nbx_07 @raul.__16" }
+                  ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "david.michelena.3", "text" : "@cristinafger y tanto!" },
+                      { "user" : "cristinafger", "text" : "@david.michelena.3 . Seguro q te gusta!" }
+                    ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("01-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[
+                      { "user" : "abl_95flames", "text" : "@audispain en eso tenéis razon🤣👏👏" },
+                      { "user" : "vladimir.vasquezm", "text" : "@audispain 🤣" }
+                ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "trancaso", "text" : "M gustaría ver y que nunca me alcancé, al que debe cobrarme el auto jeje. Hablando en serio, escuche un informe donde, comunican todos los cambios en la línea audi, como siempre en la vanguardia, q7 y q8 lo más, q3 con muchas novedades." },
+                      { "user" : "esiris_model", "text" : "@audispain a vosotros por estas maravillas😍" }
+                    ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("02-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[
+                      { "user" : "alfonsofloress__", "text" : "Con este coche me voy Murcia hasta italia de una arrancada" }, 
+                      { "user" : "martiiineez_34", "text" : "Ufffff🔥🤤🤤" }
+                ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "emf_fotografia", "text" : "Uff !!!! Ese si es un coche que me apetece fotografiar !!!" }, 
+                      { "user" : "enri_pomme", "text" : "Que tengo que hacer para hacerle fotos a esa maldita bestia" }
+                ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("03-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[
+                      { "user" : "vicariapuentedura", "text" : "@audispain el RS7 de serie ya es la leche. Como el RS5 en verde." }, 
+                      { "user" : "maribel240114", "text" : "@mchkpro" }
+                ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "antonio_realtor", "text" : "la parrilla" }, 
+                      { "user" : "craemone", "text" : "las ópticas y la parilla frontal son impresionantes!! lástima que no me toque la lotería que no juego xD" }
+                ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("04-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[
+                      { "user" : "saaray11", "text" : "@norbergmr87" }, 
+                      { "user" : "mr.sashu", "text" : "@audispain No importa, yo seguiría llevando el coche con la misma clase👌🏻" }
+                ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[{ "user" : "amorsubito", "text" : "@audispain a mi de entrada cualquier Audi me hipnotiza....me deja turoleta no puedo evitarlo, yo estoy enamorada del mío.....i 💙 Q2" }, 
+                          { "user" : "antonio_realtor", "text" : "la parrilla" },
+                  ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("05-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[{ "user" : "gerialbors", "text" : "@jangzanni q cojones vaya locura" }, 
+                          { "user" : "jangzanni", "text" : "@audispain tenéis razón... @bmwespana modernizaros anda" }
+                  ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "goloson5", "text" : "@audispain ❤️❤️😍😍" }, 
+                      { "user" : "guillermo_aleman27", "text" : "@audispain de Audi" }, { "user" : "amorsubito", "text" : "Me da igual estando dentro de él....❤️💋😍😘" }
+                  ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("06-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+        {"comments" : [
+    		{
+     			"id_media" : "2429379247628862182_1121839441",
+                  "texts":[{ "user" : "joaquinrdmz", "text" : "@audispain pues desde los 90 ha hecho 97k, está cuidado con mimo 😁" }, 
+                          {"user" : "joseluismmxviii", "text" : "@audispain es imposible que el RS5 sea confortable. Lo qye ganas en caballos lo pierdes en comodidad" }
+                ]
+    		},
+            {
+     			"id_media" : "2429083272555842514_1121839441",
+                  "texts":[
+                      { "user" : "david.l.m_13", "text" : "@audispain todo" }, 
+                      { "user" : "barrio.25_30", "text" : "@audispain El interior del audi A3 sportback es espectacular" },
+                ]
+    		}
+        ],
+     	"social_media" : "Instagram",
+     	"date" : datetime.strptime("07-11-2020",'%d-%m-%Y'),
+     	"username" : "audispain"
+        },
+    ]
+    for item in comments:
+        main_ops_object.common_data_object.insert_user_data(item, "test_comments")
+        
     # Delete all the records of the Postgres table in order to insert the data
     main_ops_object.postgresdb_object.empty_table("testmedias")
     main_ops_object.postgresdb_object.empty_table("testmediatitles")
     main_ops_object.postgresdb_object.empty_table("testmediacomments")
+    main_ops_object.postgresdb_object.empty_table("testmediasevolution")
     result = main_ops_object.perform_analysis("audispain", "test_media_evolution",
               "Instagram", "31-10-2020", "02-11-2020")
-    assert type(result) == dict and result["state"] == True 
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) == 3
     
-def test14_perform_analysis():
+def test16_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
     In this test, the analysis to perform is the Media Evolution on a set of more
     than 7 days user data.
     """
-    main_ops_object.postgresdb_object.empty_table("testmediasevolution")
-    main_ops_object.postgresdb_object.empty_table("testmedias_testmediasevolution")
     result = main_ops_object.perform_analysis("audispain", "test_media_evolution",
               "Instagram", "31-10-2020", "07-11-2020")
-    assert type(result) == dict and result["state"] == True 
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) == 2
 
-def test15_perform_analysis():
+def test17_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Media Evolution on a set of three
+    days but it's been already done so the analysis results will be recovered 
+    in order to plot them directly.
+    """
+    time.sleep(2)
+    result = main_ops_object.perform_analysis("audispain", "test_media_evolution",
+              "Instagram", "31-10-2020", "02-11-2020")
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result
+
+def test18_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Media Evolution on a set of more
+    than 7 days but it's already done so the analysis results will be
+    recovered in order to plot them directly.
+    """
+    time.sleep(2)
+    result = main_ops_object.perform_analysis("audispain", "test_media_evolution",
+              "Instagram", "31-10-2020", "07-11-2020")
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result
+
+def test19_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
     In this test, the analysis to perform is the Media Popularity on a set of three
     days user data.
     """
+    # Delete the previous records of the analysis table
+    main_ops_object.postgresdb_object.empty_table("testmediaspopularity")
     result = main_ops_object.perform_analysis("audispain", "test_media_popularity",
               "Instagram", "31-10-2020", "02-11-2020")
-    assert type(result) == dict  
-    
-def test16_perform_analysis():
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) == 2
+
+def test20_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
     In this test, the analysis to perform is the Media Popularity on a set of more
     than 7 days user data.
     """
+    time.sleep(2)
     result = main_ops_object.perform_analysis("audispain", "test_media_popularity",
               "Instagram", "31-10-2020", "07-11-2020")
-    assert type(result) == dict
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) > 0
     
-def test17_perform_analysis():
+def test21_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
-    In this test, the analysis to perform is the Sentiment Analysis based on the
-    comments from the posts during a specific period of time.
+    In this test, the analysis to perform is the Media Popularity on a set of three
+    days user data. However, this analysis has been performed previously so the
+    analysis results will be recovered in order to plot them directly.
     """
-    comments = [
-        {
-        "comments":[{ "id_media" : "2429379247628862182_1121839441", 
-                     "texts" : [{ "user" : "azahara_carmona", "text" : "@rorry_carmona 😂😂😂😂😂" }, 
-                                { "user" : "albarujano", "text" : "@apostolovakarina3 😂😂"} ]}],
-        "social_media" : "Instagram", 
-        "date" : datetime.strptime("31-10-2020",'%d-%m-%Y'),
-        "username" : "audispain" 
-        },
-        {
-        "comments":[{ "id_media" : "2429083272555842514_1121839441", 
-                     "texts" : [{ "user" : "azahara_carmona", "text" : "@rorry_carmona 😂😂😂😂😂" }, 
-                                { "user" : "albarujano", "text" : "@apostolovakarina3 😂😂"} ]}],
-        "social_media" : "Instagram", 
-        "date" : datetime.strptime("01-11-2020",'%d-%m-%Y'),
-        "username" : "audispain" 
-        },
-        {
-        "comments":[{ "id_media" : "2429379247628862182_1121839441", 
-                     "texts" : [{ "user" : "azahara_carmona", "text" : "@rorry_carmona 😂😂😂😂😂" }, 
-                                { "user" : "albarujano", "text" : "@apostolovakarina3 😂😂"} ]}],
-        "social_media" : "Instagram", 
-        "date" : datetime.strptime("02-11-2020",'%d-%m-%Y'),
-        "username" : "audispain" 
-        },
-        ]
-    
-    # Delete the mongo collection
-    main_ops_object.mongodb_object.set_collection("test_comments")
-    main_ops_object.mongodb_object.delete_records("delete_all")
-    for item in comments:
-        main_ops_object.common_data_object.insert_user_data(item, "test_comments")
-    
-    main_ops_object.postgresdb_object.empty_table("testsentimentanalysis")
-    result = main_ops_object.perform_analysis("audispain", "test_comment_sentiment_analysis",
+    time.sleep(2)
+    result = main_ops_object.perform_analysis("audispain", "test_media_popularity",
               "Instagram", "31-10-2020", "02-11-2020")
-    assert type(result) == dict and result["state"] == True 
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result
 
-def test18_perform_analysis():
+def test22_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
-    In this test, the analysis to perform is the Sentiment Analysis based on the
-    titles of a set of posts during a specific period of time.
+    In this test, the analysis to perform is the Media Popularity on a set of more
+    than 7 days user data. However, this analysis has been performed previously so the
+    analysis results will be recovered in order to plot them directly.
+    """
+    time.sleep(2)
+    result = main_ops_object.perform_analysis("audispain", "test_media_popularity",
+              "Instagram", "31-10-2020", "07-11-2020")
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result
+    
+def test23_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Comment Sentiments on a set of 
+    one-day data.
+    """
+    main_ops_object.postgresdb_object.empty_table("testtextsentiments")
+    main_ops_object.postgresdb_object.empty_table("testcommentsentiments")
+    result = main_ops_object.perform_analysis("audispain", "test_comment_sentiment_analysis",
+              "Instagram", "31-10-2020", "01-11-2020")
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) > 0
+    
+def test24_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Comment Sentiments on a set of 
+    one-day data. But this analysis has been performed previously so the analysis
+    results will be recovered in order to plot them directly.
+    """
+    result = main_ops_object.perform_analysis("audispain", "test_comment_sentiment_analysis",
+              "Instagram", "31-10-2020", "01-11-2020")
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result
+
+def test25_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Title Sentiments on a set of 
+    one-day data.
+    """
+    main_ops_object.postgresdb_object.empty_table("testtextsentiments")
+    result = main_ops_object.perform_analysis("audispain", "test_title_sentiment_analysis",
+              "Instagram", "31-10-2020", "01-11-2020")
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) > 0
+
+def test26_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the Title Sentiments on a set of 
+    one-day data. But this analysis has been performed previously so the analysis
+    results will be recovered in order to plot them directly.
     """
     result = main_ops_object.perform_analysis("audispain", "test_title_sentiment_analysis",
-              "Instagram", "31-10-2020", "02-11-2020")
-    assert type(result) == dict and result["state"] == True 
-    
-def test19_perform_analysis():
+              "Instagram", "31-10-2020", "01-11-2020")
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result            
+
+def test27_perform_analysis():
     """
     Test to check the method which performs a specific analysis on the selected
     user data getting the information from the Mongo database to Postgre database.
-    In this test, the analysis to perform is the Sentiment Analysis based on the
-    titles of a set of posts during a specific period of time.
+    In this test, the analysis to perform is the User Behaviours on a set of 
+    three-days data.
     """
-    result = main_ops_object.perform_analysis("audispain", "test_users_behaviours",
-              "Instagram", "31-10-2020", "02-11-2020")
-    assert type(result) == dict and result["state"] == True 
+    # Delete the previous records of the analysis table
+    main_ops_object.postgresdb_object.empty_table("testuserbehaviours")
+    result = main_ops_object.perform_analysis("audispain", "test_user_behaviours",
+                "Instagram", "31-10-2020", "02-11-2020")
+    assert type(result) == dict and result["state"] == True and len(result["inserted_analysis"]) > 0
+
+def test28_perform_analysis():
+    """
+    Test to check the method which performs a specific analysis on the selected
+    user data getting the information from the Mongo database to Postgre database.
+    In this test, the analysis to perform is the User Behaviours on a set of 
+    three-days data. But this analysis has been performed previously so the analysis
+    results will be recovered in order to plot them directly.
+    """
+    # Delete the previous records of the analysis table
+    result = main_ops_object.perform_analysis("audispain", "test_user_behaviours",
+               "Instagram", "31-10-2020", "02-11-2020")
+    assert type(result) == dict and result["state"] == True and "inserted_analysis" not in result            
