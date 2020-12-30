@@ -6,15 +6,14 @@ in the class DataAnalyzer. Each one performs a different type of data analysis.
 
 @author: Lidia Sánchez Mérida
 """
-from datetime import time
 import sys
 import pytest
 sys.path.append("src")
 sys.path.append("src/data")
 import data_analyzer 
 from exceptions import ValuesNotFound, KeysNotFound, ExpectedSameSize \
-    , InvalidLinePlotData, UsernameNotFound, ProfilesNotFound, InvalidBarPlotData \
-    , UserActivityNotFound, PostInteractionsNotFound, InvalidPiePlotData \
+    , UsernameNotFound, ProfilesNotFound \
+    , UserActivityNotFound, PostInteractionsNotFound \
     , PostPopularityNotFound, TextNotFound, SentimentNotFound, TextDataNotFound
     
 # DataAnalyzer object to run the data analyzer methods
@@ -105,70 +104,30 @@ def test4_get_values_per_many_weeks():
     keys = ['date', 'field_one']
     result = da.get_values_per_many_weeks(values, keys)
     assert len(list(result.keys())) == len(keys)
-
-def test1_plot_lines_chart():
-    """
-    Test to check the method which draws a line plot from the provided data.
-    In this test, the provided values to plot are not valid so an
-    exception will be raised.
-    """
-    with pytest.raises(InvalidLinePlotData):
-        assert da.plot_lines_chart([1,2,3,4], None, None, None)
-
-def test2_plot_lines_chart():
-    """
-    Test to check the method which draws a line plot from the provided data.
-    In this test, the X labels are not provided so an exception will be raised.
-    """
-    values = [[1,5,4], [3,6,9], [7,2,0]]
-    with pytest.raises(InvalidLinePlotData):
-        assert da.plot_lines_chart(values, None, None, None)
-        
-def test3_plot_lines_chart():
-    """
-    Test to check the method which draws a line plot from the provided data.
-    In this test, the Y title, plot title and file path are not provided
-    so an exception will be raised.
-    """
-    values = [[1,5,4], [3,6,9], [7,2,0]]
-    legend_labels = ["line 1", "line 2", "line 3"]
-    x_labels = ["26/07", "27/07", "29/07"]
-    with pytest.raises(InvalidLinePlotData):
-        assert da.plot_lines_chart(values, legend_labels, x_labels, 123)
-    
-def test4_plot_lines_chart():
-    """
-    Test to check the method which draws a line plot from the provided data.
-    """
-    values = [[1,5,4], [3,6,9], [7,2,0]]
-    legend_labels = ["line 1", "line 2", "line 3"]
-    x_labels = ["26/07", "27/07", "29/07"]
-    result = da.plot_lines_chart(values, legend_labels, x_labels, da.plot_tests_path+"test_lines_plot")
-    assert result[0] == True
     
 def test1_profile_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the profile from a specific user. In this test, the username is not provided
-    so an exception will be raised.
+    Test to check the method which computes the evolution of the number of followers,
+    followings and posts during a specific period of time. In this test, the username
+    of the account to study is not provided so an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
         assert da.profile_evolution(None, None)
 
 def test2_profile_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the profile from a specific user. In this test, the list of profiles is not
-    provided so an exception will be raised.
+    Test to check the method which computes the evolution of the number of followers,
+    followings and posts during a specific period of time. In this test, the profiles
+    to analyze are not provided so an exception will be raised.
     """
     with pytest.raises(ProfilesNotFound):
         assert da.profile_evolution("lidiasm", None)
         
 def test3_profile_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the profile from a specific user. In this test, the provided list of profiles 
-    is not valid so an exception will be raised.
+    Test to check the method which computes the evolution of the number of followers,
+    followings and posts during a specific period of time. In this test, the provided
+    profiles to analyze are not valid so an exception will be raised.
     """
     invalid_profile_list = [("20/10/2020", "12", "54", "27"),
                     ("22/10/2020", "15", "35")]
@@ -177,21 +136,23 @@ def test3_profile_evolution():
         
 def test4_profile_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the profile from a specific user. 
+    Test to check the method which computes the evolution of the number of followers,
+    followings and posts during a specific period of time. In this test, there is a set
+    of four profiles to analyze so their data will be returned directly.
     """
     profile_list = [("20/10/2020", "12", "54", "27"),
                     ("22/10/2020", "15", "100", "35"),
                     ("24/10/2020", "25", "104", "68"),
                     ("28/10/2020", "26", "148", "124")]
     result = da.profile_evolution("lidiasm", profile_list)
-    time(5)
-    assert result["state"] == True
-    
+    assert type(result) == dict and len(result["date"]) == len(profile_list)
+
 def test5_profile_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the profile from a specific user. 
+    Test to check the method which computes the evolution of the number of followers,
+    followings and posts during a specific period of time. In this test, there is a set
+    of eleven profiles to analyze so the method will compute the average of each
+    field per week.
     """
     profile_list = [("20/10/2020", "12", "54", "27"),
                     ("21/10/2020", "15", "100", "35"),
@@ -206,99 +167,41 @@ def test5_profile_evolution():
                     ("30/10/2020", "34", "139", "132"),
                     ("31/10/2020", "40", "145", "140")]
     result = da.profile_evolution("lidiasm", profile_list)
-    time(5)
-    assert result["state"] == True
-    
-def test1_plot_bars_chart():
-    """
-    Test to check the method which draws a bar plot from the provided data.
-    In this test, there are not provided data so an exception will be raised.
-    """
-    with pytest.raises(InvalidBarPlotData):
-        assert da.plot_bars_chart(None, None, None)
-
-def test2_plot_bars_chart():
-    """
-    Test to check the method which draws a bar plot from the provided data.
-    In this test, the path and file name to save the plot as an image are not provided
-    so an exception will be raised.
-    """
-    values = [5, 2, 15, 8, 9]
-    x_labels = ['label1', 'label2', 'label3', 'label4', 'label5']
-    with pytest.raises(InvalidBarPlotData):
-        assert da.plot_bars_chart(values, x_labels, None)
-        
-def test3_plot_bars_chart():
-    """
-    Test to check the method which draws a bar plot from the provided data.
-    In this test, the path and file name to save the plot as an image are not provided
-    so an exception will be raised.
-    """
-    values = [5, 2, 15, 8, 9]
-    x_labels = ['label1', 'label2', 'label3', 'label4', 'label5']
-    with pytest.raises(InvalidBarPlotData):
-        assert da.plot_bars_chart(values, x_labels, da.plot_tests_path+"test_bar_plot", "")
-        
-def test4_plot_bars_chart():
-    """
-    Test to check the method which draws a bar plot from the provided data.
-    """
-    values = [5, 2, 15, 8, 9]
-    x_labels = ['label1', 'label2', 'label3', 'label4', 'label5']
-    result = da.plot_bars_chart(values, x_labels, da.plot_tests_path+"test_bar_plot")
-    assert result[0] == True
-
-def test5_plot_bars_chart():
-    """
-    Test to check the method which draws a bar plot from the provided data.
-    """
-    values = [5, 2, 15, 8, 9]
-    x_labels = ['label1', 'label2', 'label3', 'label4', 'label5']
-    result = da.plot_bars_chart(values, x_labels, da.plot_tests_path+"test_bar_plot",
-                          [-3, 13, -7, -1])
-    assert result[0] == True
+    assert type(result) == dict and len(result["date"]) == 2
     
 def test1_user_activity():
     """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the username is not provided so an exception will be raised.
+    Test to check the method which computes the user activity based on the number
+    of uploaded posts during a specific period of time. In this test, the username
+    of the account to study is not provided so an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
         assert da.user_activity(None, None)
     
 def test2_user_activity():
     """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the user activity is not provided so an exception will be raised.
+    Test to check the method which computes the user activity based on the number
+    of uploaded posts during a specific period of time. In this test, the list of 
+    uploaded posts is not provided so an exception will be raised.
     """
     with pytest.raises(UserActivityNotFound):
         assert da.user_activity("lidiasm", None)
         
 def test3_user_activity():
     """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the provided user activity is not valid so an exception will be raised.
+    Test to check the method which computes the user activity based on the number
+    of uploaded posts during a specific period of time. In this test, the provided
+    list of uploaded posts is not valid so an exception will be raised.
     """
     invalid_user_activity = [("24/10/2020"), ("25/10/2020", "125")]
     with pytest.raises(UserActivityNotFound):
         assert da.user_activity("lidiasm", invalid_user_activity)
-        
+
 def test4_user_activity():
     """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the provided user activity is not valid so an exception will be raised.
-    """
-    invalid_user_activity = [("24/10/2020"), ("25/10/2020", "125"),
-                              ("24/10/2020"), ("25/10/2020", "125"),
-                              ("24/10/2020"), ("25/10/2020", "125"),
-                              ("24/10/2020"), ("25/10/2020", "125")]
-    with pytest.raises(UserActivityNotFound):
-        assert da.user_activity("lidiasm", invalid_user_activity)
-
-def test5_user_activity():
-    """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the provided user activity is not valid so an exception will be raised.
+    Test to check the method which computes the user activity based on the number
+    of uploaded posts during a specific period of time. In this test, there are seven
+    records to analyze so they will be returned directly.
     """
     user_activity = [("20/10/2020", "12"), 
                       ("21/10/2020", "15"),
@@ -309,12 +212,13 @@ def test5_user_activity():
                       ("28/10/2020", "38")
                       ]
     result = da.user_activity("lidiasm", user_activity)
-    assert result["state"] == True
+    assert type(result) == dict and len(result["date"]) == len(user_activity)
         
-def test6_user_activity():
+def test5_user_activity():
     """
-    Test to check the method which analyzes the user activity per week or more.
-    In this test, the plot will show the user activity per week.
+    Test to check the method which computes the user activity based on the number
+    of uploaded posts during a specific period of time. In this test, there are more
+    than seven records to analyze so the method will compute the required averages per week.
     """
     user_activity = [("20/10/2020", "12"), 
                       ("21/10/2020", "15"),
@@ -330,32 +234,31 @@ def test6_user_activity():
                       ("31/10/2020", "40"),
                       ]
     result = da.user_activity("lidiasm", user_activity)
-    time(5)
-    assert result["state"] == True
+    assert type(result) == dict and len(result["date"]) == 2
 
 def test1_post_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the post interactions. In this test, the username is not provided
-    so an exception will be raised.
+    Test to check the method which gets how interesting the posts are based on
+    the interactions from the members of the social media. In this test, the username
+    of the account to study is not provided so an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
         assert da.post_evolution(None, None)
 
 def test2_post_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the post interactions. In this test, the list of profiles is not
-    provided so an exception will be raised.
+    Test to check the method which gets how interesting the posts are based on
+    the interactions from the members of the social media. In this test, the list
+    of posts is not provided so an exception will be raised.
     """
     with pytest.raises(PostInteractionsNotFound):
         assert da.post_evolution("lidiasm", None)
         
 def test3_post_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the post interactions. In this test, the provided list of profiles 
-    is not valid so an exception will be raised.
+    Test to check the method which gets how interesting the posts are based on
+    the interactions from the members of the social media. In this test, the provided
+    list of posts is not valid so an exception will be raised.
     """
     invalid_interactions = [("20/10/2020", "12", "54"), ("22/10/2020", "15")]
     with pytest.raises(PostInteractionsNotFound):
@@ -363,23 +266,22 @@ def test3_post_evolution():
         
 def test4_post_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the post interactions from a specific user. In this test, the analysis
-    will be per a week.
+    Test to check the method which gets how interesting the posts are based on
+    the interactions from the members of the social media. In this test, there are seven
+    records to analyze so they will be returned directly.
     """
     post_interactions = [("20/10/2020", "128", "35"),
-                    ("22/10/2020", "135", "48"),
-                    ("24/10/2020", "147", "77"),
-                    ("28/10/2020", "159", "89")]
+                        ("22/10/2020", "135", "48"),
+                        ("24/10/2020", "147", "77"),
+                        ("28/10/2020", "159", "89")]
     result = da.post_evolution("lidiasm", post_interactions)
-    time(5)
-    assert result["state"] == True
+    assert type(result) == dict and len(result["date"]) == len(post_interactions)
     
 def test5_post_evolution():
     """
-    Test to check the method which draws a line plot after analysing the evolution
-    of the post interactions from a specific user. In this test, the analysis will
-    be per more than a week.
+    Test to check the method which gets how interesting the posts are based on
+    the interactions from the members of the social media. In this test, there are more
+    than seven records to analyze so the method will compute the required averages per week.
     """
     post_interactions = [("20/10/2020", "12", "54"),
                     ("21/10/2020", "125", "95"),
@@ -394,22 +296,21 @@ def test5_post_evolution():
                     ("30/10/2020", "245", "245"),
                     ("31/10/2020", "278", "289")]
     result = da.post_evolution("lidiasm", post_interactions)
-    time(5)
-    assert result["state"] == True
+    assert type(result) == dict and len(result["date"]) == 2
     
 def test1_post_popularity():
     """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the username is not provided
-    so an exception will be raised.
+    Test to check the method which gets the best/worst posts from an user during
+    a specific period of time. In this test, the username of the account to 
+    study is not provided so an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
         assert da.post_popularity(None, None)
         
 def test2_post_popularity():
     """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the medias to analyze are
+    Test to check the method which gets the best/worst posts from an user during
+    a specific period of time. In this test, the posts to analyze are
     not provided so an exception will be raised.
     """
     with pytest.raises(PostPopularityNotFound):
@@ -417,8 +318,8 @@ def test2_post_popularity():
         
 def test3_post_popularity():
     """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the provided medias to analyze are
+    Test to check the method which gets the best/worst posts from an user during
+    a specific period of time. In this test, the provided posts to analyze are
     not valid so an exception will be raised.
     """
     with pytest.raises(PostInteractionsNotFound):
@@ -426,71 +327,18 @@ def test3_post_popularity():
         
 def test4_post_popularity():
     """
-    Test to check the method which plots the best or worst posts from a user based
-    on a selected set of interactions. In this test, the posts will be sorted
+    Test to check the method which gets the best/worst posts from an user during
+    a specific period of time. In this test, the posts will be sorted
     by the average number of likes and comments in descending order.
     """
     posts = [('123', '145', '174'), ('456', '45', '78'), ('789', '485', '25'), ('012', '489', '584')]
     result = da.post_popularity("lidia.96.sm", posts)
-    assert result["state"] == True and type(result["file"]) == str and type(result["data"]) == list
-
-def test1_plot_pie_chart():
-    """
-    Test to check the method which draws a pie chart with the provided data and
-    save it as an image. In this test, the values to show are not provided so
-    an exception will be raised.
-    """
-    with pytest.raises(InvalidPiePlotData):
-        assert da.plot_pie_chart(None, None, None, None)
-        
-def test2_plot_pie_chart():
-    """
-    Test to check the method which draws a pie chart with the provided data and
-    save it as an image. In this test, the values to show have a different size
-    from the number of labels so an exception will be raised.
-    """
-    with pytest.raises(InvalidPiePlotData):
-        assert da.plot_pie_chart([120, 35, 107], ["Positive", "Negative"], None, None)
-        
-def test3_plot_pie_chart():
-    """
-    Test to check the method which draws a pie chart with the provided data and
-    save it as an image. In this test, the file name is not provided so an exception
-    will be raised.
-    """
-    with pytest.raises(InvalidPiePlotData):
-        assert da.plot_pie_chart([120, 35, 107], ['Positive', 'Neutral', 'Negative'], 
-                                 None, None)
-        
-def test4_plot_pie_chart():
-    """
-    Test to check the method which draws a pie chart with the provided data and
-    save it as an image. In this test, the colours are not provided so they will
-    be chosen randomly.
-    """
-    values = [120, 35, 107]
-    labels = ['Positive', 'Neutral', 'Negative']
-    file = da.plot_tests_path + "test_pie_plot"
-    result = da.plot_pie_chart(values, labels, file, None)
-    assert result[0] == True
-    
-def test5_plot_pie_chart():
-    """
-    Test to check the method which draws a pie chart with the provided data and
-    save it as an image. In this test, a list of colours are provided in order
-    to plot each piece of pie of its related colour.
-    """
-    time(5)
-    values = [140, 78, 92]
-    labels = ['Positive', 'Neutral', 'Negative']
-    file = da.plot_tests_path + "test_pie_plot"
-    result = da.plot_pie_chart(values, labels, file, ["green", "yellow", "red"])
-    assert result[0] == True
+    assert type(result) == list
     
 def test1_sentiment_analysis_text():
     """
     Test to check the method which performs a sentiment analysis based on a list
-    of texts. In this test, the username of the studied user is not provided so
+    of texts. In this test, the username of the account to study is not provided so
     an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
@@ -499,7 +347,7 @@ def test1_sentiment_analysis_text():
 def test2_sentiment_analysis_text():
     """
     Test to check the method which performs a sentiment analysis based on a list
-    of texts. In this test, the texts to analyse are not provided so
+    of texts. In this test, the texts to analyze are not provided so
     an exception will be raised.
     """
     with pytest.raises(TextDataNotFound):
@@ -508,7 +356,7 @@ def test2_sentiment_analysis_text():
 def test3_sentiment_analysis_text():
     """
     Test to check the method which performs a sentiment analysis based on a list
-    of texts. The provided texts to analyse are not valid so an exception will be
+    of texts. The provided texts to analyze are not valid so an exception will be
     raised.
     """
     with pytest.raises(TextNotFound):
@@ -517,24 +365,25 @@ def test3_sentiment_analysis_text():
 def test4_sentiment_analysis_text():
     """
     Test to check the method which performs a sentiment analysis based on a list
-    of texts. The results are plotted on a pie chart.
+    of texts. The method will return a list of tuples with the analyzed text without
+    preprocessing, the identified sentiment as well as its polarity degree.
     """
     text_list = [('1', '🔥','🔥'), ('2', '@audispain Azul eléctrico','@audispain Electric blue'), 
-                 ('3', '@audispain verdad que blanco AUDI SIEMPREE !!!! 😎', '@audispain true to the white AUDI ALWAYSEE !!!! 😎'), 
-                 ('4', '@audispain Me encanta en blanco y gris oscuro. Gracias por llenar Instagram con la perfección. ❤️','@audispain I love it in white and dark gray. Thanks for filling Instagram with perfection. ❤️'), 
-                 ('5', '@audispain podríais donarme uno 🙌, aunque sea un modelo viejo, me encantaría poder pasear a mi hija', '@audispain could donate me one 🙌, even if it is an old model, I would be happy to be able to walk my daughter'), 
-                 ('5', 'Yo negro ..... uauuuuu precio negro👏👏👏🏼👏🏻👏👏👏', 'I black ..... uauuuuu awesome black👏👏👏🏼👏🏻👏👏👏'), 
-                 ('6', 'Personamelmente el típico color azul metálico del rs 😍', 'Personally the typical metallic blue color of the rs 😍'), 
-                 ('7', '@audispain si mi Q2 es negro y me encanta ..... 💋💋', '@audispain if my Q2 is black and I love it ..... 💋💋'), 
-                 ('8', '😍', '😍'), ('9', 'Una pura máquina de carretera 👏👏❤️', 'A pure road machine 👏👏❤️')]
+                  ('3', '@audispain verdad que blanco AUDI SIEMPREE !!!! 😎', '@audispain true to the white AUDI ALWAYSEE !!!! 😎'), 
+                  ('4', '@audispain Me encanta en blanco y gris oscuro. Gracias por llenar Instagram con la perfección. ❤️','@audispain I love it in white and dark gray. Thanks for filling Instagram with perfection. ❤️'), 
+                  ('5', '@audispain podríais donarme uno 🙌, aunque sea un modelo viejo, me encantaría poder pasear a mi hija', '@audispain could donate me one 🙌, even if it is an old model, I would be happy to be able to walk my daughter'), 
+                  ('5', 'Yo negro ..... uauuuuu precio negro👏👏👏🏼👏🏻👏👏👏', 'I black ..... uauuuuu awesome black👏👏👏🏼👏🏻👏👏👏'), 
+                  ('6', 'Personamelmente el típico color azul metálico del rs 😍', 'Personally the typical metallic blue color of the rs 😍'), 
+                  ('7', '@audispain si mi Q2 es negro y me encanta ..... 💋💋', '@audispain if my Q2 is black and I love it ..... 💋💋'), 
+                  ('8', '😍', '😍'), ('9', 'Una pura máquina de carretera 👏👏❤️', 'A pure road machine 👏👏❤️')]
     result = da.sentiment_analysis_text("lidia.96.sm", text_list)
-    assert result['state'] == True and type(result['file']) == str and type(result["data"]) == dict and type(result["analysis_results"]) == list
+    assert type(result) == list and len(result) == len(text_list)
 
 def test1_user_behaviours():
     """
     Test to check the method which gets the evolution of the number of haters
     and friends based on a performed sentiment analysis during a specific period 
-    of time. In this test, the username of the studied user is not provided so 
+    of time. In this test, the username of the account to study is not provided so 
     an exception will be raised.
     """
     with pytest.raises(UsernameNotFound):
@@ -557,58 +406,48 @@ def test3_user_behaviours():
     of time. In this test, the provided list of sentiments is not valid so an
     exception will be raised.
     """
+    user_list = [{"author":"user1", "sentiment":"pos"},
+                  {"date":"24/10/2020", "author":"user2", "sentiment":"neg"}]
     with pytest.raises(SentimentNotFound):
-        da.user_behaviours("lidia.96.sm", [1,2,3,4,5])
+        da.user_behaviours("lidia.96.sm", user_list)
         
 def test4_user_behaviours():
     """
     Test to check the method which gets the evolution of the number of haters
     and friends based on a performed sentiment analysis during a specific period 
-    of time. In this test, the provided list of sentiments is not valid so an
-    exception will be raised.
-    """
-    user_list = [{"author":"user1", "sentiment":"pos"},
-                 {"date":"24/10/2020", "author":"user2", "sentiment":"neg"}]
-    with pytest.raises(SentimentNotFound):
-        da.user_behaviours("lidia.96.sm", user_list)
-        
-def test5_user_behaviours():
-    """
-    Test to check the method which gets the evolution of the number of haters
-    and friends based on a performed sentiment analysis during a specific period 
-    of time. In this test, the provided data is for seven days so the plot will
-    draw the number of haters and friends per day.
+    of time. In this test, the list of posts is less than seven days so the analysis
+    results will be per day.
     """
     user_list = [{"date":"24/10/2020", "author":"user1", "sentiment":"pos"},
-                 {"date":"24/10/2020", "author":"user2", "sentiment":"neg"},
-                 {"date":"24/10/2020", "author":"user1", "sentiment":"neu"},
-                 {"date":"24/10/2020", "author":"user1", "sentiment":"pos"},
-                 {"date":"25/10/2020", "author":"user3", "sentiment":"none"},
-                 {"date":"25/10/2020", "author":"user3", "sentiment":"pos"},
-                 {"date":"26/10/2020", "author":"user1", "sentiment":"neg"},
-                 {"date":"26/10/2020", "author":"user2", "sentiment":"none"},
-                 {"date":"26/10/2020", "author":"user4", "sentiment":"pos"},
-                 {"date":"27/10/2020", "author":"user1", "sentiment":"neu"},
-                 {"date":"28/10/2020", "author":"user1", "sentiment":"pos"}]
+                  {"date":"24/10/2020", "author":"user2", "sentiment":"neg"},
+                  {"date":"24/10/2020", "author":"user1", "sentiment":"neu"},
+                  {"date":"24/10/2020", "author":"user1", "sentiment":"pos"},
+                  {"date":"25/10/2020", "author":"user3", "sentiment":"none"},
+                  {"date":"25/10/2020", "author":"user3", "sentiment":"pos"},
+                  {"date":"26/10/2020", "author":"user1", "sentiment":"neg"},
+                  {"date":"26/10/2020", "author":"user2", "sentiment":"none"},
+                  {"date":"26/10/2020", "author":"user4", "sentiment":"pos"},
+                  {"date":"27/10/2020", "author":"user1", "sentiment":"neu"},
+                  {"date":"28/10/2020", "author":"user1", "sentiment":"pos"}]
     result = da.user_behaviours("lidia.96.sm", user_list)
-    assert result["state"] == True
+    assert type(result) == dict
     
 def test6_user_behaviours():
     """
     Test to check the method which gets the evolution of the number of haters
     and friends based on a performed sentiment analysis during a specific period 
-    of time. In this test, the provided data is for more than seven days so the
-    plot will show the average of haters and friends per week.
+    of time. In this test, the list of posts is more than seven days so the analysis
+    results will be per week.
     """
     user_list = [{"date":"24/10/2020", "author":"user1", "sentiment":"pos"}, 
-                 {"date":"24/10/2020", "author":"user2", "sentiment":"neg"},
-                 {"date":"25/10/2020", "author":"user1", "sentiment":"neu"}, {"date":"25/10/2020", "author":"user1", "sentiment":"pos"},
-                 {"date":"26/10/2020", "author":"user3", "sentiment":"none"}, {"date":"26/10/2020", "author":"user3", "sentiment":"pos"},
-                 {"date":"27/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"27/10/2020", "author":"user2", "sentiment":"none"},
-                 {"date":"28/10/2020", "author":"user4", "sentiment":"pos"}, {"date":"28/10/2020", "author":"user1", "sentiment":"neg"},
-                 {"date":"29/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"29/10/2020", "author":"user1", "sentiment":"neg"},
-                 {"date":"30/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"30/10/2020", "author":"user1", "sentiment":"neg"},
-                 {"date":"31/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"31/10/2020", "author":"user1", "sentiment":"neg"},
-                 {"date":"32/10/2020", "author":"user1", "sentiment":"pos"}, {"date":"32/10/2020", "author":"user1", "sentiment":"neg"}]
+                  {"date":"24/10/2020", "author":"user2", "sentiment":"neg"},
+                  {"date":"25/10/2020", "author":"user1", "sentiment":"neu"}, {"date":"25/10/2020", "author":"user1", "sentiment":"pos"},
+                  {"date":"26/10/2020", "author":"user3", "sentiment":"none"}, {"date":"26/10/2020", "author":"user3", "sentiment":"pos"},
+                  {"date":"27/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"27/10/2020", "author":"user2", "sentiment":"none"},
+                  {"date":"28/10/2020", "author":"user4", "sentiment":"pos"}, {"date":"28/10/2020", "author":"user1", "sentiment":"neg"},
+                  {"date":"29/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"29/10/2020", "author":"user1", "sentiment":"neg"},
+                  {"date":"30/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"30/10/2020", "author":"user1", "sentiment":"neg"},
+                  {"date":"31/10/2020", "author":"user1", "sentiment":"neg"}, {"date":"31/10/2020", "author":"user1", "sentiment":"neg"},
+                  {"date":"32/10/2020", "author":"user1", "sentiment":"pos"}, {"date":"32/10/2020", "author":"user1", "sentiment":"neg"}]
     result = da.user_behaviours("lidia.96.sm", user_list)
-    assert result["state"] == True
+    assert type(result) == dict
