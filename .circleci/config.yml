@@ -28,6 +28,7 @@ jobs:
           command: psql -h 127.0.0.1 -U ${POSTGRES_USER} --dbname=socialnetworksdb --file=test_schema.sql
       - run:
           name: Run tests.
+          no_output_timeout: 90m
           command: make test
 machine:
   services:
