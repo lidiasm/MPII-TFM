@@ -160,24 +160,6 @@ class TextNotFound(Exception):
     def __init__(self, mensaje):
         self.mensaje = mensaje
         
-class InvalidLinePlotData(Exception):
-    """Class exception to point out that the data provided to draw a line plot
-    is wrong."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidBarPlotData(Exception):
-    """Class exception to point out that the data provided to draw a bar plot
-    is wrong."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
-class InvalidPiePlotData(Exception):
-    """Class exception to point out that the data provided to draw a pie chart
-    is wrong."""
-    def __init__(self, mensaje):
-        self.mensaje = mensaje
-        
 class ProfilesNotFound(Exception):
     """Class exception to point out that the list of profiles to analyze is not found"""
     def __init__(self, mensaje):
