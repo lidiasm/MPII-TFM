@@ -426,23 +426,23 @@ class MainOperations:
         
         # 4. Perform the analysis
         analysis_results = self.data_analyzer_object.profile_evolution(username, required_data)
-        # Store the analysis result if there are more than 7 profiles
-        if ("weeks" in analysis_results["file"]):
-            insert_query = self.analysis_results_insert_queries[analysis]
-            analysis_ids = []
-            for i in range(0, len(analysis_results["data"]["date"])):
-                analysis_dict = {"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
-                                 "mean_followers":analysis_results["data"]["n_followers"][i],
-                                 "mean_followings":analysis_results["data"]["n_followings"][i],
-                                 "mean_medias":analysis_results["data"]["n_posts"][i], 
-                                 "n_week":analysis_results["data"]["date"][i]}
-                check_values = {"date_ini":date_ini, "date_fin":date_fin, 
-                                "id_user":username+"_"+social_media, "n_week":analysis_results["data"]["date"][i]}
-                analysis_ids.extend(self.postgresdb_object.insert_data(insert_query, [analysis_dict], [check_values]))
-            
-            return {"state":analysis_results["state"], "file":analysis_results["file"], "analysis_id":analysis_ids}
-        
-        return {"state":analysis_results["state"], "file":analysis_results["file"]}
+        # Store the analysis results
+        insert_query = self.analysis_results_insert_queries[analysis]
+        analysis_ids = []
+        for i in range(0, len(analysis_results["date"])):
+            if("date" in str(type(analysis_results["date"][i]))):
+                analysis_results["date"][i] = datetime.strftime(analysis_results["date"][i], "%d-%m-%Y")
+                
+            analysis_dict = {"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
+                             "mean_followers":analysis_results["n_followers"][i],
+                             "mean_followings":analysis_results["n_followings"][i],
+                             "mean_medias":analysis_results["n_posts"][i], 
+                             "time":analysis_results["date"][i]}
+            check_values = {"date_ini":date_ini, "date_fin":date_fin, 
+                            "id_user":username+"_"+social_media, "time":analysis_results["date"][i]}
+            analysis_ids.extend(self.postgresdb_object.insert_data(insert_query, [analysis_dict], [check_values]))
+                    
+        return analysis_ids
     
     def perform_profile_activity(self, username, analysis, social_media, 
                                  date_ini, date_fin):
@@ -496,21 +496,21 @@ class MainOperations:
         
         # 4. Perform the analysis
         analysis_results = self.data_analyzer_object.user_activity(username, required_data)
-        # Store the analysis result if there are more than 7 profiles
-        if ("weeks" in analysis_results["file"]):
-            insert_query = self.analysis_results_insert_queries[analysis]
-            analysis_ids = []
-            for i in range(0, len(analysis_results["data"]["date"])):
-                analysis_dict = {"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
-                                 "mean_medias":analysis_results["data"]["n_posts"][i], 
-                                 "n_week":analysis_results["data"]["date"][i]}
-                check_values = {"date_ini":date_ini, "date_fin":date_fin, 
-                                "id_user":username+"_"+social_media, "n_week":analysis_results["data"]["date"][i]}
-                analysis_ids.extend(self.postgresdb_object.insert_data(insert_query, [analysis_dict], [check_values]))
-            
-            return {"state":analysis_results["state"], "file":analysis_results["file"], "analysis_id":analysis_ids}
-        
-        return {"state":analysis_results["state"], "file":analysis_results["file"]}
+        # Store the analysis results
+        insert_query = self.analysis_results_insert_queries[analysis]
+        analysis_ids = []
+        for i in range(0, len(analysis_results["date"])):
+            if("date" in str(type(analysis_results["date"][i]))):
+                analysis_results["date"][i] = datetime.strftime(analysis_results["date"][i], "%d-%m-%Y")
+                
+            analysis_dict = {"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
+                             "mean_medias":analysis_results["n_posts"][i], 
+                             "time":analysis_results["date"][i]}
+            check_values = {"date_ini":date_ini, "date_fin":date_fin, 
+                            "id_user":username+"_"+social_media, "time":analysis_results["date"][i]}
+            analysis_ids.extend(self.postgresdb_object.insert_data(insert_query, [analysis_dict], [check_values]))
+                
+        return analysis_ids
     
     def insert_media_data(self, username, analysis, social_media, 
                                  date_ini, date_fin):
@@ -575,7 +575,7 @@ class MainOperations:
                           [dict(sorted(title_to_insert.items()))], [title_check])
                 
                 # 3. Insert the comments of the media if it's a comment analysis
-                if ("comment" in analysis): # if ("comments" in analysis):
+                if ("comment" in analysis):
                     # Get the media id if it's not been got
                     if (len(media_id) == 0):
                         get_media_id_query = "check_test_media" if "test" in analysis else "check_media"
@@ -641,18 +641,18 @@ class MainOperations:
         insert_analysis_query = "insert_test_medias_evolution" if "test" in analysis else "insert_medias_evolution"
         inserted_analysis_ids = []
         # 4. Store the analysis results for each day or week
-        for index in range(0, len(analysis_results["data"]["date"])):
-            media_time = analysis_results["data"]["date"][index] if "weeks" in analysis_results["file"] \
-                else datetime.strftime(analysis_results["data"]["date"][index], "%d-%m-%Y")
+        for index in range(0, len(analysis_results["date"])):
+            if("date" in str(type(analysis_results["date"][index]))):
+                analysis_results["date"][index] = datetime.strftime(analysis_results["date"][index], "%d-%m-%Y")
+    
             new_analysis_result = {"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
-                                   "mean_comments":analysis_results["data"]["comment_count"][index],
-                                   "mean_likes":analysis_results["data"]["like_count"][index], "time":media_time}
+                                   "mean_comments":analysis_results["comment_count"][index],
+                                   "mean_likes":analysis_results["like_count"][index], "time":analysis_results["date"][index]}
             check_analysis_result = {"date_ini":date_ini, "date_fin":date_fin, 
-                                     "id_user":username+"_"+social_media, "time":media_time}
+                                     "id_user":username+"_"+social_media, "time":analysis_results["date"][index]}
             inserted_analysis_ids.append(self.postgresdb_object.insert_data(insert_analysis_query, [new_analysis_result], [check_analysis_result]))
         
-        return {"state":analysis_results["state"], "file":analysis_results["file"], 
-                "inserted_analysis":inserted_analysis_ids}
+        return inserted_analysis_ids
     
     def perform_medias_popularity(self, username, analysis, social_media, 
                                   date_ini, date_fin, population_mode="best"):
@@ -697,7 +697,7 @@ class MainOperations:
         insert_analysis_query = "insert_test_medias_popularity" if "test" in analysis else "insert_medias_popularity"
         inserted_analysis_ids = []
         # 4. Store the analysis results for each media
-        for media in analysis_results["data"]:
+        for media in analysis_results:
             new_analysis_result = {"date_fin":date_fin, "date_ini":date_ini, "id_media":media[0],
                                    "id_user":username+"_"+social_media,
                                     "mean_comments":media[2], "mean_likes":media[1]}
@@ -705,9 +705,7 @@ class MainOperations:
                                       "id_user":username+"_"+social_media, "id_media":media[0]}
             inserted_analysis_ids.append(self.postgresdb_object.insert_data(insert_analysis_query, 
                                         [new_analysis_result], [check_analysis_result]))
-        
-        return {"state":analysis_results["state"], "file":analysis_results["file"], 
-                "inserted_analysis":inserted_analysis_ids}
+        return inserted_analysis_ids
     
     def perform_sentiment_analysis(self, username, analysis, social_media, 
                                     date_ini, date_fin):
@@ -749,30 +747,33 @@ class MainOperations:
         required_data = self.postgresdb_object.get_data(select_query, select_values)
         # 3. Perform the analysis
         analysis_results = self.data_analyzer_object.sentiment_analysis_text(username, required_data)   
-        # 4. Store the sentiment analysis results for the analyzed texts
-        if ("comments" in analysis):
+        # 4. Store the sentiment analysis results for the analyzed texts and count
+        # the number of each one as well as the average polarity
+        total_sentiments = {'pos':0.0, 'neu':0.0, 'neg':0.0}
+        total_degree = {'pos':0.0, 'neu':0.0, 'neg':0.0}
+        if ("comment" in analysis):
             insert_analyzed_text_query = "insert_test_comment_sentiment_analysis" if "test" in analysis else "insert_comment_sentiment_analysis"
-            for i in range(0, len(required_data)):
-                check_analyzed_text = [{"original_text":required_data[i][2]}]
-                new_values = [{"original_text":required_data[i][2], 
-                               "sentiment":analysis_results["analysis_results"][i]["sentiment"],
-                               "degree":analysis_results["analysis_results"][i]["degree"],}]
-                self.postgresdb_object.insert_data(insert_analyzed_text_query, new_values, check_analyzed_text)
-            
+            for item in analysis_results:
+                check_analyzed_text = [{"original_text":item["original_text"]}]
+                self.postgresdb_object.insert_data(insert_analyzed_text_query, [item], check_analyzed_text)     
+                # Count the number of sentiments and compute the average degree
+                total_sentiments[item["sentiment"]] += 1
+                total_degree[item["sentiment"]] += item["degree"]
+        
+        # Average of the polarity for each sentiment
+        for key in total_degree: total_degree[key] = round(total_degree[key]/len(analysis_results), 2)
         # 5. Store the sentiment analysis results
         insert_analysis_query = "insert_test_sentiment_analysis" if "test" in analysis else "insert_sentiment_analysis"
         analysis_type = "titles" if "title" in analysis else "comments"
         new_analysis = [{"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
-                         "n_neg":analysis_results["data"]["n_neg"], "n_neu":analysis_results["data"]["n_neu"],
-                         "n_pos":analysis_results["data"]["n_pos"], "neg_degree":analysis_results["data"]["neg_degree"],
-                         "neu_degree":analysis_results["data"]["neu_degree"], "pos_degree":analysis_results["data"]["pos_degree"],
+                         "n_neg":total_sentiments["neg"], "n_neu":total_sentiments["neu"],
+                         "n_pos":total_sentiments["pos"], "neg_degree":total_degree["neg"],
+                         "neu_degree":total_degree["neu"], "pos_degree":total_degree["pos"],
                          "type":analysis_type}]
         check_values = [{"date_ini":date_ini, "date_fin":date_fin, 
                          "id_user":username+"_"+social_media, "type":analysis_type}]
         inserted_analysis = self.postgresdb_object.insert_data(insert_analysis_query, new_analysis, check_values)
-        
-        return {"state":analysis_results["state"], "file":analysis_results["file"], 
-                "inserted_analysis":inserted_analysis}
+        return inserted_analysis
     
     def perform_user_behaviours(self, username, analysis, social_media, 
                                     date_ini, date_fin):
@@ -808,7 +809,6 @@ class MainOperations:
                         "media_date_ini":date_ini, "media_date_fin":date_fin,
                         "username":username, "social_media":social_media}
         recovered_comments = self.postgresdb_object.get_data(get_comments_query, query_values)
-        
         # 2. Get the sentiments of the recovered comments
         get_sentiments_query = "test_get_comment_sentiment" if "test" in analysis else "get_comment_sentiment"
         data_to_analyze = []
@@ -825,17 +825,16 @@ class MainOperations:
         # 4. Insert the analysis results
         inserted_analysis = []
         insert_query = self.analysis_results_insert_queries[analysis]
-        for i in range(0, len(analysis_results["data"])):
+        for i in range(0, len(analysis_results["date"])):
             new_analysis_results = [{"date_fin":date_fin, "date_ini":date_ini, "id_user":username+"_"+social_media,
-                                     "n_haters":analysis_results["data"]["haters"][i],
-                                     "n_likers":analysis_results["data"]["likers"][i],
-                                     "time":analysis_results["data"]["date"][i]}]
+                                     "n_haters":analysis_results["haters"][i],
+                                     "n_likers":analysis_results["likers"][i],
+                                     "time":analysis_results["date"][i]}]
             check_analysis_results = [{"date_ini":date_ini, "date_fin":date_fin, 
-                                       "id_user":username+"_"+social_media, "time":analysis_results["data"]["date"][i]}]
+                                       "id_user":username+"_"+social_media, "time":analysis_results["date"][i]}]
             inserted_analysis.append(self.postgresdb_object.insert_data(insert_query, new_analysis_results, check_analysis_results))
         
-        return {"state":analysis_results["state"], "file":analysis_results["file"], 
-                "inserted_analysis":inserted_analysis}
+        return inserted_analysis
     
     def format_previous_analysis(self, analysis_results, required_keys):
         """
@@ -942,16 +941,8 @@ class MainOperations:
             previous_analysis = self.postgresdb_object.get_data(analysis, analysis_values)
             # 1. Check if the analysis have been performed before
             if (len(previous_analysis) > 0):
-                formated_analysis = self.format_previous_analysis(previous_analysis, 
+                return self.format_previous_analysis(previous_analysis, 
                               ["date", "n_followers", "n_followings", "n_medias"])
-                return formated_analysis
-                # Plot the analysis
-                file_name = self.data_analyzer_object.profile_evolution_path + username + "_"+str(len(formated_analysis['date']))+"weeks"
-                plot_result = self.data_analyzer_object.plot_lines_chart(
-                    [formated_analysis['n_followers'], formated_analysis['n_followings'], formated_analysis['n_medias']],
-                    ['Followers', 'Followings', 'Posts'], formated_analysis['date'], file_name)
-                return {'state':plot_result[0], 'file':plot_result[1]}
-                        
             # 2. Perform the analysis since the beginning
             return self.perform_profile_evolution(username, analysis, social_media, date_ini, date_fin)
         
@@ -960,17 +951,7 @@ class MainOperations:
             previous_analysis = self.postgresdb_object.get_data(analysis, analysis_values)
             # 1. Check if the analysis have been performed before
             if (len(previous_analysis) > 0):
-                formated_analysis = self.format_previous_analysis(previous_analysis, 
-                              ["date", "n_medias"])
-                # Get the differences between each media average
-                differences, post_list = self.data_analyzer_object.get_differences(formated_analysis["n_medias"])
-                # Plot the analysis
-                file_name = self.data_analyzer_object.user_activity_path + username + "_"+str(len(formated_analysis['date']))+"weeks"
-                plot_result = self.data_analyzer_object.plot_bars_chart(
-                    post_list, formated_analysis['date'], file_name, differences)
-                
-                return {'state':plot_result[0], 'file':plot_result[1]}
-                        
+                return self.format_previous_analysis(previous_analysis, ["date", "n_medias"])
             # 2. Perform the analysis since the beginning
             return self.perform_profile_activity(username, analysis, social_media, date_ini, date_fin)
         
@@ -979,15 +960,8 @@ class MainOperations:
             previous_analysis = self.postgresdb_object.get_data(analysis, analysis_values)
             # 1. Check if the analysis have been performed before
             if (len(previous_analysis) > 0):
-                formated_analysis = self.format_previous_analysis(previous_analysis, 
+                return self.format_previous_analysis(previous_analysis, 
                               ['date', 'like_count', 'comment_count'])
-                # Plot the analysis
-                file_name = self.data_analyzer_object.post_evolution_path + username + "_"+str(len(formated_analysis['date']))+"weeks"
-                plot_result = self.data_analyzer_object.plot_lines_chart(
-                    [formated_analysis['like_count'], formated_analysis['comment_count']],
-                    ['Like count', 'Comment count'], formated_analysis['date'], file_name)
-                return {'state':plot_result[0], 'file':plot_result[1]}
-            
             # 2. Perform the analysis since the beginning
             return self.perform_medias_evolution(username, analysis, social_media, date_ini, date_fin)
         
@@ -1000,12 +974,7 @@ class MainOperations:
                 formated_analysis = [round((int(item[0])+int(item[1]))/2) for item in previous_analysis]
                 # Sort the medias according to the provided type of analysis
                 formated_analysis.sort(reverse=True if population_mode == "best" else False)
-                formated_analysis = formated_analysis[:10]
-                # Plot the analysis
-                file_name = self.data_analyzer_object.post_popularity_path + username
-                plot_result = self.data_analyzer_object.plot_bars_chart(formated_analysis, 
-                                           list(range(1, len(formated_analysis)+1)), file_name)
-                return {'state':plot_result[0], 'file':plot_result[1]}
+                return formated_analysis[:10]
             
             # 2. Perform the analysis since the beginning
             return self.perform_medias_popularity(username, analysis, social_media, date_ini, date_fin)
@@ -1015,19 +984,8 @@ class MainOperations:
             previous_analysis = self.postgresdb_object.get_data(analysis, analysis_values)
             # 1. Check if the analysis have been performed before
             if (len(previous_analysis) > 0):
-                # Get the number of comment for each sentiment
-                sentiment_values = list(previous_analysis[0][0:3])
-                # Get the confidence degree for each sentiment
-                sentiment_degrees = list(previous_analysis[0][3:])
-                # Plot the pie chart
-                labels = ["Positives: "+str(sentiment_degrees[0])+" %",
-                          "Neutrals: "+str(sentiment_degrees[1])+" %",
-                          "Negatives: "+str(sentiment_degrees[2])+" %"]
-                file_name = self.data_analyzer_object.text_sentiments_path + username
-                colours = ['lightgreen', 'gold', 'lightcoral']
-                plot_result = self.data_analyzer_object.plot_pie_chart(sentiment_values, labels, file_name, colours)
-                return {'state':plot_result[0], 'file':plot_result[1]}
-                
+                return {"sentiments":list(previous_analysis[0][0:3]), 
+                        "degrees":list(previous_analysis[0][3:])}
             # 2. Perform the analysis since the beginning
             return self.perform_sentiment_analysis(username, analysis, social_media, date_ini, date_fin)
         
@@ -1035,27 +993,20 @@ class MainOperations:
             analysis_values = {"date_ini":date_ini, "date_fin":date_fin, "id_user":username+"_"+social_media}
             previous_analysis = self.postgresdb_object.get_data(analysis, analysis_values)
             if (len(previous_analysis) > 0):
-                formatted_analysis = self.format_previous_analysis(previous_analysis, ["date", "likers", "haters"])
-                # Set the path and the title of the file
-                file_name = self.data_analyzer_object.user_behaviours_path + username
-                # Draw the line plot
-                plot_result = self.data_analyzer_object.plot_lines_chart([formatted_analysis['likers'], formatted_analysis['haters']],
-                          ['Likers', 'Haters'], formatted_analysis['date'], file_name)
-                return {'state':plot_result[0], 'file':plot_result[1]}
-            
+                return self.format_previous_analysis(previous_analysis, ["date", "likers", "haters"])
             # 2. Perform the analysis since the beginning
             return self.perform_user_behaviours(username, analysis, social_media, date_ini, date_fin)
             
-if __name__ == "__main__":
-    obj = MainOperations()
+# if __name__ == "__main__":
+#     obj = MainOperations()
 #     import time
 #     start = time.time()
-#     result = obj.perform_analysis("audispain", "user_behaviours", "Instagram", "27-10-2020", "28-10-2020")
+#     result = obj.perform_analysis("audispain", "profile_evolution", "Instagram", "27-10-2020", "14-12-2020")
 #     end = time.time()
     # print("TIME : ",end - start)
-    import time
-    start = time.time()
-    obj = MainOperations()
-    user_data = obj.get_user_instagram_common_data("carlosriosq", 'real')
-    end = time.time()
-    print("\nTIME: ", end - start)
+    # import time
+    # start = time.time()
+    # obj = MainOperations()
+    # user_data = obj.get_user_instagram_common_data("carlosriosq", 'real')
+    # end = time.time()
+    # print("\nTIME: ", end - start)
