@@ -84,10 +84,10 @@ CREATE TABLE public.testprofilesevolution(
     id_user VARCHAR(50) NOT NULL,
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
-    n_week VARCHAR(10) NOT NULL,
-    mean_followers VARCHAR(20) NOT NULL,
-    mean_followings VARCHAR(20) NOT NULL,
-    mean_medias VARCHAR(20) NOT NULL
+    time VARCHAR(10) NOT NULL,
+    mean_followers INTEGER NOT NULL,
+    mean_followings INTEGER NOT NULL,
+    mean_medias INTEGER NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
@@ -105,8 +105,8 @@ CREATE TABLE public.testprofilesactivity(
     id_user VARCHAR(50) NOT NULL,
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
-    n_week VARCHAR(10) NOT NULL,
-    mean_medias VARCHAR(20) NOT NULL
+    time VARCHAR(10) NOT NULL,
+    mean_medias INTEGER NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
@@ -143,8 +143,8 @@ CREATE TABLE public.testmediasevolution(
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
     time VARCHAR(10) NOT NULL,
-    mean_likes VARCHAR(20) NOT NULL,
-    mean_comments VARCHAR(20) NOT NULL
+    mean_likes INTEGER NOT NULL,
+    mean_comments INTEGER NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
@@ -194,8 +194,8 @@ CREATE TABLE public.testmediaspopularity(
     id_user VARCHAR(50) NOT NULL,
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
-    mean_likes VARCHAR(20) NOT NULL,
-    mean_comments VARCHAR(20) NOT NULL
+    mean_likes INTEGER NOT NULL,
+    mean_comments INTEGER NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
@@ -213,12 +213,12 @@ CREATE TABLE public.testtextsentiments(
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
     type VARCHAR(10) NOT NULL,
-    n_pos VARCHAR(20) NOT NULL,
-    n_neu VARCHAR(20) NOT NULL,
-    n_neg VARCHAR(20) NOT NULL,
-    pos_degree VARCHAR(20) NOT NULL,
-    neu_degree VARCHAR(20) NOT NULL,
-    neg_degree VARCHAR(20) NOT NULL
+    n_pos INTEGER NOT NULL,
+    n_neu INTEGER NOT NULL,
+    n_neg INTEGER NOT NULL,
+    pos_degree REAL NOT NULL,
+    neu_degree REAL NOT NULL,
+    neg_degree REAL NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.
@@ -251,8 +251,8 @@ CREATE TABLE public.testuserbehaviours(
     date_ini DATE NOT NULL,
     date_fin DATE NOT NULL,
     time VARCHAR(10) NOT NULL,
-    n_likers VARCHAR(20) NOT NULL,
-    n_haters VARCHAR(20) NOT NULL
+    n_likers INTEGER NOT NULL,
+    n_haters INTEGER NOT NULL
 );
 -- 
 -- Assign an owner to the table in order to operate with it.

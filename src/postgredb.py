@@ -38,11 +38,11 @@ class PostgreDB:
                        'testprofiles', 'testprofilesevolution','testprofilesactivity',
                        'testmedias', 'testmediasevolution', 'testmediaspopularity',
                        'testmediatitles', 'testmediacomments',
-                       'testtextsentiments', 'testcommentsentiments',
+                       'testtextsentiments', 'testcommentsentiments', 'testuserbehaviours',
                        
                        'profiles', 'profilesevolution', 'profilesactivity',
                        'medias', 'mediasevolution', 'mediaspopularity',
-                       'textsentiments'
+                       'textsentiments', 'userbehaviours'
                        ]
         # Connect to the database
         self.connect_to_database()
@@ -79,22 +79,22 @@ class PostgreDB:
             ## Check if the ProfilesEvolution analysis results are already in the database
             'check_test_profile_evolution':{
                 'query':'SELECT id_profile_evolution FROM testprofilesevolution WHERE '+
-                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
-                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s',
+                'fields':["date_ini", "date_fin", "id_user", "time"]},
             ## Get the ProfilesEvolution analysis results of a specific range of dates and username
             'test_profile_evolution':{
-                'query':'SELECT n_week, mean_followers, mean_followings, mean_medias FROM '+
+                'query':'SELECT time, mean_followers, mean_followings, mean_medias FROM '+
                     'testprofilesevolution WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
                 'fields':["date_ini", "date_fin", "id_user"]
             },
             ## Check if the ProfilesActivity analysis results are already in the database
             'check_test_profile_activity':{
                 'query':'SELECT id_profile_activity FROM testprofilesactivity WHERE '+
-                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
-                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s',
+                'fields':["date_ini", "date_fin", "id_user", "time"]},
             ## Get the ProfilesActivity analysis results of a specific range of dates and username
             'test_profile_activity':{
-                'query':'SELECT n_week, mean_medias FROM testprofilesactivity WHERE '+
+                'query':'SELECT time, mean_medias FROM testprofilesactivity WHERE '+
                     'date_ini=%s AND date_fin=%s AND id_user=%s',
                 'fields':["date_ini", "date_fin", "id_user"]
             },
@@ -238,22 +238,22 @@ class PostgreDB:
             ## Check if the ProfilesEvolution analysis results are already in the database
             'check_profile_evolution':{
                 'query':'SELECT id_profile_evolution FROM profilesevolution WHERE '+
-                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
-                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s',
+                'fields':["date_ini", "date_fin", "id_user", "time"]},
             ## Get the ProfilesEvolution analysis results of a specific range of dates and username
             'profile_evolution':{
-                'query':'SELECT n_week, mean_followers, mean_followings, mean_medias FROM '+
+                'query':'SELECT time, mean_followers, mean_followings, mean_medias FROM '+
                     'profilesevolution WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
                 'fields':["date_ini", "date_fin", "id_user"]
             },
             ## Check if the ProfilesActivity analysis results are already in the database
             'check_profile_activity':{
                 'query':'SELECT id_profile_activity FROM profilesactivity WHERE '+
-                    'date_ini=%s AND date_fin=%s AND id_user=%s AND n_week=%s',
-                'fields':["date_ini", "date_fin", "id_user", "n_week"]},
+                    'date_ini=%s AND date_fin=%s AND id_user=%s AND time=%s',
+                'fields':["date_ini", "date_fin", "id_user", "time"]},
             ## Get the ProfilesActivity analysis results of a specific range of dates and username
             'profile_activity':{
-                'query':'SELECT n_week, mean_medias FROM profilesactivity WHERE '+
+                'query':'SELECT time, mean_medias FROM profilesactivity WHERE '+
                     'date_ini=%s AND date_fin=%s AND id_user=%s',
                 'fields':["date_ini", "date_fin", "id_user"]
             },
@@ -410,16 +410,16 @@ class PostgreDB:
             # Insert the results of a specific ProfilesEvolution analysis
             'insert_test_profile_evolution':{
                 'query':"INSERT INTO testprofilesevolution (date_fin, date_ini, id_user, mean_followers, "+
-                         " mean_followings, mean_medias, n_week) VALUES (TO_DATE(%s,'DD-MM-YYYY'), "+
+                         " mean_followings, mean_medias, time) VALUES (TO_DATE(%s,'DD-MM-YYYY'), "+
                          "TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s, %s, %s) RETURNING id_profile_evolution",
-                'fields':['date_fin', 'date_ini', 'id_user', 'mean_followers', 'mean_followings', 'mean_medias', 'n_week'],
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_followers', 'mean_followings', 'mean_medias', 'time'],
                 'table':'testprofilesevolution'
             },
             # Insert the results of a specific ProfilesActivity analysis
             'insert_test_profile_activity':{
-                'query':"INSERT INTO testprofilesactivity (date_fin, date_ini, id_user, mean_medias, n_week) "+
+                'query':"INSERT INTO testprofilesactivity (date_fin, date_ini, id_user, mean_medias, time) "+
                          "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s) RETURNING id_profile_activity",
-                'fields':['date_fin', 'date_ini', 'id_user', 'mean_medias', 'n_week'],
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_medias', 'time'],
                 'table':'testprofilesactivity'
             },
             # Insert the data of the specific medias
@@ -495,16 +495,16 @@ class PostgreDB:
             # Insert the results of a specific ProfilesEvolution analysis
             'insert_profile_evolution':{
                 'query':"INSERT INTO profilesevolution (date_fin, date_ini, id_user, mean_followers, "+
-                         " mean_followings, mean_medias, n_week) VALUES (TO_DATE(%s,'DD-MM-YYYY'), "+
+                         " mean_followings, mean_medias, time) VALUES (TO_DATE(%s,'DD-MM-YYYY'), "+
                          "TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s, %s, %s) RETURNING id_profile_evolution",
-                'fields':['date_fin', 'date_ini', 'id_user', 'mean_followers', 'mean_followings', 'mean_medias', 'n_week'],
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_followers', 'mean_followings', 'mean_medias', 'time'],
                 'table':'profilesevolution'
             },
             # Insert the results of a specific ProfilesActivity analysis
             'insert_profile_activity':{
-                'query':"INSERT INTO profilesactivity (date_fin, date_ini, id_user, mean_medias, n_week) "+
+                'query':"INSERT INTO profilesactivity (date_fin, date_ini, id_user, mean_medias, time) "+
                          "VALUES (TO_DATE(%s,'DD-MM-YYYY'), TO_DATE(%s,'DD-MM-YYYY'), %s, %s, %s) RETURNING id_profile_activity",
-                'fields':['date_fin', 'date_ini', 'id_user', 'mean_medias', 'n_week'],
+                'fields':['date_fin', 'date_ini', 'id_user', 'mean_medias', 'time'],
                 'table':'profilesactivity'
             },
             # Insert the data of the specific medias
