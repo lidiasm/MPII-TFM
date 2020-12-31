@@ -5,7 +5,6 @@ psycopg2-binary>=2.8.6
 translate-api>=4.7.6
 emoji>=0.5.4
 regex>=2020.6.8
-nltk>=3.5
 matplotlib>=3.2.2
 numpy>=1.19.0 
 google-trans-new>=1.1.4
