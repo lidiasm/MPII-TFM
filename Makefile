@@ -4,11 +4,9 @@ install:
 
 test:
 	# Execute the tests for the project classes.
-	python3 -B -m pytest --disable-warnings tests/test_api.py tests/test_commondata.py \
-	tests/test_data_analyzer.py tests/test_mongodb.py tests/test_postgredb.py 
-	
+	python3 -B -m pytest --disable-warnings tests/*
+
 	# Coverage tests
-	# --cov-report=html
+	# For storing the coverage reports in a HTML: --cov-report=html
 	python3 -B -m pytest --disable-warnings --cov=api --cov=commondata --cov=data_analyzer \
-	--cov=mongodb --cov=postgredb tests/test_api.py tests/test_commondata.py \
-	tests/test_data_analyzer.py tests/test_mongodb.py tests/test_postgredb.py 
+	--cov=mongodb --cov=postgredb --cov=main_ops tests/*
