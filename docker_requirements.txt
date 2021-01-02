@@ -10,6 +10,9 @@ numpy>=1.19.0
 google-trans-new>=1.1.4
 flair>=0.7
 nltk>=3.5 
+huey>=2.3.0
+redis>=3.5.3
+gevent>=20.12.1
 
 cufflinks>=0.17.3
 plotly>=4.14.1 
