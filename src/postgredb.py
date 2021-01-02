@@ -629,7 +629,7 @@ class PostgreDB:
         # Try to connect to the database        
         try:
             self.connection = psycopg2.connect(host="localhost", user=user, 
-                               password=pswd, database=self.database_name, port=5433)
+                               password=pswd, database=self.database_name)#, port=5433)
             self.cursor = self.connection.cursor()
             return self.cursor
         except Exception: # pragma no cover
