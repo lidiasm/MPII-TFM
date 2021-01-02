@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+  # Mongo container to save the social networks data
+  mongo:
+      image: mongo
+      container_name: mongodb_socialnetworks
+      restart: unless-stopped
+      ports:
+        - "27018:27018"
+      # File in which there are the environmental variables
+      env_file:
+        - .env
+      # Credentials to init the database
+      environment:
+        - MONGO_INITDB_DATABASE=${MONGO_DB}
+        - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+        - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PSWD}
+      volumes:
+        - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro # Creates the database and the user
+        - ./mongo-socialnetworks:/data/db # Persistent data to not lose them even if the container is deleted
+  # Postgres container to save the data which have been analyzed
+  postgres:
+    image: postgres:alpine
+    container_name: postgresdb_socialnetworks
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    # Credentials to init the database and create the SQL schema
+    environment:
+      - POSTGRES_USER=${DEFAULT_POSTGRE_USER}
+      - POSTGRES_PASSWORD=${DEFAULT_POSTGRE_PSWD}
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql     # SQL schema to create
+      - ./postgres-socialnetworks:/var/lib/postgresql/data  # Persistent data to not lose them even if the container is deleted
+  # Dash container to deploy the platform
+  platform:
+    build: .
+    container_name: platform
+    depends_on:
+      - mongo
+      - postgres
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    env_file:
+      - .env
+
+volumes:
+  postgres-socialnetwork:
+  mongo-socialnetworks:
