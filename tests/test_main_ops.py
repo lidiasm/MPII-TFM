@@ -12,225 +12,258 @@ sys.path.append('src')
 import main_ops 
 from exceptions import UsernameNotFound, MaxRequestsExceed, UserDataNotFound \
     , InvalidMongoDbObject, InvalidSocialMediaSource, InvalidMode, InvalidAnalysis \
-    , InvalidDates, CollectionNotFound
+    , InvalidDates, CollectionNotFound, InvalidQuery
     
 # MainOperations object to perform the tests
 main_ops_object = main_ops.MainOperations()
 # Username to get his user data from Instagram
 username = "pablo_cuevas15"
-        
-# def test1_get_user_instagram_common_data():
-#     """
-#     Test to check the method which gets, preprocesses and stores user data using the
-#     LevPasha Instagram API without providing the username. It will raise an exception.
-#     """
-#     with pytest.raises(UsernameNotFound):
-#         assert main_ops_object.get_user_instagram_common_data('', None)
-        
-# def test2_get_user_instagram_common_data():
-#     """
-#     Test to check the method which gets, preprocesses and stores user data using the
-#     LevPasha Instagram API without providing a valid mode to insert the user data
-#     in the Mongo database. It will raise an exception.
-#     """
-#     with pytest.raises(InvalidMode):
-#         assert main_ops_object.get_user_instagram_common_data(username, "invalid_mode")
-        
-# def test3_get_user_instagram_common_data():
-#     """
-#     Test to check the method which gets, preprocesses and stores user data using the
-#     LevPasha Instagram API. In this test, the collection to insert the user data
-#     will be the 'test' collection.
-#     """
-#     try:
-#         user_data = main_ops_object.get_user_instagram_common_data(username, "test")
-#         assert type(user_data) == dict
-#     except MaxRequestsExceed:
-#         print("Max requests exceed. Wait to send more.")
-        
-# def test1_preprocess_and_store_common_data():
-#     """
-#     Test to check the method which preprocesses and stores user data from any
-#     social media source without providing the user data. An exception will be raised.
-#     """
-#     with pytest.raises(UserDataNotFound):
-#         assert main_ops_object.preprocess_and_store_common_data(None, None, None)
-        
-# def test2_preprocess_and_store_common_data():
-#     """
-#     Test to check the method which preprocesses and stores user data from any
-#     social media source without providing the social media source. An exception will be raised.
-#     """
-#     with pytest.raises(InvalidSocialMediaSource):
-#         assert main_ops_object.preprocess_and_store_common_data({'id':'first id'}, None, None)
-        
-# def test3_preprocess_and_store_common_data():
-#     """
-#     Test to check the method which preprocesses and stores user data from any
-#     social media source without providing a valid social media source. An exception will be raised.
-#     """
-#     with pytest.raises(InvalidSocialMediaSource):
-#         assert main_ops_object.preprocess_and_store_common_data({'id':'first id'}, 'Random', None)
-        
-# def test4_preprocess_and_store_common_data():
-#     """
-#     Test to check the method which preprocesses and stores user data from any
-#     social media source without providing a valid mode to insert the user data
-#     in the Mongo database. An exception will be raised.
-#     """
-#     with pytest.raises(InvalidMode):
-#         assert main_ops_object.preprocess_and_store_common_data({'id':'first id'}, 'Instagram', 'invalid_mode')
-        
-# def test5_preprocess_and_store_common_data():
-#     """
-#     Test to check the method which preprocesses and stores user data from any social
-#     media source without providing a valid MongoDB. In order to do that, the 
-#     MongoDB object is set to a invalid value, so an exception will be raised.
-#     """
-#     mo = main_ops.MainOperations()
-#     mo.mongodb_object = ""
-#     with pytest.raises(InvalidMongoDbObject):
-#         assert mo.preprocess_and_store_common_data({'id':'first id'}, 'Instagram', 'test')
 
-# def test6_preprocess_and_store_common_data():
-#     """
-#     Test to preprocess and store user data in the Mongo database from any 
-#     social media source.
-#     """
-#     profile = {"userid" : 123456789, "username" : "lidia.96.sm", "name" : "Lidia Sánchez",
-#                 "biography" : "\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
-#                 "gender" : "None", "profile_pic" : "https://instagram_example", 
-#                 "location" : "None", "birthday" : "None", "date_joined" : "None", 
-#                 "n_followers" : 61, "n_followings":45, "n_medias" : 6}
-#     medias = [{'id_media': '1', "taken_at":"24/10/2020", "title":None, 'url':None, 'like_count': 29, 'comment_count': 14}, 
-#               {'id_media': '2', "taken_at":"24/10/2020", "title":None, 'url':None,'like_count': 18, 'comment_count': 0}]
-#     texts = [{'id_media': '1', 
-#               'texts': [{'user': 'user1', 'text': 'aa'}, {'user': 'user2', 'text': 'ee'}]},
-#               {'id_media': '2', 
-#               'texts': [{'user': 'user3', 'text': 'ii'}, {'user': 'user2', 'text': 'oo'}]}]
-#     user_data = {'profile':profile, 'medias':medias, 'comments':texts}
-#     mo = main_ops.MainOperations()
-#     result = mo.preprocess_and_store_common_data(user_data, 'Instagram', 'test')
-#     assert type(result) == dict
-
-# def test1_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the username of the studied user is
-#     not provided so an exception will be raised.
-#     """
-#     with pytest.raises(UsernameNotFound):
-#         assert main_ops_object.get_data_from_mongodb(None, None, None, None)
+def test1_set_user_to_study():
+    """
+    Test to check the method which sets the username of the user to collect data
+    from the chosen social media sources. In this test, the username is not provided
+    so an exception will be raised.
+    """
+    with pytest.raises(UsernameNotFound):
+        assert main_ops_object.set_user_to_study(None)
         
-# def test2_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the social media source is
-#     not provided so an exception will be raised.
-#     """
-#     with pytest.raises(InvalidSocialMediaSource):
-#         assert main_ops_object.get_data_from_mongodb(username, None, None, None)
+def test2_set_user_to_study():
+    """
+    Test to check the method which sets the username of the user to collect data
+    from the chosen social media sources. 
+    """
+    set_user = main_ops_object.set_user_to_study(username)
+    assert set_user == username
         
-# def test3_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the provided social media source is
-#     not valid so an exception will be raised.
-#     """
-#     with pytest.raises(InvalidSocialMediaSource):
-#         assert main_ops_object.get_data_from_mongodb(username, "InvalidSocialMedia", None, None)
-
-# def test4_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the range of dates is
-#     not provided so an exception will be raised.
-#     """
-#     with pytest.raises(CollectionNotFound):
-#         assert main_ops_object.get_data_from_mongodb(username, "Instagram", None, None)
-
-# def test5_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the provided range of date is not valid
-#     so an exception will be raised.
-#     """
-#     with pytest.raises(InvalidDates):
-#         assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", None)
-
-# def test6_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the provided range of date is not valid
-#     so an exception will be raised.
-#     """
-#     with pytest.raises(InvalidDates):
-#         assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", [(1,2,3)])
-
-# def test7_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the provided range of date is not valid
-#     so an exception will be raised.
-#     """
-#     with pytest.raises(InvalidDates):
-#         assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", [(1,2)])
-
-# def test8_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the provided range of date is not valid
-#     so an exception will be raised.
-#     """
-#     date_list = [("24-10-2020", "28/10/2020")]
-#     with pytest.raises(InvalidDates):
-#         assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", date_list)
-
-# def test9_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, the provided range of date is not valid
-#     so an exception will be raised.
-#     """
-#     date_list = [("26-10-2020", "22-10-2020")]
-#     with pytest.raises(InvalidDates):
-#         assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", date_list)
+def test1_get_user_instagram_common_data():
+    """
+    Test to check the method which gets, preprocesses and stores user data using the
+    LevPasha Instagram API without providing the username. It will raise an exception.
+    """
+    with pytest.raises(UsernameNotFound):
+        assert main_ops_object.get_user_instagram_common_data('', None)
         
-# def test10_get_data_from_mongodb():
-#     """
-#     Test to check the method which gets user data from the Mongo database depending on
-#     the provided range of dates. In this test, first a profile from a specific user is
-#     inserted in the Mongo database, if it's not already in, and then it's recovered
-#     by providing the username, the social media source, which in this case is Instagram,
-#     as well as the range of date, which in this case is only one day.
-#     """
-#     user_data = [
-#         {"userid" : "1121839441", "username" : "audispain", 
-#         "name" : "Audi España", "biography" : "Bienvenidos al canal oficial de Audi España. Nuestro equipo permanece a tu disposición en el número 800 500 102.", 
-#         "gender" : "None", "profile_pic" : "https://instagram.fsvq2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/13167289_1713494358922750_2066970229_a.jpg?_nc_ht=instagram.fsvq2-2.fna.fbcdn.net&_nc_ohc=nS90OZW4faUAX9bEQzi&oh=fc5ceaaa72a7cc21a0185719616ea3b0&oe=5FCE818A", 
-#         "location" : "None", "birthday" : "None", "date_joined" : "None", 
-#         "n_followers" : "217094", "n_followings" : "430", "n_medias" : "1217", 
-#         "social_media" : "Instagram", "date" : datetime.strptime("05-11-2020",'%d-%m-%Y')},
-#         {"userid" : "1121839441", "username" : "audispain", 
-#         "name" : "Audi España", "biography" : "Bienvenidos al canal oficial de Audi España. Nuestro equipo permanece a tu disposición en el número 800 500 102.", 
-#         "gender" : "None", "profile_pic" : "https://instagram.fsvq2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/13167289_1713494358922750_2066970229_a.jpg?_nc_ht=instagram.fsvq2-2.fna.fbcdn.net&_nc_ohc=nS90OZW4faUAX9bEQzi&oh=fc5ceaaa72a7cc21a0185719616ea3b0&oe=5FCE818A", 
-#         "location" : "None", "birthday" : "None", "date_joined" : "None", 
-#         "n_followers" : "217178", "n_followings" : "431", "n_medias" : "1219", 
-#         "social_media" : "Instagram", "date" : datetime.strptime("06-11-2020",'%d-%m-%Y')},
-#         {"userid" : "1121839441", "username" : "audispain", 
-#         "name" : "Audi España", "biography" : "Bienvenidos al canal oficial de Audi España. Nuestro equipo permanece a tu disposición en el número 800 500 102.", 
-#         "gender" : "None", "profile_pic" : "https://instagram.fsvq2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/13167289_1713494358922750_2066970229_a.jpg?_nc_ht=instagram.fsvq2-2.fna.fbcdn.net&_nc_ohc=nS90OZW4faUAX9bEQzi&oh=fc5ceaaa72a7cc21a0185719616ea3b0&oe=5FCE818A", 
-#         "location" : "None", "birthday" : "None", "date_joined" : "None", 
-#         "n_followers" : "217299", "n_followings" : "431", "n_medias" : "1220", 
-#         "social_media" : "Instagram", "date" : datetime.strptime("07-11-2020",'%d-%m-%Y')}
-#         ]
-#     for item in user_data:
-#         main_ops_object.common_data_object.insert_user_data(item, "test")
+def test2_get_user_instagram_common_data():
+    """
+    Test to check the method which gets, preprocesses and stores user data using the
+    LevPasha Instagram API without providing a valid mode to insert the user data
+    in the Mongo database. It will raise an exception.
+    """
+    with pytest.raises(InvalidMode):
+        assert main_ops_object.get_user_instagram_common_data(username, "invalid_mode")
         
-#     date_list = [("05-11-2020", "07-11-2020")]
-#     global mongo_data
-#     mongo_data = main_ops_object.get_data_from_mongodb("audispain", "Instagram", "test", date_list)
-#     assert type(mongo_data) == list and len(mongo_data) == 3
+def test3_get_user_instagram_common_data():
+    """
+    Test to check the method which gets, preprocesses and stores user data using the
+    LevPasha Instagram API. In this test, the collection to insert the user data
+    will be the 'test' collection.
+    """
+    try:
+        user_data = main_ops_object.get_user_instagram_common_data(username, "test")
+        assert type(user_data) == dict
+    except MaxRequestsExceed:
+        print("Max requests exceed. Wait to send more.")
+        
+def test1_preprocess_and_store_common_data():
+    """
+    Test to check the method which preprocesses and stores user data from any
+    social media source without providing the user data. An exception will be raised.
+    """
+    with pytest.raises(UserDataNotFound):
+        assert main_ops_object.preprocess_and_store_common_data(None, None, None)
+        
+def test2_preprocess_and_store_common_data():
+    """
+    Test to check the method which preprocesses and stores user data from any
+    social media source without providing the social media source. An exception will be raised.
+    """
+    with pytest.raises(InvalidSocialMediaSource):
+        assert main_ops_object.preprocess_and_store_common_data({'id':'first id'}, None, None)
+        
+def test3_preprocess_and_store_common_data():
+    """
+    Test to check the method which preprocesses and stores user data from any
+    social media source without providing a valid social media source. An exception will be raised.
+    """
+    with pytest.raises(InvalidSocialMediaSource):
+        assert main_ops_object.preprocess_and_store_common_data({'id':'first id'}, 'Random', None)
+        
+def test4_preprocess_and_store_common_data():
+    """
+    Test to check the method which preprocesses and stores user data from any
+    social media source without providing a valid mode to insert the user data
+    in the Mongo database. An exception will be raised.
+    """
+    with pytest.raises(InvalidMode):
+        assert main_ops_object.preprocess_and_store_common_data({'id':'first id'}, 'Instagram', 'invalid_mode')
+        
+def test5_preprocess_and_store_common_data():
+    """
+    Test to check the method which preprocesses and stores user data from any social
+    media source without providing a valid MongoDB. In order to do that, the 
+    MongoDB object is set to a invalid value, so an exception will be raised.
+    """
+    mo = main_ops.MainOperations()
+    mo.mongodb_object = ""
+    with pytest.raises(InvalidMongoDbObject):
+        assert mo.preprocess_and_store_common_data({'id':'first id'}, 'Instagram', 'test')
+
+def test6_preprocess_and_store_common_data():
+    """
+    Test to preprocess and store user data in the Mongo database from any 
+    social media source.
+    """
+    profile = {"userid" : 123456789, "username" : "lidia.96.sm", "name" : "Lidia Sánchez",
+                "biography" : "\"Si eres valiente para empezar, eres fuerte para acabar.\" Ingeniería Informática.",
+                "gender" : "None", "profile_pic" : "https://instagram_example", 
+                "location" : "None", "birthday" : "None", "date_joined" : "None", 
+                "n_followers" : 61, "n_followings":45, "n_medias" : 6}
+    medias = [{'id_media': '1', "taken_at":"24/10/2020", "title":None, 'like_count': 29, 'comment_count': 14}, 
+              {'id_media': '2', "taken_at":"24/10/2020", "title":None,'like_count': 18, 'comment_count': 0}]
+    texts = [{'id_media': '1', 
+              'texts': [{'user': 'user1', 'text': 'aa'}, {'user': 'user2', 'text': 'ee'}]},
+              {'id_media': '2', 
+              'texts': [{'user': 'user3', 'text': 'ii'}, {'user': 'user2', 'text': 'oo'}]}]
+    user_data = {'profile':profile, 'medias':medias, 'comments':texts}
+    mo = main_ops.MainOperations()
+    result = mo.preprocess_and_store_common_data(user_data, 'Instagram', 'test')
+    assert type(result) == dict
+
+def test1_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the username of the studied user is
+    not provided so an exception will be raised.
+    """
+    with pytest.raises(UsernameNotFound):
+        assert main_ops_object.get_data_from_mongodb(None, None, None, None)
+        
+def test2_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the social media source is
+    not provided so an exception will be raised.
+    """
+    with pytest.raises(InvalidSocialMediaSource):
+        assert main_ops_object.get_data_from_mongodb(username, None, None, None)
+        
+def test3_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the provided social media source is
+    not valid so an exception will be raised.
+    """
+    with pytest.raises(InvalidSocialMediaSource):
+        assert main_ops_object.get_data_from_mongodb(username, "InvalidSocialMedia", None, None)
+
+def test4_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the range of dates is
+    not provided so an exception will be raised.
+    """
+    with pytest.raises(CollectionNotFound):
+        assert main_ops_object.get_data_from_mongodb(username, "Instagram", None, None)
+
+def test5_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the provided range of date is not valid
+    so an exception will be raised.
+    """
+    with pytest.raises(InvalidDates):
+        assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", None)
+
+def test6_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the provided range of date is not valid
+    so an exception will be raised.
+    """
+    with pytest.raises(InvalidDates):
+        assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", [(1,2,3)])
+
+def test7_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the provided range of date is not valid
+    so an exception will be raised.
+    """
+    with pytest.raises(InvalidDates):
+        assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", [(1,2)])
+
+def test8_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the provided range of date is not valid
+    so an exception will be raised.
+    """
+    date_list = [("24-10-2020", "28/10/2020")]
+    with pytest.raises(InvalidDates):
+        assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", date_list)
+
+def test9_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, the provided range of date is not valid
+    so an exception will be raised.
+    """
+    date_list = [("26-10-2020", "22-10-2020")]
+    with pytest.raises(InvalidDates):
+        assert main_ops_object.get_data_from_mongodb(username, "Instagram", "test", date_list)
+        
+def test10_get_data_from_mongodb():
+    """
+    Test to check the method which gets user data from the Mongo database depending on
+    the provided range of dates. In this test, first a profile from a specific user is
+    inserted in the Mongo database, if it's not already in, and then it's recovered
+    by providing the username, the social media source, which in this case is Instagram,
+    as well as the range of date, which in this case is only one day.
+    """
+    user_data = [
+        {"userid" : "1121839441", "username" : "audispain", 
+        "name" : "Audi España", "biography" : "Bienvenidos al canal oficial de Audi España. Nuestro equipo permanece a tu disposición en el número 800 500 102.", 
+        "gender" : "None", "profile_pic" : "https://instagram.fsvq2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/13167289_1713494358922750_2066970229_a.jpg?_nc_ht=instagram.fsvq2-2.fna.fbcdn.net&_nc_ohc=nS90OZW4faUAX9bEQzi&oh=fc5ceaaa72a7cc21a0185719616ea3b0&oe=5FCE818A", 
+        "location" : "None", "birthday" : "None", "date_joined" : "None", 
+        "n_followers" : "217094", "n_followings" : "430", "n_medias" : "1217", 
+        "social_media" : "Instagram", "date" : datetime.strptime("05-11-2020",'%d-%m-%Y')},
+        {"userid" : "1121839441", "username" : "audispain", 
+        "name" : "Audi España", "biography" : "Bienvenidos al canal oficial de Audi España. Nuestro equipo permanece a tu disposición en el número 800 500 102.", 
+        "gender" : "None", "profile_pic" : "https://instagram.fsvq2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/13167289_1713494358922750_2066970229_a.jpg?_nc_ht=instagram.fsvq2-2.fna.fbcdn.net&_nc_ohc=nS90OZW4faUAX9bEQzi&oh=fc5ceaaa72a7cc21a0185719616ea3b0&oe=5FCE818A", 
+        "location" : "None", "birthday" : "None", "date_joined" : "None", 
+        "n_followers" : "217178", "n_followings" : "431", "n_medias" : "1219", 
+        "social_media" : "Instagram", "date" : datetime.strptime("06-11-2020",'%d-%m-%Y')},
+        {"userid" : "1121839441", "username" : "audispain", 
+        "name" : "Audi España", "biography" : "Bienvenidos al canal oficial de Audi España. Nuestro equipo permanece a tu disposición en el número 800 500 102.", 
+        "gender" : "None", "profile_pic" : "https://instagram.fsvq2-2.fna.fbcdn.net/v/t51.2885-19/s150x150/13167289_1713494358922750_2066970229_a.jpg?_nc_ht=instagram.fsvq2-2.fna.fbcdn.net&_nc_ohc=nS90OZW4faUAX9bEQzi&oh=fc5ceaaa72a7cc21a0185719616ea3b0&oe=5FCE818A", 
+        "location" : "None", "birthday" : "None", "date_joined" : "None", 
+        "n_followers" : "217299", "n_followings" : "431", "n_medias" : "1220", 
+        "social_media" : "Instagram", "date" : datetime.strptime("07-11-2020",'%d-%m-%Y')}
+        ]
+    for item in user_data:
+        main_ops_object.common_data_object.insert_user_data(item, "test")
+        
+    date_list = [("05-11-2020", "07-11-2020")]
+    global mongo_data
+    mongo_data = main_ops_object.get_data_from_mongodb("audispain", "Instagram", "test", date_list)
+    assert type(mongo_data) == list and len(mongo_data) == 3
+    
+def test1_get_data_from_postgresdb():
+    """
+    Test to check the method which recovers data from the Postgres database. In
+    this test, the query to make is not provided so an exceptino will be raised.
+    """
+    with pytest.raises(InvalidQuery):
+        assert main_ops_object.get_data_from_postgresdb(None, None)
+        
+def test2_get_data_from_postgresdb():
+    """
+    Test to check the method which recovers data from the Postgres database. In
+    this test, the values to make the provided query are not provided so an exceptino will be raised.
+    """
+    with pytest.raises(UserDataNotFound):
+        assert main_ops_object.get_data_from_postgresdb("check_test_profile", None)
 
 def test1_perform_analysis():
     """
