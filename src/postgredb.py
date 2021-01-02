@@ -83,8 +83,8 @@ class PostgreDB:
                 'fields':["date_ini", "date_fin", "id_user", "time"]},
             ## Get the ProfilesEvolution analysis results of a specific range of dates and username
             'test_profile_evolution':{
-                'query':'SELECT time, mean_followers, mean_followings, mean_medias FROM '+
-                    'testprofilesevolution WHERE date_ini=%s AND date_fin=%s AND id_user=%s',
+                'query':"SELECT time, mean_followers, mean_followings, mean_medias FROM "+
+                    "testprofilesevolution WHERE date_ini=TO_DATE(%s, 'DD/MM/YYYY') AND date_fin=TO_DATE(%s, 'DD/MM/YYYY') AND id_user=%s",
                 'fields':["date_ini", "date_fin", "id_user"]
             },
             ## Check if the ProfilesActivity analysis results are already in the database
@@ -629,7 +629,7 @@ class PostgreDB:
         # Try to connect to the database        
         try:
             self.connection = psycopg2.connect(host="localhost", user=user, 
-                               password=pswd, database=self.database_name)
+                               password=pswd, database=self.database_name)#, port=5433)
             self.cursor = self.connection.cursor()
             return self.cursor
         except Exception: # pragma no cover
