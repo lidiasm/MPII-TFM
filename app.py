@@ -14,7 +14,7 @@ from dash.dependencies import Input, Output
 from plotly import graph_objects as go
 import plotly.express as px
 
-from sklearn import preprocessing
+import pandas as pd 
 from datetime import datetime
 import sys
 sys.path.append("src")
@@ -23,6 +23,8 @@ sys.path.append("src")
 class AuxData():
     def __init__(self):
         self.current_page = None
+        self.n_clicks = 0
+        self.popularity_mode = "best"
 
 #-------------------------------- APP ATTRIBUTES ------------------------------
 auxdata_attr = AuxData()
@@ -62,42 +64,141 @@ def get_avalaible_dates(collection="profiles"):
     return avalaible_string_dates
 
 def plot_filled_area_chart(analysis_result):
+    """
+    Plots a filled area chart in order to represent a ProfilesEvolution analysis.
+    The data to show are the number of followers, followings and posts over a specific
+    period of time. 
+
+    Parameters
+    ----------
+    analysis_result : dict
+        It's the dict which contains the ProfilesEvolution analysis results.
+
+    Returns
+    -------
+    A filled area chart.
+    """
     if (len(analysis_result) > 0):
-        # Transform each value to an integer value
-        for i in range(0, len(analysis_result["n_followers"])):
-            analysis_result["n_followers"][i] = int(analysis_result["n_followers"][i])
-            analysis_result["n_followings"][i] = int(analysis_result["n_followings"][i])
-            analysis_result["n_medias"][i] = int(analysis_result["n_medias"][i])
-        # Normalize the values
-        normalized_values = list(preprocessing.normalize([analysis_result["n_followers"],
-                                                     analysis_result["n_followings"],
-                                                     analysis_result["n_medias"]]))
         # Initialize the plot object
         fig = go.Figure()
         # 1. Add the Followers values
         fig.add_trace(go.Scatter(
             x=analysis_result["date"], y=analysis_result["n_followers"],
-            line=dict(width=0.5, color='rgb(131, 90, 241)'),
+            line=dict(width=2.0, color="#330064"), mode="lines+markers",
             stackgroup='one',
             name="Seguidores"
         ))
         # 1. Add the Followings values
         fig.add_trace(go.Scatter(
             x=analysis_result["date"], y=analysis_result["n_followings"],
-            line=dict(width=0.5, color='rgb(111, 231, 219)'),
+            line=dict(width=2.0, color="#007cea"), mode="lines+markers",
             stackgroup='one',
             name="Seguidos"
         ))
         # 1. Add the Posts values
         fig.add_trace(go.Scatter(
             x=analysis_result["date"], y=analysis_result["n_medias"],
-            line=dict(width=0.5, color='rgb(184, 247, 212)'),
+            line=dict(width=2.0, color="#00d5ea"), mode="lines+markers",
             stackgroup='one',
             name="Publicaciones"
         ))
         # Delete Y axis
         fig.update_yaxes(visible=False, showticklabels=False)
+        fig.update_layout(title="Evolución del número de seguidores, seguidos y publicaciones.")
         return fig
+
+def plot_waterfall_chart(analysis_result):
+    """
+    Plots a waterfall chart in order to represent a ProfilesActivity analysis.
+    The data to show are the number of uploaded posts during a specific
+    period of time as well as the difference of uploaded media between each date.
+
+    Parameters
+    ----------
+    analysis_result : dict
+        It's the dict which contains the ProfilesActivity analysis results.
+
+    Returns
+    -------
+    A waterfall chart.
+    """
+    # Compute the differences between each number of posts
+    differences = []
+    differences.append("")
+    for i in range(1, len(analysis_result["n_medias"])):
+        diff = analysis_result["n_medias"][i]-analysis_result["n_medias"][i-1]
+        if (diff > 0): differences.append("+"+str(diff))
+        elif (diff == 0): differences.append(str(diff))
+        else: differences.append("-"+str(diff))
+    
+    fig = go.Figure(go.Waterfall(
+        name = "Nº de publicaciones", orientation = "v",
+        x=analysis_result["date"],
+        textposition = "inside",
+        text = differences,
+        y = analysis_result["n_medias"],
+        increasing = {"marker":{"color":"rgb(169, 131, 227)", "line":{"color":"#6d4e8c", "width":2}}},
+        connector = {"line":{"color":"#330064"}},
+    ))
+
+    fig.update_layout(
+        title = "Evolución del número de publicaciones",
+        showlegend = True
+    )
+    return fig
+
+def plot_heatmap_chart(analysis_result):
+    """
+    Plots a heatmap chart in order to represent a MediasEvolution analysis.
+    The data to show are the number of post interactions during a specific
+    period of time.
+
+    Parameters
+    ----------
+    analysis_result : dict
+        It's the dict which contains the MediasEvolution analysis results.
+
+    Returns
+    -------
+    A heatmap chart.
+    """
+    fig = px.imshow([analysis_result["like_count"], analysis_result["comment_count"]],
+                    labels=dict(color="Nº de interacciones"),
+                    color_continuous_scale=["#00d5ea", "#007cea", "#a983e3", "#8c59d9", "#6f2ed0", "#330064"],
+                    x=analysis_result["date"],
+                    y=["Me gusta", "Comentarios"]
+                   )
+    fig.update_xaxes(side="top")
+    fig.update_layout(
+        title = "Evolución del interés de las publicaciones",
+        showlegend = True
+    )
+    return fig
+
+def plot_bar_chart(analysis_result):
+    """
+    Plots a bar chart in order to represent a MediasPopularity analysis in order
+    to show the ranking of the best/worst posts based on the number of interactions.
+
+    Parameters
+    ----------
+    analysis_result : dict
+        It's the dict which contains the MediasPopularity analysis results.
+
+    Returns
+    -------
+    A bar chart.
+    """
+    df = pd.DataFrame()
+    df["Posición"] = list(range(1, len(analysis_result)+1))
+    df["Interacciones"] = analysis_result
+    fig = px.bar(df, x="Posición", y="Interacciones", color='Interacciones',
+                 color_continuous_scale=["#00d5ea", "#007cea", "#a983e3", "#8c59d9", "#6f2ed0", "#330064"])
+    fig.update_layout(
+        title = "Las 10 publicaciones más populares." if auxdata_attr.popularity_mode == "best" else "Las 10 publicaciones menos populares.",
+        showlegend = True
+    )
+    return fig
 
 #---------------------------------- APP SETTINGS ---------------------------------
 # Flask application
@@ -202,6 +303,7 @@ app.layout = html.Div([
                     ),
                     html.Button('Recopilar datos', id='enable-new-user', 
                     style={'background':'#8c59d9', 'margin-top':'20px', 'color':'white'}),
+                    html.P(children="", id="user-result"),
                 ]),
         ]),
         
@@ -217,7 +319,6 @@ app.layout = html.Div([
                     ),
                     html.H3(
                         id="analysis-title",
-                        children=["Análisis de la evolución del perfil"],
                         style={"text-align": "left"},
                     ),
                     html.P(
@@ -261,6 +362,15 @@ app.layout = html.Div([
                             value="Instagram",
                             style={"display":"inline-block", "width":"20%", "margin-right":"5%"}
                         ),
+                        html.Div(children=[
+                            html.P(id="popularity-mode-label", children="Ranking de publicaciones", style={"display":"none"}),
+                        ]),
+                        dcc.Dropdown(
+                            options=[{"label":"Más populares", "value":"best"}, {"label":"Menos populares", "value":"worst"}],
+                            id="popularity-mode-dropdown",
+                            value="best",
+                            style={"display":"inline-block", "width":"20%", "margin-right":"5%"}
+                        ),
                         html.Button('Analizar', id='perform-analysis-button', 
                         style={'background':'#8c59d9', 'margin-top':'20px', 'margin-right':'45px', 'color':'white', 'float':'right'}),
                 ]),
@@ -285,24 +395,97 @@ app.layout = html.Div([
 
 #---------------------------------- APP CALLBACKS ---------------------------------
 @app.callback(
+    [Output("user-result", "children"),
+    Output("user-result", "style")],
+    [Input("enable-new-user", "n_clicks"),
+     Input("new-user-input", "value")]
+)
+def set_user_to_study(clicks, user):
+    """
+    Saves the username of the account to study later by setting the related 
+    attributes of the MainOperations class which will be read by the task server
+    when the data are going to be download.
+
+    Parameters
+    ----------
+    clicks : integer
+        It's the number of clicks over the button.
+    user : str
+        It's the username of the account to analyze.
+
+    Returns
+    -------
+    A string with the related to message to show the status of the process as well
+    as its style.
+    """
+    if (clicks != None):
+        if (clicks > 0):
+            set_user = mainops_attr.set_user_to_study(user)
+            color = "green"
+            message = "El usuario a analizar ha sido actualizado correctamente." 
+            if (set_user != user):
+                color = "red"
+                message = "Ha ocurrido un error durante el proceso y no se ha podido establecer el usuario."
+            return message, {"display":"inline-block", "color":color, "margin-top":"10px"}
+        return "", {"display":"none"}
+    return "", {"display":"none"}
+    
+@app.callback(
     Output("analysis-results", "figure"),
     [Input("analysis-start-date-dropdown", "value"),
      Input("analysis-end-date-dropdown", "value"),
      Input("analysis-users-dropdown", "value"),
      Input("analysis-social-media-dropdown", "value"),
-     Input("perform-analysis-button", "n_clicks")]
+     Input("perform-analysis-button", "n_clicks"),
+     Input("url", "pathname"),
+     Input("popularity-mode-dropdown", "value")]
 )
-def update_analysis_results(start_date, end_date, user, social_media, clicks):
+def update_analysis_results(start_date, end_date, user, social_media, clicks, path, popularity):
+    """
+    Plots the analysis results which are related to the current page and from the
+    provided start and end date, as well as the username to study and the social media
+    source of the downloaded user data.
+
+    Parameters
+    ----------
+    start_date : str
+        It's the first date of the analysis.
+    end_date : str
+        It's the end date of the analysis .
+    user : str
+        It's the username of the account to study.
+    social_media : str
+        It's the social media source from the user data will be recovered to
+        perform the analysis.
+    clicks : integer
+        It's the number of clicks of the perform analysis button .
+
+    Returns
+    -------
+    The related figure to the chosen analysis.
+    """
     if (clicks != None):
-        if (clicks > 0):
+        if (clicks > 0 and clicks > auxdata_attr.n_clicks):
+            auxdata_attr.n_clicks += 1
             if (auxdata_attr.current_page == 'profile-evolution'):
-                start_date = "27-10-2020"
-                end_date = "07-11-2020"
                 analysis_result = mainops_attr.perform_analysis(user, 'profile_evolution', social_media, start_date, end_date)
                 result = plot_filled_area_chart(analysis_result)
                 if (result != None): return result 
-        return dash.no_update
-    return dash.no_update
+            elif (auxdata_attr.current_page == 'profile-activity'):
+                analysis_result = mainops_attr.perform_analysis(user, 'profile_activity', social_media, start_date, end_date)
+                result = plot_waterfall_chart(analysis_result)
+                if (result != None): return result 
+            elif (auxdata_attr.current_page == 'medias-evolution'):
+                analysis_result = mainops_attr.perform_analysis(user, 'media_evolution', social_media, start_date, end_date)
+                result = plot_heatmap_chart(analysis_result)
+                if (result != None): return result 
+            elif (auxdata_attr.current_page == "medias-popularity"): 
+                analysis_result = mainops_attr.perform_analysis(user, 'media_popularity', social_media, start_date, end_date, popularity)
+                result = plot_bar_chart(analysis_result)
+                if (result != None): return result 
+    
+        return go.Figure()
+    return go.Figure()
     
 @app.callback(
     [Output(f"page-{i}-link", "active") for i in range(1, 9)],
@@ -334,7 +517,10 @@ def toggle_active_links(pathname):
                 Output("page-5-link", "style"),
                 Output("page-6-link", "style"),
                 Output("page-7-link", "style"),
-                Output("page-8-link", "style")], 
+                Output("page-8-link", "style"),
+                Output("analysis-title", "children"),
+                Output("popularity-mode-label", "style"),
+                Output("popularity-mode-dropdown", "style")], 
               [Input("url", "pathname")])
 def render_page_content(pathname):
     """
@@ -351,13 +537,42 @@ def render_page_content(pathname):
     """
     selected_option = {"color":"white", "background":"#8c59d9", "text-decoration":"none", "margin-bottom":"2%"}
     non_selected_option = {"color":"#6d4e8c", "background":"white", "text-decoration":"none", "margin-bottom":"2%"}
+    popularity_label = {"display":"inline-block", "width":"20%", "margin-right":"5%"}
+    popularity_dropdown = {"display":"inline-block", "width":"20%", "margin-right":"5%"}
     non_selected_option_style = {"display":"none"}
     if pathname in ["/", "/page-1"]:
         auxdata_attr.current_page = "new-user"
-        return CONTENT_STYLE, non_selected_option_style, selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option
+        return CONTENT_STYLE, non_selected_option_style, selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, "", non_selected_option_style, non_selected_option_style
     elif pathname == "/page-2":
         auxdata_attr.current_page = "profile-evolution"
-        return {"display":"none"}, CONTENT_STYLE, non_selected_option, selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option, non_selected_option
+        return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
+                selected_option, non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                "Análisis de la evolución del perfil", non_selected_option_style, non_selected_option_style
+    elif pathname == "/page-3":
+        auxdata_attr.current_page = "profile-activity"
+        return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
+                non_selected_option, selected_option, non_selected_option,  \
+                non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, "Análisis de la evolución de la actividad", \
+                non_selected_option_style, non_selected_option_style
+    elif pathname == "/page-4":
+        auxdata_attr.current_page = "medias-evolution"
+        return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
+                non_selected_option, non_selected_option, selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, "Análisis de la evolución del interés de las publicaciones", \
+                non_selected_option_style, non_selected_option_style
+    elif pathname == "/page-5":
+        auxdata_attr.current_page = "medias-popularity"
+        return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, "Análisis de la popularidad de las publicaciones" \
+                , popularity_label, popularity_dropdown
 
 
 #---------------------------------- FLASK SERVER ---------------------------------
