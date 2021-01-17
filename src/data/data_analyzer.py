@@ -435,11 +435,10 @@ class DataAnalyzer:
                 sentiment = "none"
                 if (analysis['pos'] != 0 or analysis['neu'] != 0 or analysis['neg'] != 0):
                     sentiment = max(analysis, key=analysis.get)
-                    
                 # Analysis results to insert
                 text_analysis_results.append({"original_text":text[2], "sentiment":sentiment, 
                                               "degree":analysis[sentiment] if sentiment != "none" else 0.0})
-            
+        
         return text_analysis_results
 
     def user_behaviours(self, username, user_list):

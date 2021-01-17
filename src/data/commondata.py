@@ -379,7 +379,7 @@ class CommonData:
             # Add the cleaned text to the list of cleaned texts
             cleaned_texts.append(non_special_characters)
             # Wait a few seconds to not overwhelm the API
-            time.sleep(2)
+            time.sleep(1)
         
         return cleaned_texts
 
