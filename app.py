@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Dec 19 22:49:06 2020
+This file includes the required Dash callbacks to run the platform from an interface.
 
-@author: lidia
+@author: Lidia Sánchez Mérida
 """
 #---------------------------------- LIBRARIES ---------------------------------
 import dash
@@ -25,6 +25,7 @@ class AuxData():
         self.current_page = None
         self.n_clicks = 0
         self.popularity_mode = "best"
+        self.sentiment_analysis = "comment_sentiment_analysis"
 
 #-------------------------------- APP ATTRIBUTES ------------------------------
 auxdata_attr = AuxData()
@@ -145,11 +146,12 @@ def plot_waterfall_chart(analysis_result):
         title = "Evolución del número de publicaciones",
         showlegend = True
     )
+    
     return fig
 
-def plot_heatmap_chart(analysis_result):
+def plot_funnel_chart(analysis_result):
     """
-    Plots a heatmap chart in order to represent a MediasEvolution analysis.
+    Plots a funnel chart in order to represent a MediasEvolution analysis.
     The data to show are the number of post interactions during a specific
     period of time.
 
@@ -160,15 +162,19 @@ def plot_heatmap_chart(analysis_result):
 
     Returns
     -------
-    A heatmap chart.
-    """
-    fig = px.imshow([analysis_result["like_count"], analysis_result["comment_count"]],
-                    labels=dict(color="Nº de interacciones"),
-                    color_continuous_scale=["#00d5ea", "#007cea", "#a983e3", "#8c59d9", "#6f2ed0", "#330064"],
-                    x=analysis_result["date"],
-                    y=["Me gusta", "Comentarios"]
-                   )
-    fig.update_xaxes(side="top")
+    A funnel chart.
+    """    
+    fig = go.Figure()
+    fig.add_trace(go.Funnel(
+        name = 'Me gusta',
+        x = analysis_result["like_count"],
+        textinfo = "value")
+    )
+    fig.add_trace(go.Funnel(
+        name = 'Comentarios',
+        x = analysis_result["comment_count"],
+        textinfo = "value")
+    )
     fig.update_layout(
         title = "Evolución del interés de las publicaciones",
         showlegend = True
@@ -198,6 +204,82 @@ def plot_bar_chart(analysis_result):
         title = "Las 10 publicaciones más populares." if auxdata_attr.popularity_mode == "best" else "Las 10 publicaciones menos populares.",
         showlegend = True
     )
+    return fig
+
+def plot_pie_chart(analysis_result):
+    """
+    Plots a pie chart in order to represent a sentiment analysis based on post
+    comments or post titles in order to show the number of positive, neutral
+    and negative texts as well as their related polarity or confidence degree
+    for each different sentiment.
+
+    Parameters
+    ----------
+    analysis_result : dict
+        It's the dict which contains the sentiment analysis results.
+
+    Returns
+    -------
+    A pie chart.
+    """
+    df = pd.DataFrame()
+    df["Sentimiento"] = ["Positivo", "Neutral", "Negativo"]
+    df["Número de textos"] = analysis_result["sentiments"]
+    polarity_percentaje = [value*100 for value in analysis_result["degrees"]]
+    df["Polaridad"] = polarity_percentaje
+    fig = go.Figure(go.Pie(
+        name="",
+        values = df['Número de textos'],
+        labels = df['Sentimiento'],
+        customdata=df['Polaridad'],
+        hovertemplate = "Sentimiento: %{label} <br>Nº de textos: %{value} </br> Polaridad: %{customdata}%"
+    ))
+    fig.update_traces(
+        marker=dict(colors=["#00d5ea", "#8c59d9", "#330064"])
+    )
+    fig.update_layout(
+        title = "Análisis de sentimientos de los comentarios de las publicaciones." \
+            if "comment" in auxdata_attr.sentiment_analysis  else "Análisis de sentimientos de los títulos de las publicaciones.",
+        showlegend = True
+    )
+    
+    return fig
+
+def plot_heatmap_chart(analysis_result):
+    """
+    Plots a funnel-heatmap chart in order to represent the number of identified
+    friends and haters based on the sentiment analysis of the post comments of 
+    a specific user in a particular period of time.
+
+    Parameters
+    ----------
+    analysis_result : dict
+        It's the dict which contains the user behaviours analysis results.
+
+    Returns
+    -------
+    A funnel-heatmap chart.
+    """
+    fig = go.Figure()
+    fig.add_trace(go.Funnel(
+        name = 'Amigos',
+        x = analysis_result["likers"],
+        textinfo = "value",
+        opacity = 0.65, 
+        marker = {"color": ["#007cea"], "line": {"width": [5], "color": ["#00d5ea"]}})
+    )
+    fig.add_trace(go.Funnel(
+        name = 'Haters',
+        x = analysis_result["haters"],
+        textinfo = "value",
+        opacity = 0.65, 
+        marker = {"color": ["#330064"], "line": {"width": [5], "color": ["#a983e3"]}})
+    )
+    fig.update_layout(
+        title = "Análisis de los patrones de comportamiento de los miembros de la comunidad.",
+        showlegend = True
+    )
+    fig.update_yaxes(visible=False, showticklabels=False)
     return fig
 
 #---------------------------------- APP SETTINGS ---------------------------------
@@ -247,7 +329,6 @@ sidebar = html.Div([
             dbc.NavLink("Popularidad de las publicaciones", href="/page-5", id="page-5-link"),
             dbc.NavLink("Análisis de sentimientos", href="/page-6", id="page-6-link"),
             dbc.NavLink("Patrones de comportamiento", href="/page-7", id="page-7-link"),
-            dbc.NavLink("Ayuda", href="/page-8", id="page-8-link"),
             ],
             vertical=True,
             pills=True,
@@ -280,7 +361,19 @@ app.layout = html.Div([
                     ),
                     html.P(
                         id="new-user-description",
-                        children=["Descripción para obtener los datos de un nuevo usuario"],
+                        children=["En esta vista se puede especificar el nombre de usuario "+
+                                  "relativo a la cuenta que se desee estudiar así como las redes "+
+                                  "sociales de las que se obtendrá la suficiente información como para "+
+                                  "realizar los diversos análisis que se proponen en esta plataforma.\n"+
+                                  "La descarga de datos relativos al usuario especificado se realizará en segundo plano "+
+                                  "de modo que permita la interacción con la plataforma y la realización de análisis sobre "+
+                                  "otros usuarios."],
+                    ),
+                    html.P(
+                        id="new-user-description-2",
+                        children=["La descarga de datos relativos al usuario especificado se realizará en segundo plano "+
+                                  "de modo que permita la interacción con la plataforma y la realización de análisis sobre "+
+                                  "otros usuarios."],
                     ),
                 ]),
                 html.Div(
@@ -323,7 +416,11 @@ app.layout = html.Div([
                     ),
                     html.P(
                         id="analysis-description",
-                        children=["Descripción del primer análisis"],
+                        children=[""],
+                    ),
+                    html.P(
+                        id="analysis-instructions",
+                        children=[""],
                     ),
                 ]),
                 html.Div(
@@ -369,6 +466,16 @@ app.layout = html.Div([
                             options=[{"label":"Más populares", "value":"best"}, {"label":"Menos populares", "value":"worst"}],
                             id="popularity-mode-dropdown",
                             value="best",
+                            style={"display":"inline-block", "width":"20%", "margin-right":"5%"}
+                        ),
+                        html.Div(children=[
+                            html.P(id="text-sentiments-label", children="Textos a analizar", style={"display":"none"}),
+                        ]),
+                        dcc.Dropdown(
+                            options=[{"label":"Comentarios de publicaciones", "value":"comment_sentiment_analysis"}, 
+                                     {"label":"Títulos de publicaciones", "value":"title_sentiment_analysis"}],
+                            id="text-sentiments-dropdown",
+                            value="comment_sentiment_analysis",
                             style={"display":"inline-block", "width":"20%", "margin-right":"5%"}
                         ),
                         html.Button('Analizar', id='perform-analysis-button', 
@@ -438,9 +545,11 @@ def set_user_to_study(clicks, user):
      Input("analysis-social-media-dropdown", "value"),
      Input("perform-analysis-button", "n_clicks"),
      Input("url", "pathname"),
-     Input("popularity-mode-dropdown", "value")]
+     Input("popularity-mode-dropdown", "value"),
+     Input("text-sentiments-dropdown", "value")]
 )
-def update_analysis_results(start_date, end_date, user, social_media, clicks, path, popularity):
+def update_analysis_results(start_date, end_date, user, social_media, 
+                            clicks, path, popularity, text_analysis):
     """
     Plots the analysis results which are related to the current page and from the
     provided start and end date, as well as the username to study and the social media
@@ -458,7 +567,10 @@ def update_analysis_results(start_date, end_date, user, social_media, clicks, pa
         It's the social media source from the user data will be recovered to
         perform the analysis.
     clicks : integer
-        It's the number of clicks of the perform analysis button .
+        It's the number of clicks of the perform analysis button
+    path:
+    popularity:
+    text_analysis
 
     Returns
     -------
@@ -477,18 +589,28 @@ def update_analysis_results(start_date, end_date, user, social_media, clicks, pa
                 if (result != None): return result 
             elif (auxdata_attr.current_page == 'medias-evolution'):
                 analysis_result = mainops_attr.perform_analysis(user, 'media_evolution', social_media, start_date, end_date)
-                result = plot_heatmap_chart(analysis_result)
+                result = plot_funnel_chart(analysis_result)
                 if (result != None): return result 
             elif (auxdata_attr.current_page == "medias-popularity"): 
                 analysis_result = mainops_attr.perform_analysis(user, 'media_popularity', social_media, start_date, end_date, popularity)
+                auxdata_attr.popularity_mode = popularity
                 result = plot_bar_chart(analysis_result)
+                if (result != None): return result 
+            elif (auxdata_attr.current_page == "text-sentiments"): 
+                analysis_result = mainops_attr.perform_analysis(user, text_analysis, social_media, start_date, end_date)
+                auxdata_attr.sentiment_analysis = text_analysis
+                result = plot_pie_chart(analysis_result)
+                if (result != None): return result 
+            elif (auxdata_attr.current_page == "user-behaviours"): 
+                analysis_result = mainops_attr.perform_analysis(user, 'user_behaviours', social_media, start_date, end_date)
+                result = plot_heatmap_chart(analysis_result)
                 if (result != None): return result 
     
         return go.Figure()
     return go.Figure()
     
 @app.callback(
-    [Output(f"page-{i}-link", "active") for i in range(1, 9)],
+    [Output(f"page-{i}-link", "active") for i in range(1, 8)],
     [Input("url", "pathname")],
 )
 def toggle_active_links(pathname):
@@ -505,8 +627,8 @@ def toggle_active_links(pathname):
     The URL to the page to plot.
     """
     if pathname == "/":
-        return True, False, False, False, False, False, False, False
-    return [pathname == f"/page-{i}" for i in range(1,9)]
+        return True, False, False, False, False, False, False
+    return [pathname == f"/page-{i}" for i in range(1,8)]
 
 @app.callback([Output("new-user-page", "style"),
                Output("analysis-page", "style"),
@@ -517,10 +639,13 @@ def toggle_active_links(pathname):
                 Output("page-5-link", "style"),
                 Output("page-6-link", "style"),
                 Output("page-7-link", "style"),
-                Output("page-8-link", "style"),
                 Output("analysis-title", "children"),
                 Output("popularity-mode-label", "style"),
-                Output("popularity-mode-dropdown", "style")], 
+                Output("popularity-mode-dropdown", "style"),
+                Output("text-sentiments-label", "style"),
+                Output("text-sentiments-dropdown", "style"),
+                Output("analysis-description", "children"),
+                Output("analysis-instructions", "children")], 
               [Input("url", "pathname")])
 def render_page_content(pathname):
     """
@@ -539,42 +664,98 @@ def render_page_content(pathname):
     non_selected_option = {"color":"#6d4e8c", "background":"white", "text-decoration":"none", "margin-bottom":"2%"}
     popularity_label = {"display":"inline-block", "width":"20%", "margin-right":"5%"}
     popularity_dropdown = {"display":"inline-block", "width":"20%", "margin-right":"5%"}
+    sentiments_dropdown = {"display":"inline-block", "width":"25%", "margin-right":"5%"}
     non_selected_option_style = {"display":"none"}
+    
+    profiles_evolution_description = "El principal objetivo de este análisis reside en estudiar si existe "\
+                                      "una relación directa entre el número de seguidores, seguidos y contenido publicado."\
+                                      "De este modo podrá conocer si a mayor número de publicaciones, existe un mayor número de usuarios "\
+                                      "que se suscriben a la cuenta para continuar recibiendo el nuevo contenido que se genere. Asimismo "\
+                                      "tendrá la oportunidad de observar si existe un equilibrio entre el número de seguidores y el número "\
+                                      "de cuentas que sigue con el objetivo de determinar si el uso de la cuenta es exclusivo para dar a conocer "\
+                                      "su contenido, o si por el contrario, también la utiliza para conectar con otros miembros de la red social."
+    profiles_activity_description = "En este análisis se muestra la evolución del número publicaciones que ha realizado el usuario dentro del período "\
+                                    "de tiempo seleccionado. El objetivo de este estudio consiste en visualizar si existen intervalos de tiempo en los "\
+                                    "la actividad del usuario aumenta considerablemente mediante la creación y la publicación de mayor contenido. "\
+                                    "De este modo, usted podrá concluir si la cuenta analizada dispone de cierta tendencia de mercado y de estrategias "\
+                                    "comerciales para estudiar cuáles son las fechas más prolíferas para dar a conocer sus nuevos productos."
+    medias_evolution_description = "El análisis de la evolución de las publicaciones muestra una comparativa entre las principales interacciones que "\
+                                    "características de la red social seleccionada con el principal objetivo de determinar el interés que muestran los "\
+                                    "miembros de una comunidad hacia el contenido publicado de un usuario en particular durante un período de tiempo. "\
+                                    "Así, podrá detectar si existe un incremento o decremento de la popularidad de la cuenta en estudio de modo que le permita "\
+                                    "detectar el poder de influencia y su capacidad de distribución de los que dispone este ususario en cuestión."
+    medias_popularity_description = "Este estudio realiza un análisis acerca de las interacciones que han recibido las publicaciones de un usuario concreto "\
+                                    "durante un período de tiempo con el objetivo de presentar las características de las diez publicaciones más o menos populares. "\
+                                    "Dependiendo del medio social escogido, las métricas serán diferentes puesto que cada red social dispone de un conjunto de interacciones "\
+                                    "comunes pero también contiene algunas que solo aparecen de forma particular."
+    sentiment_analysis_description = "El análisis de sentimientos tiene como principal objetivo el estudio de la bondad de los textos disponibles en la cuenta de usuario seleccionada. "\
+                                    "En esta plataforma se posibilita la realización de este tipo de investigación sobre los comentarios y los títulos de las publicaciones. "\
+                                    "De este modo, podrá conocer el número de textos clasificados como positivos, neutrales y negativos así como su respectiva polaridad o grado de confianza. "\
+                                    "Este dato explica cuán seguro está el modelo de que un determinado texto pertenece al tipo de sentimiento que ha identificado."
+    users_behaviours_description = "El análisis de los patrones de comportamiento identifica el número de usuarios que se caracterizan por se más amigables con la cuenta en estudio "\
+                                    "así como el número de miembros que se muestran más hostiles, los llamados haters, a partir del análisis de sentimientos realizado a los comentarios de las publicaciones del usuario analizado "\
+                                    "durante un período de tiempo determinado. De este modo, este estudio posibilita la identificación de etapas temporales en las que hayan aumentado "\
+                                    "el número de un tipo u otro de usuarios con el objetivo de poder combinar sus resultados con los de otros análisis que se proporcionan en esta plataforma "\
+                                    "y así comprender los motivos de las diversas reacciones del resto de miembros de la comunidad al contenido publicado."
+    instructions = "Para ello es necesario que indique la fecha de inicio y de fin entre las que obtener la información necesaria "\
+        "para llevar a cabo este análisis sobre el usuario especificado dentro de una red social concreta."
     if pathname in ["/", "/page-1"]:
         auxdata_attr.current_page = "new-user"
         return CONTENT_STYLE, non_selected_option_style, selected_option, \
                 non_selected_option, non_selected_option, non_selected_option, \
                 non_selected_option, non_selected_option, non_selected_option, \
-                non_selected_option, "", non_selected_option_style, non_selected_option_style
+                "", non_selected_option_style, non_selected_option_style \
+                , non_selected_option_style, non_selected_option_style, "", ""
     elif pathname == "/page-2":
         auxdata_attr.current_page = "profile-evolution"
         return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
                 selected_option, non_selected_option, non_selected_option, non_selected_option, \
-                non_selected_option, non_selected_option, non_selected_option, \
-                "Análisis de la evolución del perfil", non_selected_option_style, non_selected_option_style
+                non_selected_option, non_selected_option, \
+                "Análisis de la evolución del perfil", non_selected_option_style, non_selected_option_style \
+                , non_selected_option_style, non_selected_option_style, profiles_evolution_description, instructions
     elif pathname == "/page-3":
         auxdata_attr.current_page = "profile-activity"
         return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
                 non_selected_option, selected_option, non_selected_option,  \
                 non_selected_option, non_selected_option, non_selected_option, \
-                non_selected_option, "Análisis de la evolución de la actividad", \
-                non_selected_option_style, non_selected_option_style
+                "Análisis de la evolución de la actividad", \
+                non_selected_option_style, non_selected_option_style \
+                , non_selected_option_style, non_selected_option_style, profiles_activity_description, instructions
     elif pathname == "/page-4":
         auxdata_attr.current_page = "medias-evolution"
         return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
                 non_selected_option, non_selected_option, selected_option, \
                 non_selected_option, non_selected_option, non_selected_option, \
-                non_selected_option, "Análisis de la evolución del interés de las publicaciones", \
-                non_selected_option_style, non_selected_option_style
+                "Análisis de la evolución del interés de las publicaciones", \
+                non_selected_option_style, non_selected_option_style \
+                , non_selected_option_style, non_selected_option_style, medias_evolution_description, instructions
     elif pathname == "/page-5":
         auxdata_attr.current_page = "medias-popularity"
         return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
                 non_selected_option, non_selected_option, non_selected_option, \
                 selected_option, non_selected_option, non_selected_option, \
-                non_selected_option, "Análisis de la popularidad de las publicaciones" \
-                , popularity_label, popularity_dropdown
+                "Análisis de la popularidad de las publicaciones" \
+                , popularity_label, popularity_dropdown, non_selected_option_style, non_selected_option_style\
+                , medias_popularity_description, instructions+" Asimismo, también podrá seleccionar si desea visualizar las diez publicaciones más o menos populares."
+    elif pathname == "/page-6":
+        auxdata_attr.current_page = "text-sentiments"
+        return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, selected_option, non_selected_option, \
+                "Análisis de sentimientos basado en texto" \
+                , non_selected_option_style, non_selected_option_style, \
+                popularity_label, sentiments_dropdown \
+                , sentiment_analysis_description, instructions+" Además, deberá elegir a qué tipo de textos se va a aplicar el análisis de sentimientos, a los comentarios o a los títulos de las publicaciones."
+    elif pathname == "/page-7":
+        auxdata_attr.current_page = "user-behaviours"
+        return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
+                non_selected_option, non_selected_option, non_selected_option, \
+                non_selected_option, non_selected_option, selected_option, \
+                "Análisis de patrones de comportamiento" \
+                , non_selected_option_style, non_selected_option_style, \
+                non_selected_option_style, non_selected_option_style, users_behaviours_description, instructions
 
 
 #---------------------------------- FLASK SERVER ---------------------------------
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(host="0.0.0.0", debug=True)
