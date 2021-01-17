@@ -765,7 +765,7 @@ class MainOperations:
             - The ids of the inserted analysis results.
         """
         # 1. Get and insert the required medias to perform the analysis
-        self.insert_media_data(username, analysis, social_media, date_ini, date_fin)
+        # self.insert_media_data(username, analysis, social_media, date_ini, date_fin)
         # 2. Get only the required fields to perform the analysis
         select_query = self.analysis_postgres_select_queries[analysis]
         select_values = {"comment_date_ini":date_ini, "comment_date_fin":date_fin,
@@ -784,8 +784,9 @@ class MainOperations:
                 check_analyzed_text = [{"original_text":item["original_text"]}]
                 self.postgresdb_object.insert_data(insert_analyzed_text_query, [item], check_analyzed_text)
             # Count the number of sentiments and compute the average degree
-            total_sentiments[item["sentiment"]] += 1
-            total_degree[item["sentiment"]] += item["degree"]
+            if (item["sentiment"] != "none"):
+                total_sentiments[item["sentiment"]] += 1
+                total_degree[item["sentiment"]] += item["degree"]
 
         # Average of the polarity for each sentiment
         for key in total_degree: 
@@ -1025,14 +1026,14 @@ class MainOperations:
             # 2. Perform the analysis since the beginning
             return self.perform_user_behaviours(username, analysis, social_media, date_ini, date_fin)
 
-# if __name__ == "__main__":
-#     obj = MainOperations()
-#     import time
-#     start = time.time()
-#     result = obj.perform_analysis("audispain", "comment_sentiment_analysis", "Instagram", "01-12-2020", "07-12-2020")
-#     end = time.time()
-#     print(result)
-#     print("TIME : ",end - start)
+if __name__ == "__main__":
+    obj = MainOperations()
+    import time
+    start = time.time()
+    result = obj.perform_analysis("audispain", "user_behaviours", "Instagram", "01-11-2020", "07-11-2020")
+    end = time.time()
+    print(result)
+    print("TIME : ",end - start)
     # import time
     # start = time.time()
     # obj = MainOperations()
