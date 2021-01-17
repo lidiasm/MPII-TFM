@@ -13,7 +13,6 @@ nltk>=3.5
 huey>=2.3.0
 redis>=3.5.3
 gevent>=20.12.1
-
 cufflinks>=0.17.3
 plotly>=4.14.1 
 dash>=1.17.0
