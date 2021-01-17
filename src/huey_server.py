@@ -6,8 +6,8 @@ user and from a particular social media source.
 
 @author: Lidia Sánchez Mérida
 """
-from huey import RedisHuey, crontab
-huey = RedisHuey('social_networks_app', host='localhost')
+from huey import SqliteHuey, crontab
+huey = SqliteHuey(filename='/tmp/huey_sqlite.db')
 
 from main_ops import MainOperations
 
