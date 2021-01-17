@@ -168,11 +168,13 @@ def plot_funnel_chart(analysis_result):
     fig.add_trace(go.Funnel(
         name = 'Me gusta',
         x = analysis_result["like_count"],
+        y = analysis_result["date"],
         textinfo = "value")
     )
     fig.add_trace(go.Funnel(
         name = 'Comentarios',
         x = analysis_result["comment_count"],
+        y = analysis_result["date"],
         textinfo = "value")
     )
     fig.update_layout(
