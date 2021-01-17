@@ -7,7 +7,7 @@ services:
       container_name: mongodb_socialnetworks
       restart: unless-stopped
       ports:
-        - "27018:27018"
+        - "27018:27017"
       # File in which there are the environmental variables
       env_file:
         - .env

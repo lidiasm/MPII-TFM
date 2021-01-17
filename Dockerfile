@@ -8,17 +8,14 @@ ENV PORT 8002
 WORKDIR .
 
 # Copy the requirements file in order to install the depedencies
-COPY docker_requirements.txt /tmp/
+COPY docker_requirements.txt src/ app.py docker_requirements.txt run_huey.sh ./
 
 # Update the SO and pip. Then, the libraries will be installed
-RUN apt-get update && pip install --upgrade pip && pip install --requirement /tmp/requirements.txt
+RUN apt-get update && pip install --upgrade pip && pip install --requirement docker_requirements.txt
 
 # Create a non-user root to run the container with it
 RUN useradd -m user_lidia
 USER user_lidia
-
-# Copy only the required files to the container in order to run the app
-COPY src/ app.py ./
 
 # Info about the avalaible port to access the app.
 EXPOSE 8002
