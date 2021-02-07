@@ -346,7 +346,7 @@ dates_to_print = get_avalaible_dates()
 app.layout = html.Div([
         dcc.Location(id="url"), 
         sidebar,
-        # ----------------------- NEW USER TO GET DATA -----------------------
+        # ----------------------- NEW USER TO GET DATA ----------------------- #
         html.Div(
             id="new-user-page",
             style=CONTENT_STYLE,
@@ -402,7 +402,7 @@ app.layout = html.Div([
                 ]),
         ]),
         
-        # --------------------- PROFILE EVOLUTION ANALYSIS --------------------
+        # --------------------------- ANALYSIS VIEWS -------------------------- #
         html.Div(
             id="analysis-page",
             style=CONTENT_STYLE,
@@ -498,6 +498,16 @@ app.layout = html.Div([
                         ),
                     ),
                 ]),
+                
+                html.Div(
+                    id="top-3-popularity",
+                    className="six columns pretty_container",
+                    style={"width":"100%", "margin-left":"-0px"},
+                    children=[
+                        html.A(id="first-popularity-post", style={"margin-left":"50px"}, children="Primera publicación", href=""),
+                        html.A(id="second-popularity-post", style={"margin-left":"200px"}, children="Segunda publicación", href=""),
+                        html.A(id="third-popularity-post", style={"margin-left":"200px"}, children="Tercera publicación", href=""),
+                ]),
             ],
         ),
     ])
@@ -540,7 +550,11 @@ def set_user_to_study(clicks, user):
     return "", {"display":"none"}
     
 @app.callback(
-    Output("analysis-results", "figure"),
+    [Output("analysis-results", "figure"),
+     Output("top-3-popularity", "style"),
+     Output("first-popularity-post", "href"),
+     Output("second-popularity-post", "href"),
+     Output("third-popularity-post", "href"),],
     [Input("analysis-start-date-dropdown", "value"),
      Input("analysis-end-date-dropdown", "value"),
      Input("analysis-users-dropdown", "value"),
@@ -584,32 +598,41 @@ def update_analysis_results(start_date, end_date, user, social_media,
             if (auxdata_attr.current_page == 'profile-evolution'):
                 analysis_result = mainops_attr.perform_analysis(user, 'profile_evolution', social_media, start_date, end_date)
                 result = plot_filled_area_chart(analysis_result)
-                if (result != None): return result 
+                if (result != None): return result, {"display":"none"}, "", "", ""
             elif (auxdata_attr.current_page == 'profile-activity'):
                 analysis_result = mainops_attr.perform_analysis(user, 'profile_activity', social_media, start_date, end_date)
                 result = plot_waterfall_chart(analysis_result)
-                if (result != None): return result 
+                if (result != None): return result, {"display":"none"}, "", "", ""
             elif (auxdata_attr.current_page == 'medias-evolution'):
                 analysis_result = mainops_attr.perform_analysis(user, 'media_evolution', social_media, start_date, end_date)
                 result = plot_funnel_chart(analysis_result)
-                if (result != None): return result 
+                if (result != None): return result, {"display":"none"}, "", "", "" 
             elif (auxdata_attr.current_page == "medias-popularity"): 
                 analysis_result = mainops_attr.perform_analysis(user, 'media_popularity', social_media, start_date, end_date, popularity)
                 auxdata_attr.popularity_mode = popularity
+                post_popularity = {"best":["https://www.instagram.com/p/CC_UcwgnZJK/?igshid=lpfow838ccqr",
+                               "https://www.instagram.com/p/CGK0lf8HjSn/",
+                               "https://www.instagram.com/p/CGKXU0nnm5A/"], 
+                    "worst":["https://www.instagram.com/p/CHfgiQwix-C/",
+                              "https://www.instagram.com/p/CF2WL3ziB7g/",
+                              "https://www.instagram.com/p/CIBklUtCoO1/"]}
+                link1 = post_popularity["best"][0] if auxdata_attr.popularity_mode == "best" else post_popularity["worst"][0]
+                link2 = post_popularity["best"][1] if auxdata_attr.popularity_mode == "best" else post_popularity["worst"][1]
+                link3 = post_popularity["best"][2] if auxdata_attr.popularity_mode == "best" else post_popularity["worst"][2]
                 result = plot_bar_chart(analysis_result)
-                if (result != None): return result 
+                if (result != None): return result, {"display":"block", "width":"100%", "margin-left":"-0px"}, link1, link2, link3
             elif (auxdata_attr.current_page == "text-sentiments"): 
                 analysis_result = mainops_attr.perform_analysis(user, text_analysis, social_media, start_date, end_date)
                 auxdata_attr.sentiment_analysis = text_analysis
                 result = plot_pie_chart(analysis_result)
-                if (result != None): return result 
+                if (result != None): return result, {"display":"none"}, "", "", "" 
             elif (auxdata_attr.current_page == "user-behaviours"): 
                 analysis_result = mainops_attr.perform_analysis(user, 'user_behaviours', social_media, start_date, end_date)
                 result = plot_heatmap_chart(analysis_result)
-                if (result != None): return result 
+                if (result != None): return result, {"display":"none"}, "", "", "" 
     
-        return go.Figure()
-    return go.Figure()
+        return go.Figure(), {"display":"none"}, "", "", ""
+    return go.Figure(), {"display":"none"}, "", "", ""
     
 @app.callback(
     [Output(f"page-{i}-link", "active") for i in range(1, 8)],
@@ -701,13 +724,15 @@ def render_page_content(pathname):
                                     "y así comprender los motivos de las diversas reacciones del resto de miembros de la comunidad al contenido publicado."
     instructions = "Para ello es necesario que indique la fecha de inicio y de fin entre las que obtener la información necesaria "\
         "para llevar a cabo este análisis sobre el usuario especificado dentro de una red social concreta."
+        
+    
     if pathname in ["/", "/page-1"]:
         auxdata_attr.current_page = "new-user"
         return CONTENT_STYLE, non_selected_option_style, selected_option, \
                 non_selected_option, non_selected_option, non_selected_option, \
                 non_selected_option, non_selected_option, non_selected_option, \
                 "", non_selected_option_style, non_selected_option_style \
-                , non_selected_option_style, non_selected_option_style, "", ""
+                , non_selected_option_style, non_selected_option_style, "", "" 
     elif pathname == "/page-2":
         auxdata_attr.current_page = "profile-evolution"
         return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
@@ -730,7 +755,7 @@ def render_page_content(pathname):
                 non_selected_option, non_selected_option, non_selected_option, \
                 "Análisis de la evolución del interés de las publicaciones", \
                 non_selected_option_style, non_selected_option_style \
-                , non_selected_option_style, non_selected_option_style, medias_evolution_description, instructions
+                , non_selected_option_style, non_selected_option_style, medias_evolution_description, instructions 
     elif pathname == "/page-5":
         auxdata_attr.current_page = "medias-popularity"
         return non_selected_option_style, CONTENT_STYLE, non_selected_option, \
@@ -756,7 +781,6 @@ def render_page_content(pathname):
                 "Análisis de patrones de comportamiento" \
                 , non_selected_option_style, non_selected_option_style, \
                 non_selected_option_style, non_selected_option_style, users_behaviours_description, instructions
-
 
 #---------------------------------- FLASK SERVER ---------------------------------
 if __name__ == "__main__":
