@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-This file includes the required Dash callbacks to run the platform from an interface.
+This file includes the required Dash callbacks to run the interface.
 
 @author: Lidia Sánchez Mérida
 """
